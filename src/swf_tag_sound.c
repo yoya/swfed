@@ -29,7 +29,7 @@ swf_tag_sound_create_detail(unsigned char *data, unsigned long length,
     swf_tag_sound_detail_t *swf_tag_sound;
     bitstream_t *bs;
     unsigned long sound_data_len;
-    unsigned char *sound_data;
+    unsigned char *sound_data_ref;
     (void) tag;
     (void) swf;
     swf_tag_sound = calloc(sizeof(*swf_tag_sound), 1);
@@ -53,8 +53,8 @@ swf_tag_sound_create_detail(unsigned char *data, unsigned long length,
         bitstream_close(bs);
         return NULL;
     }
-    sound_data = bitstream_buffer(bs, bitstream_getbytepos(bs));
-    memcpy(swf_tag_sound->sound_data, sound_data, sound_data_len);
+    sound_data_ref = bitstream_buffer(bs, bitstream_getbytepos(bs));
+    memcpy(swf_tag_sound->sound_data, sound_data_ref, sound_data_len);
     swf_tag_sound->sound_data_len = sound_data_len;
     bitstream_close(bs);
     return (void *) swf_tag_sound;
