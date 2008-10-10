@@ -1,0 +1,8 @@
+% tar xvfz swfed-?.??.tar.gz
+% cd src
+% phpize
+% ./configure
+% make
+% su
+Password:
+# cp modules/swfed.so <php extension dir>/.

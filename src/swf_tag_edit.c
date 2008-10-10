@@ -1,0 +1,295 @@
+/*
+  +----------------------------------------------------------------------+
+  | Author: yoya@awm.jp                                                  |
+  +----------------------------------------------------------------------+
+*/
+
+#include <stdio.h>
+#include <string.h>
+#include "bitstream.h"
+#include "swf_tag_edit.h"
+#include "swf_object.h"
+#include "swf_rgba.h"
+
+swf_tag_detail_handler_t edit_detail_handler;
+
+swf_tag_detail_handler_t *
+swf_tag_edit_detail_handler(void) {
+    edit_detail_handler.create   = swf_tag_edit_create_detail;
+    edit_detail_handler.identity = swf_tag_edit_identity_detail;
+    edit_detail_handler.output   = swf_tag_edit_output_detail;
+    edit_detail_handler.print    = swf_tag_edit_print_detail;
+    edit_detail_handler.destroy  = swf_tag_edit_destroy_detail;
+    return &edit_detail_handler;
+}
+
+void *
+swf_tag_edit_create_detail(unsigned char *data, unsigned long length,
+                           swf_tag_t *tag,
+                           struct swf_object_ *swf) {
+    swf_tag_edit_detail_t *swf_tag_edit;
+    bitstream_t *bs;
+    (void) tag;
+    swf_tag_edit = calloc(sizeof(*swf_tag_edit), 1);
+    if (swf_tag_edit == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_edit_create_detail: can't calloc\n");
+        return NULL;
+    }
+    bs = bitstream_open();
+    bitstream_input(bs, data, length);
+    swf_tag_edit->edit_id = bitstream_getbytesLE(bs, 2);
+    swf_rect_parse(bs, &swf_tag_edit->rect);
+    bitstream_align(bs);
+    swf_tag_edit->edit_has_text       = bitstream_getbit(bs);
+    swf_tag_edit->edit_word_wrap      = bitstream_getbit(bs);
+    swf_tag_edit->edit_multiline      = bitstream_getbit(bs);
+    swf_tag_edit->edit_password       = bitstream_getbit(bs);
+    swf_tag_edit->edit_readonly       = bitstream_getbit(bs);
+    swf_tag_edit->edit_has_color      = bitstream_getbit(bs);
+    swf_tag_edit->edit_has_max_length = bitstream_getbit(bs);
+    swf_tag_edit->edit_has_font       = bitstream_getbit(bs);
+    if (swf && (swf->header.version >= 6)) {
+        (void) bitstream_getbit(bs); // reserved;
+        swf_tag_edit->edit_auto_size = bitstream_getbit(bs);
+    } else {
+        (void) bitstream_getbit(bs); // reserved;
+        (void) bitstream_getbit(bs); // reserved;
+    }
+    swf_tag_edit->edit_has_layout   = bitstream_getbit(bs);
+    swf_tag_edit->edit_no_select    = bitstream_getbit(bs);
+    swf_tag_edit->edit_border       = bitstream_getbit(bs);
+    (void) bitstream_getbit(bs); // reserved;
+    swf_tag_edit->edit_html         = bitstream_getbit(bs);
+    swf_tag_edit->edit_use_outlines = bitstream_getbit(bs);
+    if (swf_tag_edit->edit_has_font) {
+        swf_tag_edit->edit_font_id_ref = bitstream_getbytesLE(bs, 2);
+        swf_tag_edit->edit_font_height = bitstream_getbytesLE(bs, 2);
+    }
+    if (swf_tag_edit->edit_has_color) {
+        swf_rgba_parse(bs, &swf_tag_edit->edit_color);
+    }
+    if (swf_tag_edit->edit_has_max_length) {
+        swf_tag_edit->edit_max_length = bitstream_getbytesLE(bs, 2);
+    }
+    if (swf_tag_edit->edit_has_layout) {
+        swf_tag_edit->edit_align = bitstream_getbyte(bs);
+        swf_tag_edit->edit_left_margine = bitstream_getbytesLE(bs, 2);
+        swf_tag_edit->edit_right_margine = bitstream_getbytesLE(bs, 2);
+        swf_tag_edit->edit_indent = (signed) bitstream_getbytesLE(bs, 2);
+        swf_tag_edit->edit_leading = (signed) bitstream_getbytesLE(bs, 2);
+    }
+    swf_tag_edit->edit_variable_name = (char *) bitstream_outputstring(bs);
+    if (swf_tag_edit->edit_has_text) {
+        swf_tag_edit->edit_initial_text = (char *) bitstream_outputstring(bs);
+    } else {
+        swf_tag_edit->edit_initial_text = NULL;
+    }
+    
+    bitstream_close(bs);
+    return (void *) swf_tag_edit;
+}
+
+int swf_tag_edit_identity_detail(unsigned char *data, int id,
+                                 swf_tag_t *tag) {
+    bitstream_t *bs;
+    int edit_id;
+    (void) tag;
+    bs = bitstream_open();
+    bitstream_input(bs, data, 2);
+    edit_id = bitstream_getbytesLE(bs, 2);
+    bitstream_close(bs);
+    if (id == edit_id) {
+        return 0;
+    }        
+    return 1;
+}
+
+unsigned char *
+swf_tag_edit_output_detail(void *detail, unsigned long *length,
+                           swf_tag_t *tag,
+                           struct swf_object_ *swf) {
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    bitstream_t *bs;
+    unsigned char *data;
+    (void) tag;
+    *length = 0;
+    bs = bitstream_open();
+    bitstream_putbytesLE(bs, swf_tag_edit->edit_id, 2);
+    swf_rect_build(bs, &swf_tag_edit->rect);
+    bitstream_align(bs);
+    bitstream_putbit(bs, swf_tag_edit->edit_has_text);
+    bitstream_putbit(bs, swf_tag_edit->edit_word_wrap);
+    bitstream_putbit(bs, swf_tag_edit->edit_multiline);
+    bitstream_putbit(bs, swf_tag_edit->edit_password );
+    bitstream_putbit(bs, swf_tag_edit->edit_readonly);
+    bitstream_putbit(bs, swf_tag_edit->edit_has_color );
+    bitstream_putbit(bs, swf_tag_edit->edit_has_max_length);
+    bitstream_putbit(bs, swf_tag_edit->edit_has_font);
+    if (swf && (swf->header.version >= 6)) {
+        bitstream_putbit(bs, 0); // reserved;
+        bitstream_putbit(bs, swf_tag_edit->edit_auto_size);
+    } else {
+        bitstream_putbit(bs, 0); // reserved;
+        bitstream_putbit(bs, 0); // reserved;
+    }
+    bitstream_putbit(bs, swf_tag_edit->edit_has_layout);
+    bitstream_putbit(bs, swf_tag_edit->edit_no_select);
+    bitstream_putbit(bs, swf_tag_edit->edit_border);
+    bitstream_putbit(bs, 0); // reserved;
+    bitstream_putbit(bs, swf_tag_edit->edit_html);
+    bitstream_putbit(bs, swf_tag_edit->edit_use_outlines);
+    if (swf_tag_edit->edit_has_font) {
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_font_id_ref, 2);
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_font_height, 2);
+    }
+    if (swf_tag_edit->edit_has_color) {
+        swf_rgba_build(bs, &swf_tag_edit->edit_color);
+    }
+    if (swf_tag_edit->edit_has_max_length) {
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_max_length, 2);
+    }
+    if (swf_tag_edit->edit_has_layout) {
+        bitstream_putbyte(bs, swf_tag_edit->edit_align);
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_left_margine, 2);
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_right_margine, 2);
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_indent, 2);
+        bitstream_putbytesLE(bs, swf_tag_edit->edit_leading, 2);
+    }
+    bitstream_putstring(bs,
+                        (unsigned char *) swf_tag_edit->edit_variable_name,
+                        strlen(swf_tag_edit->edit_variable_name) + 1);
+    if (swf_tag_edit->edit_has_text) {
+        bitstream_putstring(bs,
+                            (unsigned char *)swf_tag_edit->edit_initial_text,
+                            strlen(swf_tag_edit->edit_initial_text) + 1);
+    }
+    data = bitstream_steal(bs, length);
+    bitstream_close(bs);
+    return data;
+}
+
+void
+swf_tag_edit_print_detail(void *detail,
+                          swf_tag_t *tag,
+                          struct swf_object_ *swf) {
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    (void) tag;
+    printf("\tedit_id=%d\n", swf_tag_edit->edit_id);
+    printf("\t");
+    swf_rect_print(&swf_tag_edit->rect);
+    printf("\ttext=%d wwrap=%d multi=%d pass=%d ro=%d col=%d maxlen=%d font=%d\n",
+           swf_tag_edit->edit_has_text?1:0,
+           swf_tag_edit->edit_word_wrap?1:0,
+           swf_tag_edit->edit_multiline?1:0,
+           swf_tag_edit->edit_password?1:0,
+           swf_tag_edit->edit_readonly?1:0,
+           swf_tag_edit->edit_has_color?1:0,
+           swf_tag_edit->edit_has_max_length?1:0,
+           swf_tag_edit->edit_has_font?1:0);
+    if (swf->header.version >= 6) {
+        printf("\tauto_size=%d\n", swf_tag_edit->edit_auto_size);
+    }
+    printf("\tlayout=%d no_sel=%d border=%d\n",
+           swf_tag_edit->edit_has_layout?1:0,
+           swf_tag_edit->edit_no_select?1:0,
+           swf_tag_edit->edit_border?1:0);
+    if (swf_tag_edit->edit_has_font) {
+        printf("\tfont_id=%d font_height=%d\n",
+               swf_tag_edit->edit_font_id_ref,
+               swf_tag_edit->edit_font_height / SWF_TWIPS);
+    }
+    if (swf_tag_edit->edit_has_color) {
+        printf("\t");
+        swf_rgba_print(&swf_tag_edit->edit_color);
+    }
+    if (swf_tag_edit->edit_has_max_length) {
+        printf("\tmax_length=%d\n",
+               swf_tag_edit->edit_max_length);
+    }
+    if (swf_tag_edit->edit_has_layout) {
+        printf("\talign=%d (left,right)_margine=(%d,%d) indent=%d leading=%d\n",
+               swf_tag_edit->edit_align,
+               swf_tag_edit->edit_left_margine,
+               swf_tag_edit->edit_right_margine,
+               swf_tag_edit->edit_indent,
+               swf_tag_edit->edit_leading);
+    }
+    if (swf_tag_edit->edit_variable_name) {
+        printf("\tvariable_name=%s\n",
+               swf_tag_edit->edit_variable_name);
+    }
+    if (swf_tag_edit->edit_initial_text) {
+        printf("\tinitial_text=%s\n",
+               swf_tag_edit->edit_initial_text);
+    }
+    return ;
+}
+
+void
+swf_tag_edit_destroy_detail(void *detail) {
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    if (swf_tag_edit) {
+        free(swf_tag_edit->edit_variable_name);
+        free(swf_tag_edit->edit_initial_text);
+        swf_tag_edit->edit_variable_name = NULL;
+        swf_tag_edit->edit_initial_text = NULL;
+        free(swf_tag_edit);
+    }
+    return ;
+}
+
+char *
+swf_tag_edit_get_string(void *detail,
+                        char *variable_name, int variable_name_len) {
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    char *data, *initial_text;
+    if (strcmp(swf_tag_edit->edit_variable_name, variable_name)) {
+        if (atoi(variable_name) != swf_tag_edit->edit_id) {
+            return NULL;
+        }
+    }
+    initial_text = swf_tag_edit->edit_initial_text;
+    data = malloc(variable_name_len + 1);
+    if (data == NULL) {
+        fprintf(stderr, "swf_tag_edit_get_string: Can't malloc\n");
+        return NULL;
+    }
+    memcpy(data, initial_text, variable_name_len + 1);
+    return data;
+}
+
+int
+swf_tag_edit_replace_string(void *detail,
+                            char *variable_name, int variable_name_len,
+                            char *initial_text, int initial_text_len) {
+    char *new_str;
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    if (((int) strlen(swf_tag_edit->edit_variable_name) != variable_name_len)
+        || memcmp(swf_tag_edit->edit_variable_name, variable_name,
+                  variable_name_len)) {
+        if (atoi(variable_name) != swf_tag_edit->edit_id) {
+            return 1;
+        }
+    }
+    if (initial_text_len == 0) {
+	swf_tag_edit->edit_has_text = 0;
+        if (swf_tag_edit->edit_initial_text) {
+	    free(swf_tag_edit->edit_initial_text);
+	    swf_tag_edit->edit_initial_text = NULL;
+        }
+	return 0;
+    } 
+    swf_tag_edit->edit_has_text = 1;
+    new_str = malloc(initial_text_len + 1);
+    if (new_str == NULL) {
+        fprintf(stderr, "swf_tag_edit_replace_string: Can't malloc\n");
+        return 1;
+    }
+    memcpy(new_str, initial_text, initial_text_len);
+    new_str[initial_text_len] = '\0';
+    if (swf_tag_edit->edit_initial_text) {
+        free(swf_tag_edit->edit_initial_text);
+    }
+    swf_tag_edit->edit_initial_text = new_str;
+    return 0;
+}
