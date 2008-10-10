@@ -20,7 +20,7 @@
  echo $swf->output(); 
  
  - other sample code
-   http://svn.sourceforge.jp/svnroot/swfed/sample/ 
+   http://svn.sourceforge.jp/svnroot/swfed/trunk/sample/ 
 
 * demo
 
@@ -32,7 +32,7 @@
 * download
 
  - http://sourceforge.jp/projects/swfed/files/ release 
- - http://svn.sourceforge.jp/svnroot/swfed/ current 
+ - http://svn.sourceforge.jp/svnroot/swfed/trunk/ current 
 
 * install
 
