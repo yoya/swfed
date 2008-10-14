@@ -31,19 +31,19 @@ swf_tag_sound_create_detail(void) {
         fprintf(stderr, "ERROR: swf_tag_sound_create_detail: can't calloc\n");
         return NULL;
     }
+    return swf_tag_sound;
 }
 
 int
-swf_tag_sound_input_detail(unsigned char *data, unsigned long length,
-                            swf_tag_t *tag,
+swf_tag_sound_input_detail(swf_tag_t *tag,
                             struct swf_object_ *swf) {
-    swf_tag_sound_detail_t *swf_tag_sound;
+    swf_tag_sound_detail_t *swf_tag_sound = tag->detail;
+    unsigned char *data  = tag->data;
+    unsigned long length = tag->length;
     bitstream_t *bs;
     unsigned long sound_data_len;
     unsigned char *sound_data_ref;
-    (void) tag;
     (void) swf;
-    swf_tag_sound = tag->detail;
     if (swf_tag_sound == NULL) {
         fprintf(stderr, "ERROR: swf_tag_sound_input_detail: swf_tag_sound == NULL\n");
         return 1;
@@ -72,10 +72,11 @@ swf_tag_sound_input_detail(unsigned char *data, unsigned long length,
 }
 
 int
-swf_tag_sound_identity_detail(unsigned char *data, int id, swf_tag_t *tag) {
+swf_tag_sound_identity_detail(swf_tag_t *tag, int id) {
     int sound_id;
+    unsigned char *data = tag->data;
     if (tag->detail) {
-        swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;        
+        swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
         if (swf_tag_sound->sound_id == id) {
             return 0;
         }        
@@ -93,10 +94,9 @@ swf_tag_sound_identity_detail(unsigned char *data, int id, swf_tag_t *tag) {
 }
 
 unsigned char *
-swf_tag_sound_output_detail(void *detail, unsigned long *length,
-                           swf_tag_t *tag,
-                           struct swf_object_ *swf) {
-    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) detail;
+swf_tag_sound_output_detail(swf_tag_t *tag, unsigned long *length,
+                            struct swf_object_ *swf) {
+    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
     (void) tag;
@@ -117,12 +117,10 @@ swf_tag_sound_output_detail(void *detail, unsigned long *length,
 }
 
 void
-swf_tag_sound_print_detail(void *detail,
-                          swf_tag_t *tag,
-                          struct swf_object_ *swf) {
-    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) detail;
+swf_tag_sound_print_detail(swf_tag_t *tag,
+                           struct swf_object_ *swf) {
+    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
     char *format_name = "Unknown";
-    (void) tag;
     (void) swf;
     switch(swf_tag_sound->sound_format & 0x0f) {
     case 0:
@@ -156,8 +154,8 @@ swf_tag_sound_print_detail(void *detail,
 }
 
 void
-swf_tag_sound_destroy_detail(void *detail) {
-    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) detail;
+swf_tag_sound_destroy_detail(swf_tag_t *tag) {
+    swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
     if (swf_tag_sound) {
         free(swf_tag_sound->sound_data);
         swf_tag_sound->sound_data = NULL;

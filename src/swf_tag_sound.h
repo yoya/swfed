@@ -23,20 +23,14 @@ typedef struct swf_tag_sound_detail_ {
 extern swf_tag_detail_handler_t *swf_tag_sound_detail_handler(void);
 
 extern void *swf_tag_sound_create_detail(void);
-extern int swf_tag_sound_input_detail(unsigned char *data,
-                                      unsigned long length,
-                                      swf_tag_t *tag,
-                                      struct swf_object_ *swf);
-extern int swf_tag_sound_identity_detail(unsigned char *data, int id,
-                                         swf_tag_t *tag);
-extern unsigned char *swf_tag_sound_output_detail(void *detail,
+extern int swf_tag_sound_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
+extern int swf_tag_sound_identity_detail(swf_tag_t *tag, int id);
+extern unsigned char *swf_tag_sound_output_detail(swf_tag_t *tag,
                                                   unsigned long *length,
-                                                  swf_tag_t *tag,
                                                   struct swf_object_ *swf);
-extern void swf_tag_sound_print_detail(void *detail,
-                                       swf_tag_t *tag,
+extern void swf_tag_sound_print_detail(swf_tag_t *tag,
                                        struct swf_object_ *swf);
-extern void swf_tag_sound_destroy_detail(void *detail);
+extern void swf_tag_sound_destroy_detail(swf_tag_t *tag);
 
 extern unsigned char *swf_tag_sound_get_sound_data(void *detail, unsigned long *length,
                                         int sound_id);

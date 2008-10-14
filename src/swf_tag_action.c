@@ -38,19 +38,18 @@ swf_tag_action_create_detail(void) {
 }
 
 int
-swf_tag_action_input_detail(unsigned char *data,
-                            unsigned long length,
-                            swf_tag_t *tag,
-                            struct swf_object_ *swf) {
-    swf_tag_action_detail_t *swf_tag_action;
+swf_tag_action_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
+    swf_tag_action_detail_t *swf_tag_action = tag->detail;
+    unsigned char *data  = tag->data;
+    unsigned long length = tag->length;
     bitstream_t *bs;
     unsigned long pos, len;
     (void) swf;
-    swf_tag_action = tag->detail;
     if (swf_tag_action == NULL) {
         fprintf(stderr, "ERROR: swf_tag_action_create_detail: swf_tag_action == NULL\n");
         return 1;
     }
+
     bs = bitstream_open();
     bitstream_input(bs, data, length);
 
@@ -67,19 +66,16 @@ swf_tag_action_input_detail(unsigned char *data,
     return 0;
 }
 
-int swf_tag_action_identity_detail(unsigned char *data, int id,
-                                   swf_tag_t *tag) {
-    (void) data;
-    (void) id;
+int swf_tag_action_identity_detail(swf_tag_t *tag, int id) {
     (void) tag;
+    (void) id;
     return 1;
 }
 
 unsigned char *
-swf_tag_action_output_detail(void *detail, unsigned long *length,
-                             swf_tag_t *tag,
+swf_tag_action_output_detail(swf_tag_t *tag, unsigned long *length,
                              struct swf_object_ *swf) {
-    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) detail;
+    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
     *length = 0;
@@ -99,12 +95,11 @@ swf_tag_action_output_detail(void *detail, unsigned long *length,
 }
 
 void
-swf_tag_action_print_detail(void *detail,
-                            swf_tag_t *tag,
+swf_tag_action_print_detail(swf_tag_t *tag,
                             struct swf_object_ *swf) {
     bitstream_t *bs;
     swf_action_list_t *action_list;
-    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) detail;
+    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     (void) swf;
     if (tag->tag == 59) { // DoInitAction
         printf("action_sprite=%d  ", swf_tag_action->action_sprite);
@@ -121,8 +116,8 @@ swf_tag_action_print_detail(void *detail,
 }
 
 void
-swf_tag_action_destroy_detail(void *detail) {
-    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) detail;
+swf_tag_action_destroy_detail(swf_tag_t *tag) {
+    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     if (swf_tag_action) {
         free(swf_tag_action->action_record);
         swf_tag_action->action_record = NULL;

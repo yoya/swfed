@@ -23,19 +23,12 @@ typedef struct swf_tag_ {
 
 typedef struct swf_tag_detail_handler_ {
     void          * (*create)   (void);
-    int             (*input)    (unsigned char *data,
-                                 unsigned long length,
-                                 swf_tag_t *tag,
+    int             (*input)    (swf_tag_t *tag, struct swf_object_ *swf);
+    int             (*identity) (swf_tag_t *tag, int id);
+    unsigned char * (*output)   (swf_tag_t *tag, unsigned long *length,
                                  struct swf_object_ *swf);
-    int             (*identity) (unsigned char *data, int id,
-                                 swf_tag_t *tag);
-    unsigned char * (*output)   (void *detail, unsigned long *length,
-                                 swf_tag_t *tag,
-                                 struct swf_object_ *swf);
-    void            (*print)    (void *detail,
-                                 swf_tag_t *tag,
-                                 struct swf_object_ *swf);
-    void            (*destroy)  (void *);
+    void            (*print)    (swf_tag_t *tag, struct swf_object_ *swf);
+    void            (*destroy)  (swf_tag_t *tag);
 } swf_tag_detail_handler_t;
 
 typedef struct swf_tag_info_ {
@@ -85,6 +78,6 @@ extern int swf_tag_replace_edit_string(swf_tag_t *tag,
                                        int initial_text_len,
                                        struct swf_object_ *swf);
 
-extern int swf_tag_create_detail(swf_tag_t *tag, struct swf_object_ *swf);
+extern int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 
 #endif /* __SWF_TAG_H__ */

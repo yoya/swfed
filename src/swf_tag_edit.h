@@ -50,20 +50,14 @@ typedef struct swf_tag_edit_detail_ {
 extern swf_tag_detail_handler_t *swf_tag_edit_detail_handler(void);
 
 extern void *swf_tag_edit_create_detail(void);
-extern int swf_tag_edit_input_detail(unsigned char *data,
-                                     unsigned long length,
-                                     swf_tag_t *tag,
-                                     struct swf_object_ *swf);
-extern int swf_tag_edit_identity_detail(unsigned char *data, int id,
-                                        swf_tag_t *tag);
-extern unsigned char *swf_tag_edit_output_detail(void *detail,
+extern int swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
+extern int swf_tag_edit_identity_detail(swf_tag_t *tag, int id);
+extern unsigned char *swf_tag_edit_output_detail(swf_tag_t *tag,
                                                  unsigned long *length,
-                                                 swf_tag_t *tag,
                                                  struct swf_object_ *swf);
-extern void swf_tag_edit_print_detail(void *detail,
-                                      swf_tag_t *tag,
+extern void swf_tag_edit_print_detail(swf_tag_t *tag,
                                       struct swf_object_ *swf);
-extern void swf_tag_edit_destroy_detail(void *detail);
+extern void swf_tag_edit_destroy_detail(swf_tag_t *tag);
 
 extern char *swf_tag_edit_get_string(void *detail,
                                      char *variable_name,

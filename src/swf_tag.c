@@ -111,7 +111,7 @@ void swf_tag_destroy(swf_tag_t *tag) {
         if (tag_info && tag_info->detail_handler) {
             swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
             if (detail_handler->destroy) {
-               detail_handler->destroy(tag->detail);
+               detail_handler->destroy(tag);
             } else {
                 fprintf(stderr, "detail_handler->destroy == NULL (tag=%d)\n",
                         tag->tag);
@@ -182,7 +182,7 @@ extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *sw
                     tag->tag);
             return 1;
         }
-        data = detail_handler->output(tag->detail, &data_len, tag, swf);
+        data = detail_handler->output(tag, &data_len, swf);
         if (data == NULL) {
             fprintf(stderr, "swf_tag_build: Can't output: data=%p data_len=%lu\n",
                     data, data_len);
@@ -219,7 +219,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->print) {
-            detail_handler->print(tag->detail, tag, swf);
+            detail_handler->print(tag, swf);
         }
     }
 }
@@ -244,7 +244,7 @@ int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
             fprintf(stderr, "can't create tag detail (tag=%d)\n", tag->tag);
             return 1;
         }
-        result = detail_handler->input(tag->data, tag->length, tag, swf);
+        result = detail_handler->input(tag, swf);
         if (result) {
             fprintf(stderr, "can't input tag detail (result=%d)\n", result);
             return 1;
@@ -297,7 +297,7 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     if (tag_info && tag_info->detail_handler) {
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->identity) {
-            if (detail_handler->identity(tag->data, image_id, tag)) {
+            if (detail_handler->identity(tag, image_id)) {
                 return NULL;
             }
         }
@@ -333,11 +333,11 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     }
     tag_info = get_swf_tag_info(tag->tag);
     detail_handler = tag_info->detail_handler();
-    if (detail_handler->identity(tag->data, image_id, tag)) {
+    if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
     if (tag->detail) {
-        detail_handler->destroy(tag->detail);
+        detail_handler->destroy(tag);
         tag->detail = NULL;
     }
     if (alpha_data && (alpha_data_len > 0)) {
@@ -358,7 +358,7 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
         tag->data = NULL;
         tag->length = 0;
     } else {
-        detail_handler->destroy(tag->detail);
+        detail_handler->destroy(tag);
         tag->detail = NULL;
     } 
     return result;
@@ -405,11 +405,11 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     }
     tag_info = get_swf_tag_info(tag->tag);
     detail_handler = tag_info->detail_handler();
-    if (detail_handler->identity(tag->data, image_id, tag)) {
+    if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
     if (tag->detail) {
-        detail_handler->destroy(tag->detail);
+        detail_handler->destroy(tag);
         tag->detail = NULL;
     }
     if (tag->tag == 20) {
@@ -428,7 +428,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
         tag->data = NULL;
         tag->length = 0;
     } else {
-        detail_handler->destroy(tag->detail);
+        detail_handler->destroy(tag);
         tag->detail = NULL;
     }
     return result;
@@ -477,7 +477,7 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
     if (tag_info && tag_info->detail_handler) {
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->identity) {
-            if (detail_handler->identity(tag->data, sound_id, tag)) {
+            if (detail_handler->identity(tag, sound_id)) {
                 return 1;
             }
         }

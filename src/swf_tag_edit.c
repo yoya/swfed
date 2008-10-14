@@ -37,13 +37,11 @@ swf_tag_edit_create_detail(void) {
 }
 
 int
-swf_tag_edit_input_detail(unsigned char *data, unsigned long length,
-                           swf_tag_t *tag,
-                           struct swf_object_ *swf) {
-    swf_tag_edit_detail_t *swf_tag_edit;
+swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
+    swf_tag_edit_detail_t *swf_tag_edit = tag->detail;
+    unsigned char *data  = tag->data;
+    unsigned long length = tag->length;
     bitstream_t *bs;
-    (void) tag;
-    swf_tag_edit = tag->detail;
     if (swf_tag_edit == NULL) {
         fprintf(stderr, "ERROR: swf_tag_edit_input_detail: swf_tag_edit == NULL\n");
         return 1;
@@ -102,11 +100,17 @@ swf_tag_edit_input_detail(unsigned char *data, unsigned long length,
     return 0;
 }
 
-int swf_tag_edit_identity_detail(unsigned char *data, int id,
-                                 swf_tag_t *tag) {
+int swf_tag_edit_identity_detail(swf_tag_t *tag, int id) {
+    unsigned char *data = tag->data;
     bitstream_t *bs;
     int edit_id;
-    (void) tag;
+    if (tag->detail) {
+        swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
+        if (swf_tag_edit->edit_id == id) {
+            return 0;
+        }        
+        return 1;
+    }
     bs = bitstream_open();
     bitstream_input(bs, data, 2);
     edit_id = bitstream_getbytesLE(bs, 2);
@@ -118,10 +122,9 @@ int swf_tag_edit_identity_detail(unsigned char *data, int id,
 }
 
 unsigned char *
-swf_tag_edit_output_detail(void *detail, unsigned long *length,
-                           swf_tag_t *tag,
+swf_tag_edit_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {
-    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
     (void) tag;
@@ -182,10 +185,9 @@ swf_tag_edit_output_detail(void *detail, unsigned long *length,
 }
 
 void
-swf_tag_edit_print_detail(void *detail,
-                          swf_tag_t *tag,
+swf_tag_edit_print_detail(swf_tag_t *tag,
                           struct swf_object_ *swf) {
-    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
     (void) tag;
     printf("\tedit_id=%d\n", swf_tag_edit->edit_id);
     printf("\t");
@@ -239,8 +241,8 @@ swf_tag_edit_print_detail(void *detail,
 }
 
 void
-swf_tag_edit_destroy_detail(void *detail) {
-    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
+swf_tag_edit_destroy_detail(swf_tag_t *tag) {
+    swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
     if (swf_tag_edit) {
         free(swf_tag_edit->edit_variable_name);
         free(swf_tag_edit->edit_initial_text);
