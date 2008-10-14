@@ -21,11 +21,6 @@ typedef struct swf_tag_ {
     struct swf_tag_ *next;
 } swf_tag_t;
 
-typedef struct swf_tag_list_ {
-    struct swf_tag_ *node;
-    struct swf_tag_list_ *next;
-} swf_tag_list_t;
-
 typedef struct swf_tag_detail_handler_ {
     void          * (*create)   (unsigned char *data,
                                  unsigned long length,

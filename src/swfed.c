@@ -318,26 +318,26 @@ PHP_METHOD(swfed, getTagList) {
     int i = 0;
     zval *data;
     swf_object_t *swf;
-    swf_tag_list_t *tag_list;
+    swf_tag_t *tag;
     swf_tag_info_t *tag_info;
     if (ZEND_NUM_ARGS() != 0) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
     }
     swf = get_swf_object(getThis());
+    tag = swf->tag;
     array_init(return_value);
-    for(tag_list = swf->tag_list; tag_list && tag_list->node;
-        tag_list = tag_list->next) {
+    for(tag = swf->tag; tag; tag=tag->next) {
         ALLOC_INIT_ZVAL(data);
         array_init(data);
-        add_assoc_long(data, "tag", tag_list->node->tag);
-        tag_info = get_swf_tag_info(tag_list->node->tag);
+        add_assoc_long(data, "tag", tag->tag);
+        tag_info = get_swf_tag_info(tag->tag);
         if (tag_info && tag_info->name) {
             add_assoc_string_ex(data,
                                 "tagName", sizeof("tagName"),
                                 (char *)tag_info->name, 1);
         }
-        add_assoc_long(data, "length", tag_list->node->length);
+        add_assoc_long(data, "length", tag->length);
         if (tag_info && tag_info->detail_handler) {
             add_assoc_bool(data, "detail", 1);
         }
@@ -349,7 +349,7 @@ PHP_METHOD(swfed, getTagList) {
 PHP_METHOD(swfed, getTagDetail) {
     long tag_seqno;
     swf_object_t *swf;
-    swf_tag_list_t *tag_list;
+    swf_tag_t *tag;
     swf_tag_info_t *tag_info;
     int i;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
@@ -358,22 +358,21 @@ PHP_METHOD(swfed, getTagDetail) {
     }
     swf = get_swf_object(getThis());
     i = 0;
-    for (tag_list = swf->tag_list; tag_list && tag_list->node ;
-         tag_list = tag_list->next) {
+    for(tag = swf->tag; tag; tag = tag->next) {
         if (i == tag_seqno) {
             break;
         }
         i++;
     }
-    if (tag_list == NULL) {
+    if (tag == NULL) {
         RETURN_FALSE;
     }
-    tag_info = get_swf_tag_info(tag_list->node->tag);
+    tag_info = get_swf_tag_info(tag->tag);
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
         RETURN_FALSE;
     }
-    swf_tag_create_detail(tag_list->node, swf);
-    switch (tag_list->node->tag) {
+    swf_tag_create_detail(tag, swf);
+    switch (tag->tag) {
         swf_tag_jpeg_detail_t     *tag_jpeg;
         swf_tag_lossless_detail_t *tag_lossless;
         swf_tag_edit_detail_t     *tag_edit;
@@ -382,7 +381,7 @@ PHP_METHOD(swfed, getTagDetail) {
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
-        tag_jpeg = tag_list->node->detail;
+        tag_jpeg = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "image_id", tag_jpeg->image_id);
         add_assoc_long(return_value, "jpeg_data_len", tag_jpeg->jpeg_data_len);
@@ -393,7 +392,7 @@ PHP_METHOD(swfed, getTagDetail) {
         break;
       case 20: // DefineBitsLossless
       case 36: // DefineBitsLossless2
-        tag_lossless = tag_list->node->detail;
+        tag_lossless = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "image_id", tag_lossless->image_id);
         add_assoc_long(return_value, "format", tag_lossless->format);
@@ -404,7 +403,7 @@ PHP_METHOD(swfed, getTagDetail) {
         }
         break;
     case 14: // DefineSound
-        tag_sound = tag_list->node->detail;
+        tag_sound = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "sound_id", tag_sound->sound_id);
         add_assoc_long(return_value, "format", (unsigned long) tag_sound->sound_format);
@@ -416,9 +415,9 @@ PHP_METHOD(swfed, getTagDetail) {
         break;
     case 12: // DoAction
     case 59: // DoInitAction
-        tag_action = tag_list->node->detail;
+        tag_action = tag->detail;
         array_init(return_value);
-        if (tag_list->node->tag == 59) { // DoInitAction
+        if (tag->tag == 59) { // DoInitAction
             add_assoc_long(return_value, "action_sprite", tag_action->action_sprite);
         }
         if (tag_action->action_record && tag_action->action_record_len) {
@@ -426,7 +425,7 @@ PHP_METHOD(swfed, getTagDetail) {
         }
         break;
       case 37: // DefineEditText;
-        tag_edit = tag_list->node->detail;
+        tag_edit = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "edit_id", tag_edit->edit_id);
         if (tag_edit->edit_variable_name && tag_edit->edit_variable_name[0]){
