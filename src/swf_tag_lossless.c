@@ -33,6 +33,16 @@ swf_tag_lossless_create_detail(void) {
         fprintf(stderr, "swf_tag_lossless_create_detail: can't calloc swf_tag_lossless\n");
         return NULL;
     }
+    swf_tag_lossless->image_id = 0;
+    swf_tag_lossless->format = 0;
+    swf_tag_lossless->width  = 0;
+    swf_tag_lossless->height = 0;
+    swf_tag_lossless->colormap_count = 0;
+    swf_tag_lossless->colormap  = NULL;
+    swf_tag_lossless->colormap2 = NULL;
+    swf_tag_lossless->indices   = NULL;
+    swf_tag_lossless->bitmap  = NULL;
+    swf_tag_lossless->bitmap2 = NULL;
     return swf_tag_lossless;
 }
 
@@ -377,9 +387,7 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
         fprintf(stderr, "swf_tag_lossless_replace_lossless_data: detail == NULL at line(%d)\n", __LINE__);
         return 1;
     }
-    if (swf_tag_lossless->image_id != image_id) {
-        return 1;
-    }
+    swf_tag_lossless->image_id = image_id;
     result_data = pngconv_png2lossless(png_data, png_data_len,
                                        &tag_no, &format,
                                        &width, &height,

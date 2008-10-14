@@ -46,9 +46,10 @@ swf_tag_jpeg_create_detail(void) {
         fprintf(stderr, "ERROR: swf_tag_jpeg_create_detail: can't calloc\n");
         return NULL;
     }
-    swf_tag_jpeg->image_id = -1;
+    swf_tag_jpeg->image_id = 0;
     swf_tag_jpeg->jpeg_data = NULL;
     swf_tag_jpeg->jpeg_data_len = 0;
+    swf_tag_jpeg->offset_to_alpha = 0;
     swf_tag_jpeg->alpha_data = NULL;
     swf_tag_jpeg->alpha_data_len = 0;
     return (void *) swf_tag_jpeg;
@@ -306,9 +307,7 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
         fprintf(stderr, "swf_tag_jpeg_replace_jpeg_data: detail == NULL\n");
         return 1;
     }
-    if (swf_tag_jpeg->image_id != image_id) {
-        return 1;
-    }
+    swf_tag_jpeg->image_id = image_id;
     if (tag->tag == 6) { // DefineBitsJPEG
         free(swf_tag_jpeg->jpeg_data);
         swf_tag_jpeg->jpeg_data = malloc(jpeg_data_len);
@@ -329,6 +328,5 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
             swf_tag_jpeg->alpha_data_len = alpha_data_len;
         }
     }
-
     return 0;
 }
