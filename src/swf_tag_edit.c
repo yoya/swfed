@@ -16,6 +16,7 @@ swf_tag_detail_handler_t edit_detail_handler;
 swf_tag_detail_handler_t *
 swf_tag_edit_detail_handler(void) {
     edit_detail_handler.create   = swf_tag_edit_create_detail;
+    edit_detail_handler.input    = swf_tag_edit_input_detail;
     edit_detail_handler.identity = swf_tag_edit_identity_detail;
     edit_detail_handler.output   = swf_tag_edit_output_detail;
     edit_detail_handler.print    = swf_tag_edit_print_detail;
@@ -23,17 +24,29 @@ swf_tag_edit_detail_handler(void) {
     return &edit_detail_handler;
 }
 
+
 void *
-swf_tag_edit_create_detail(unsigned char *data, unsigned long length,
+swf_tag_edit_create_detail(void) {
+    swf_tag_edit_detail_t *swf_tag_edit;
+    swf_tag_edit = calloc(sizeof(*swf_tag_edit), 1);
+    if (swf_tag_edit == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_edit_create_detail: can't calloc\n");
+        return NULL;
+    }
+    return swf_tag_edit;
+}
+
+int
+swf_tag_edit_input_detail(unsigned char *data, unsigned long length,
                            swf_tag_t *tag,
                            struct swf_object_ *swf) {
     swf_tag_edit_detail_t *swf_tag_edit;
     bitstream_t *bs;
     (void) tag;
-    swf_tag_edit = calloc(sizeof(*swf_tag_edit), 1);
+    swf_tag_edit = tag->detail;
     if (swf_tag_edit == NULL) {
-        fprintf(stderr, "ERROR: swf_tag_edit_create_detail: can't calloc\n");
-        return NULL;
+        fprintf(stderr, "ERROR: swf_tag_edit_input_detail: swf_tag_edit == NULL\n");
+        return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -86,7 +99,7 @@ swf_tag_edit_create_detail(unsigned char *data, unsigned long length,
     }
     
     bitstream_close(bs);
-    return (void *) swf_tag_edit;
+    return 0;
 }
 
 int swf_tag_edit_identity_detail(unsigned char *data, int id,

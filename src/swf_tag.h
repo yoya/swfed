@@ -22,7 +22,8 @@ typedef struct swf_tag_ {
 } swf_tag_t;
 
 typedef struct swf_tag_detail_handler_ {
-    void          * (*create)   (unsigned char *data,
+    void          * (*create)   (void);
+    int             (*input)    (unsigned char *data,
                                  unsigned long length,
                                  swf_tag_t *tag,
                                  struct swf_object_ *swf);

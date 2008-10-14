@@ -17,6 +17,7 @@ swf_tag_detail_handler_t lossless_detail_handler;
 
 swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void) {
     lossless_detail_handler.create   = swf_tag_lossless_create_detail;
+    lossless_detail_handler.input    = swf_tag_lossless_input_detail;
     lossless_detail_handler.identity = swf_tag_lossless_identity_detail;
     lossless_detail_handler.output   = swf_tag_lossless_output_detail;
     lossless_detail_handler.print    = swf_tag_lossless_print_detail;
@@ -25,7 +26,18 @@ swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void) {
 }
 
 void *
-swf_tag_lossless_create_detail(unsigned char *data,
+swf_tag_lossless_create_detail(void) {
+    swf_tag_lossless_detail_t *swf_tag_lossless;
+    swf_tag_lossless = calloc(sizeof(*swf_tag_lossless), 1);
+    if (swf_tag_lossless == NULL) {
+        fprintf(stderr, "swf_tag_lossless_create_detail: can't calloc swf_tag_lossless\n");
+        return NULL;
+    }
+    return swf_tag_lossless;
+}
+
+int
+swf_tag_lossless_input_detail(unsigned char *data,
                                unsigned long length,
                                swf_tag_t *tag,
                                struct swf_object_ *swf) {
@@ -36,12 +48,12 @@ swf_tag_lossless_create_detail(unsigned char *data,
     unsigned char *tmp_buff, *old_buff_ref;
     unsigned long origsize, old_size, offset;
     int result;
-    
-    swf_tag_lossless = calloc(sizeof(*swf_tag_lossless), 1);
+    swf_tag_lossless = tag->detail;
     if (swf_tag_lossless == NULL) {
-        fprintf(stderr, "swf_tag_lossless_create_detail: can't calloc swf_tag_lossless\n");
-        return NULL;
+        fprintf(stderr, "swf_tag_lossless_input_detail: swf_tag_lossless == NULL\n");
+        return 1;
     }
+
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     swf_tag_lossless->image_id = bitstream_getbytesLE(bs, 2);
@@ -76,7 +88,7 @@ swf_tag_lossless_create_detail(unsigned char *data,
             }
             free(tmp_buff);
             bitstream_close(bs);
-            return NULL;
+            return 1;
         }
         if (indices_len != origsize - bytes_per_color * swf_tag_lossless->colormap_count) {
             fprintf(stderr, "swf_tag_lossless_create_detail: indices_len(%lu) != origsize(%lu) - %d * swf_tag_lossless->colormap_count(%d) at line(%d)\n",
@@ -84,7 +96,7 @@ swf_tag_lossless_create_detail(unsigned char *data,
                     swf_tag_lossless->colormap_count, __LINE__);
             free(tmp_buff);
             bitstream_close(bs);
-            return NULL;
+            return 1;
         }
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
@@ -128,7 +140,7 @@ swf_tag_lossless_create_detail(unsigned char *data,
             }
             free(tmp_buff);
             bitstream_close(bs);
-            return NULL;
+            return 1;
         }
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
@@ -149,7 +161,8 @@ swf_tag_lossless_create_detail(unsigned char *data,
         free(tmp_buff);
     }
     bitstream_close(bs);
-    return (void *) swf_tag_lossless;
+    return 0;
+
 }
 
 int

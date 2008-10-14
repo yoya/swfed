@@ -15,6 +15,7 @@ swf_tag_detail_handler_t sound_detail_handler;
 swf_tag_detail_handler_t *
 swf_tag_sound_detail_handler(void) {
     sound_detail_handler.create   = swf_tag_sound_create_detail;
+    sound_detail_handler.input    = swf_tag_sound_input_detail;
     sound_detail_handler.identity = swf_tag_sound_identity_detail;
     sound_detail_handler.output   = swf_tag_sound_output_detail;
     sound_detail_handler.print    = swf_tag_sound_print_detail;
@@ -23,19 +24,29 @@ swf_tag_sound_detail_handler(void) {
 }
 
 void *
-swf_tag_sound_create_detail(unsigned char *data, unsigned long length,
-                           swf_tag_t *tag,
-                           struct swf_object_ *swf) {
+swf_tag_sound_create_detail(void) {
+    swf_tag_sound_detail_t *swf_tag_sound;
+    swf_tag_sound = calloc(sizeof(*swf_tag_sound), 1);
+    if (swf_tag_sound == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_sound_create_detail: can't calloc\n");
+        return NULL;
+    }
+}
+
+int
+swf_tag_sound_input_detail(unsigned char *data, unsigned long length,
+                            swf_tag_t *tag,
+                            struct swf_object_ *swf) {
     swf_tag_sound_detail_t *swf_tag_sound;
     bitstream_t *bs;
     unsigned long sound_data_len;
     unsigned char *sound_data_ref;
     (void) tag;
     (void) swf;
-    swf_tag_sound = calloc(sizeof(*swf_tag_sound), 1);
+    swf_tag_sound = tag->detail;
     if (swf_tag_sound == NULL) {
-        fprintf(stderr, "ERROR: swf_tag_sound_create_detail: can't calloc\n");
-        return NULL;
+        fprintf(stderr, "ERROR: swf_tag_sound_input_detail: swf_tag_sound == NULL\n");
+        return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -51,13 +62,13 @@ swf_tag_sound_create_detail(unsigned char *data, unsigned long length,
         fprintf(stderr, "swf_tag_sound_create_detail: swf_tag_sound->sound_data == NULL at line(%d): sound_data_len=%lu\n",
                 __LINE__, sound_data_len);
         bitstream_close(bs);
-        return NULL;
+        return 1;
     }
     sound_data_ref = bitstream_buffer(bs, bitstream_getbytepos(bs));
     memcpy(swf_tag_sound->sound_data, sound_data_ref, sound_data_len);
     swf_tag_sound->sound_data_len = sound_data_len;
     bitstream_close(bs);
-    return (void *) swf_tag_sound;
+    return 0;
 }
 
 int

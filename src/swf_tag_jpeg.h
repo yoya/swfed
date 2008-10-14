@@ -21,10 +21,16 @@ typedef struct swf_tag_jpeg_detail_ {
 extern swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void);
 extern swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void);
 
-extern void *swf_tag_jpeg_create_detail(unsigned char *data,
-                                        unsigned long length,
-                                        swf_tag_t *tag,
-                                        struct swf_object_ *swf);
+extern void *swf_tag_jpeg_create_detail(void);
+
+extern int swf_tag_jpeg_input_detail(unsigned char *data,
+                                     unsigned long length,
+                                     swf_tag_t *tag,
+                                     struct swf_object_ *swf);
+extern int swf_tag_jpeg3_input_detail(unsigned char *data,
+                                      unsigned long length,
+                                      swf_tag_t *tag,
+                                      struct swf_object_ *swf);
 extern int swf_tag_jpeg_identity_detail(unsigned char *data, int id,
                                         swf_tag_t *tag);
 extern void *swf_tag_jpeg3_create_detail(unsigned char *data,

@@ -19,6 +19,7 @@ swf_tag_detail_handler_t jpeg_detail_handler;
 
 swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
     jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
+    jpeg_detail_handler.input    = swf_tag_jpeg_input_detail;
     jpeg_detail_handler.identity = swf_tag_jpeg_identity_detail;
     jpeg_detail_handler.output   = swf_tag_jpeg_output_detail;
     jpeg_detail_handler.print    = swf_tag_jpeg_print_detail;
@@ -27,7 +28,8 @@ swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
 }
 
 swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void) {
-    jpeg_detail_handler.create   = swf_tag_jpeg3_create_detail;
+    jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
+    jpeg_detail_handler.input    = swf_tag_jpeg3_input_detail;
     jpeg_detail_handler.identity = swf_tag_jpeg_identity_detail;
     jpeg_detail_handler.output   = swf_tag_jpeg3_output_detail;
     jpeg_detail_handler.print    = swf_tag_jpeg_print_detail;
@@ -36,17 +38,34 @@ swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void) {
 }
 
 void *
-swf_tag_jpeg_create_detail(unsigned char *data, unsigned long length,
+swf_tag_jpeg_create_detail(void) {
+    swf_tag_jpeg_detail_t *swf_tag_jpeg;
+    bitstream_t *bs;
+    swf_tag_jpeg = calloc(sizeof(*swf_tag_jpeg), 1);
+    if (swf_tag_jpeg == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_jpeg_create_detail: can't calloc\n");
+        return NULL;
+    }
+    swf_tag_jpeg->image_id = -1;
+    swf_tag_jpeg->jpeg_data = NULL;
+    swf_tag_jpeg->jpeg_data_len = 0;
+    swf_tag_jpeg->alpha_data = NULL;
+    swf_tag_jpeg->alpha_data_len = 0;
+    return (void *) swf_tag_jpeg;
+}
+
+int
+swf_tag_jpeg_input_detail(unsigned char *data, unsigned long length,
                            swf_tag_t *tag,
                            struct swf_object_ *swf) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg;
     bitstream_t *bs;
     (void) tag;
     (void) swf;
-    swf_tag_jpeg = calloc(sizeof(*swf_tag_jpeg), 1);
+    swf_tag_jpeg = tag->detail;
     if (swf_tag_jpeg == NULL) {
-        fprintf(stderr, "ERROR: swf_tag_jpeg_create_detail: can't calloc\n");
-        return NULL;
+        fprintf(stderr, "ERROR: swf_tag_jpeg_input_detail: swf_tag_jpeg == NULL\n");
+        return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -56,14 +75,14 @@ swf_tag_jpeg_create_detail(unsigned char *data, unsigned long length,
     swf_tag_jpeg->alpha_data = NULL;
     swf_tag_jpeg->alpha_data_len = 0;
     bitstream_close(bs);
-    return (void *) swf_tag_jpeg;
+    return 0;
 }
 
-void *
-swf_tag_jpeg3_create_detail(unsigned char *data,
-                            unsigned long length,
-                            swf_tag_t *tag,
-                            struct swf_object_ *swf) {
+int
+swf_tag_jpeg3_input_detail(unsigned char *data,
+                           unsigned long length,
+                           swf_tag_t *tag,
+                           struct swf_object_ *swf) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg;
     unsigned long offset_to_alpha;
     bitstream_t *bs;
@@ -73,10 +92,10 @@ swf_tag_jpeg3_create_detail(unsigned char *data,
     int result;
     (void) tag;
     (void) swf;
-    swf_tag_jpeg = calloc(sizeof(*swf_tag_jpeg), 1);
+    swf_tag_jpeg = tag->detail;
     if (swf_tag_jpeg == NULL) {
-        fprintf(stderr, "swf_tag_jpeg_create_detail: can't calloc\n");
-        return NULL;
+        fprintf(stderr, "ERROR: swf_tag_jpeg3_input_detail: swf_tag_jpeg == NULL\n");
+        return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -88,19 +107,18 @@ swf_tag_jpeg3_create_detail(unsigned char *data,
         free(swf_tag_jpeg);
         bitstream_close(bs);
         fprintf(stderr, "swf_tag_jpeg3_create_detail: swf_tag_jpeg->jpeg_data\n");
-        return NULL;
+        return 1;
     }
     
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
     offset = 2 + 4 + offset_to_alpha;
     alpha_data_len = length - offset;
     origsize = 256 * alpha_data_len;
-    new_buff = malloc(origsize);
+    new_buff = malloc(origsize); // enough size
     old_buff_ref = bitstream_buffer(bs, offset);
     result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
     if (result == Z_OK) {
         swf_tag_jpeg->alpha_data = realloc(new_buff, origsize);
-        swf_tag_jpeg->alpha_data = new_buff;
         swf_tag_jpeg->alpha_data_len = origsize;
     } else {
         if (result == Z_MEM_ERROR) {
@@ -115,7 +133,8 @@ swf_tag_jpeg3_create_detail(unsigned char *data,
         free(new_buff);
     }
     bitstream_close(bs);
-    return (void *) swf_tag_jpeg;
+    (void *) swf_tag_jpeg;
+    return 0;
 }
 
 int
@@ -281,7 +300,7 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
                                unsigned long jpeg_data_len,
                                unsigned char *alpha_data,
                                unsigned long alpha_data_len,
-                                          swf_tag_t *tag) {
+                               swf_tag_t *tag) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) detail;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_jpeg_replace_jpeg_data: detail == NULL\n");

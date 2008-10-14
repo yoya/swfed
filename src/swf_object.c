@@ -402,7 +402,7 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     if ((tag->tag != 12) &&  (tag->tag != 59)) { //  DoAction, DoInitAction
         return NULL;
     }
-    swf_tag_create_detail(tag, swf);
+    swf_tag_create_input_detail(tag, swf);
     swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     *length = swf_tag_action->action_record_len;
     return swf_tag_action->action_record;

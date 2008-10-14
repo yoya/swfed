@@ -371,7 +371,7 @@ PHP_METHOD(swfed, getTagDetail) {
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
         RETURN_FALSE;
     }
-    swf_tag_create_detail(tag, swf);
+    swf_tag_create_input_detail(tag, swf);
     switch (tag->tag) {
         swf_tag_jpeg_detail_t     *tag_jpeg;
         swf_tag_lossless_detail_t *tag_lossless;

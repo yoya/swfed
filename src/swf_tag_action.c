@@ -15,6 +15,7 @@ swf_tag_detail_handler_t action_detail_handler;
 swf_tag_detail_handler_t *
 swf_tag_action_detail_handler(void) {
     action_detail_handler.create   = swf_tag_action_create_detail;
+    action_detail_handler.input    = swf_tag_action_input_detail;
     action_detail_handler.identity = swf_tag_action_identity_detail;
     action_detail_handler.output   = swf_tag_action_output_detail;
     action_detail_handler.print    = swf_tag_action_print_detail;
@@ -23,18 +24,32 @@ swf_tag_action_detail_handler(void) {
 }
 
 void *
-swf_tag_action_create_detail(unsigned char *data,
-                             unsigned long length,
-                             swf_tag_t *tag,
-                             struct swf_object_ *swf) {
+swf_tag_action_create_detail(void) {
     swf_tag_action_detail_t *swf_tag_action;
-    bitstream_t *bs;
-    unsigned long pos, len;
-    (void) swf;
     swf_tag_action = calloc(sizeof(*swf_tag_action), 1);
     if (swf_tag_action == NULL) {
         fprintf(stderr, "ERROR: swf_tag_action_create_detail: can't calloc\n");
         return NULL;
+    }
+    swf_tag_action->action_sprite = 0;
+    swf_tag_action->action_record = NULL;
+    swf_tag_action->action_record_len = 0;
+    return swf_tag_action;
+}
+
+int
+swf_tag_action_input_detail(unsigned char *data,
+                            unsigned long length,
+                            swf_tag_t *tag,
+                            struct swf_object_ *swf) {
+    swf_tag_action_detail_t *swf_tag_action;
+    bitstream_t *bs;
+    unsigned long pos, len;
+    (void) swf;
+    swf_tag_action = tag->detail;
+    if (swf_tag_action == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_action_create_detail: swf_tag_action == NULL\n");
+        return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -49,7 +64,7 @@ swf_tag_action_create_detail(unsigned char *data,
     swf_tag_action->action_record = bitstream_output_sub(bs, pos, len);
     swf_tag_action->action_record_len = len;
     bitstream_close(bs);
-    return (void *) swf_tag_action;
+    return 0;
 }
 
 int swf_tag_action_identity_detail(unsigned char *data, int id,

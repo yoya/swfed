@@ -215,7 +215,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
     printf("\n");
     if (tag_info && tag_info->detail_handler) {
         if (tag->detail == NULL) {
-            swf_tag_create_detail(tag, swf);
+            swf_tag_create_input_detail(tag, swf);
         }
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->print) {
@@ -224,23 +224,29 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
     }
 }
 
-int swf_tag_create_detail(swf_tag_t *tag, struct swf_object_ *swf) {
+int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info;
     if (tag == NULL) {
-        fprintf(stderr, "swf_tag_create_detail: tag == NULL\n");
+        fprintf(stderr, "swf_tag_create_input_detail: tag == NULL\n");
         return 1;
     }
     tag_info = get_swf_tag_info(tag->tag);
     if (tag_info && tag_info->detail_handler) {
+        int result;
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->create == NULL) {
             fprintf(stderr, "detail_handler->create == NULL (tag=%d)\n",
                     tag->tag);
             return 1;
         }
-        tag->detail = detail_handler->create(tag->data, tag->length, tag, swf);
+        tag->detail = detail_handler->create();
         if (tag->detail == NULL) {
             fprintf(stderr, "can't create tag detail (tag=%d)\n", tag->tag);
+            return 1;
+        }
+        result = detail_handler->input(tag->data, tag->length, tag, swf);
+        if (result) {
+            fprintf(stderr, "can't input tag detail (result=%d)\n", result);
             return 1;
         }
     }
@@ -260,7 +266,7 @@ swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_t
         return NULL;
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_get_jpeg_data: Can't create tag\n");
@@ -297,7 +303,7 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         }
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_get_alpha_data: Can't create tag\n");
@@ -331,7 +337,7 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
         }
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_replace_jpeg_data: Can't create tag\n");
@@ -361,7 +367,7 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         return NULL;
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_get_png_data: Can't create tag\n");
@@ -393,7 +399,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
         }
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_replace_png_data: Can't create tag\n");
@@ -426,7 +432,7 @@ swf_tag_get_sound_data(swf_tag_t *tag, unsigned long *length, int sound_id) {
         return NULL;
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_get_sound_data: Can't create tag detail\n");
@@ -458,7 +464,7 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
         }
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, NULL);
+        swf_tag_create_input_detail(tag, NULL);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_replace_melog_data: Can't create tag\n");
@@ -486,7 +492,7 @@ swf_tag_get_edit_string(swf_tag_t *tag,
         return NULL;
     }
     if (! tag->detail) {
-        swf_tag_create_detail(tag, swf);
+        swf_tag_create_input_detail(tag, swf);
     }
     if (! tag->detail) {
         fprintf(stderr, "Can't create tag\n");
@@ -512,7 +518,7 @@ swf_tag_replace_edit_string(swf_tag_t *tag,
     }
     
     if (! tag->detail) {
-        swf_tag_create_detail(tag, swf);
+        swf_tag_create_input_detail(tag, swf);
     }
     if (! tag->detail) {
         fprintf(stderr, "swf_tag_replace_edit_string: Can't create tag\n");
