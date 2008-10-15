@@ -22,8 +22,9 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
     $tmp_name = sha1($swfdata, false);
     $id = substr($tmp_name, 0, 16); // XXX
     $tmp_filename = "$tmp_prefix$id.swf";
-    if (! file_put_contents($tmp_filename, $swfdata)) {
-        echo 'ERROR: file_put_contents failed.  zero size ?'."\n";
+    if ((! is_readable($tmp_filename)) &&
+        (! file_put_contents($tmp_filename, $swfdata))) {
+        fprintf(stderr, "swfdump.php: file_put_contents failed. zero size?\n");
         unlink($tmp_filename);
         exit(0);
     }

@@ -34,7 +34,9 @@ foreach ($swf->getTagList() as $tag_seqno => $tagblock) {
     } else {
         $image_data = $swf->getPNGData(intval($image_id));
     }
-    file_put_contents($image_filename, $image_data);
+    if (! is_readable($image_filename)) {
+        file_put_contents($image_filename, $image_data);
+    }
     echo "<tr>\n";
     echo "<td> $name($tag) </td> ";
     echo "<td> $image_id (ext=$ext)</td>\n";
