@@ -11,7 +11,7 @@ $swfdata = file_get_contents($swf_filename);
 $obj = new SWFEditor();
 $obj->input($swfdata);
 
-for ($i=2 ; $i< $argc ; $i += 2) {
+for ($i=2 ; $i < $argc ; $i+=2) {
 	$sound_id = $argv[$i];
 	$mld_filename = $argv[$i+1];
 	$mlddata = file_get_contents($mld_filename);
