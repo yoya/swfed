@@ -12,14 +12,6 @@
 </form>
 <?php
 
-if (@$argc > 1) {
-    if (! is_array($_FILES)) {
-        $_FILES = array();
-        $_FILES['swffile'] = array();
-    }
-    $_FILES['swffile']['tmp_name'] = $argv[1];
-}
-
 if (! empty($_FILES['swffile']['tmp_name'])) {
     $filename = $_FILES['swffile']['tmp_name'];
     $swfdata = file_get_contents($filename);
