@@ -196,7 +196,7 @@ int
 bitstream_putbytesLE(bitstream_t *bs, unsigned long bytes, int byte_width) {
     int i;
     unsigned long byte;
-    for (i=0; i < byte_width; i++) {
+    for (i=0 ; i < byte_width ; i++) {
         byte = bytes & 0xff;
         bitstream_putbyte(bs, byte);
         bytes >>= 8;
@@ -208,7 +208,7 @@ int
 bitstream_putbytesBE(bitstream_t *bs, unsigned long bytes, int byte_width) {
     int i;
     unsigned long byte;
-    for (i=0; i < byte_width; i++) {
+    for (i=0 ; i < byte_width ; i++) {
         byte = bytes >> ( 8 * (byte_width - 1 - i));
         bitstream_putbyte(bs, byte & 0xff);
     }
@@ -219,7 +219,7 @@ unsigned long
 bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
     int i;
     unsigned long byte, bytes = 0;
-    for (i=0; i < byte_width; i++) {
+    for (i=0 ; i < byte_width ; i++) {
         byte = bitstream_getbyte(bs);
         byte <<= 8 * i;
         bytes |= byte;
@@ -231,7 +231,7 @@ unsigned long
 bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
     int i;
     unsigned long byte, bytes = 0;
-    for (i=0; i < byte_width; i++) {
+    for (i=0 ; i < byte_width ; i++) {
         bytes <<= 8;
         byte = bitstream_getbyte(bs);
         bytes |= byte;
@@ -281,7 +281,7 @@ bitstream_getbit(bitstream_t *bs) {
 int
 bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
     int i, bit;
-    for (i=0; i < bit_width; i++) {
+    for (i=0 ; i < bit_width ; i++) {
         bit = bits >> (bit_width - 1 - i);
         bit &= 1;
         bitstream_putbit(bs, bit);
@@ -294,7 +294,7 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     int i;
     int bit;
     unsigned long bits = 0;
-    for (i=0; i < bit_width; i++) {
+    for (i=0 ; i < bit_width ; i++) {
         bit = bitstream_getbit(bs);
         if (bit == -1) {
             return -1;

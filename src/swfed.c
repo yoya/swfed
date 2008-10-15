@@ -327,7 +327,7 @@ PHP_METHOD(swfed, getTagList) {
     swf = get_swf_object(getThis());
     tag = swf->tag;
     array_init(return_value);
-    for(tag = swf->tag; tag; tag=tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         ALLOC_INIT_ZVAL(data);
         array_init(data);
         add_assoc_long(data, "tag", tag->tag);
@@ -358,7 +358,7 @@ PHP_METHOD(swfed, getTagDetail) {
     }
     swf = get_swf_object(getThis());
     i = 0;
-    for(tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         if (i == tag_seqno) {
             break;
         }
@@ -428,7 +428,7 @@ PHP_METHOD(swfed, getTagDetail) {
         tag_edit = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "edit_id", tag_edit->edit_id);
-        if (tag_edit->edit_variable_name && tag_edit->edit_variable_name[0]){
+        if (tag_edit->edit_variable_name && tag_edit->edit_variable_name[0]) {
             add_assoc_string_ex(return_value, "variable_name",
                                 sizeof("variable_name"),
                                 (char *)tag_edit->edit_variable_name, 1);

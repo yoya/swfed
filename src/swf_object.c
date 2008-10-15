@@ -30,7 +30,7 @@ swf_object_close(swf_object_t *swf) {
     if (! swf) {
         return ;
     }
-    for(tag = swf->tag; tag; tag = next_tag) {
+    for (tag=swf->tag ; tag ; tag=next_tag) {
         next_tag = tag->next;
         swf_tag_destroy(tag);
     }
@@ -119,7 +119,7 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         bitstream_close(bs);
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         swf_tag_build(bs, tag, swf);
     }
     swf->header.file_length = bitstream_getbytepos(bs);
@@ -166,7 +166,7 @@ swf_object_print(swf_object_t *swf) {
     swf_header_print(&swf->header);
     swf_header_movie_print(&swf->header_movie);
     tag = swf->tag;
-    for (i=0; tag; i++) {
+    for (i=0 ; tag ; i++) {
         printf("[%d] ", i);
         swf_tag_print(tag, swf);
         if (tag->tag == 0) { // END Tag
@@ -188,13 +188,13 @@ swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id) 
         fprintf(stderr, "swf_object_get_jpegdata: swf == NULL\n");
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag == 8) { // JPEGTables
             tag_jpegtables = tag;
             break;
         }
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag == 8) {
             tag_jpegtables = tag;
             continue;
@@ -220,7 +220,7 @@ swf_object_get_alphadata(swf_object_t *swf, unsigned long *length, int image_id)
         fprintf(stderr, "swf_object_get_alphadata: swf == NULL\n");
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag != 35) { // ! DefineBitsJPEG3
             continue;
         }
@@ -245,7 +245,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
         return 1;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_jpeg_data(tag, image_id,
                                            jpeg_data, jpeg_data_len,
                                            alpha_data, alpha_data_len);
@@ -266,7 +266,7 @@ swf_object_get_pngdata(swf_object_t *swf, unsigned long *length, int image_id) {
         fprintf(stderr, "swf_object_get_pngdata: swf == NULL\n");
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         // DefineBitsLossless(1),2
         if ((tag->tag != 20) && (tag->tag != 36)) {
             continue;
@@ -289,7 +289,7 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_pngdata: swf == NULL\n");
         return 1;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_png_data(tag, image_id,
                                            png_data, png_data_len);
         if (! result) {
@@ -308,7 +308,7 @@ swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id)
         fprintf(stderr, "swf_object_get_sounddata: swf == NULL\n");
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         // DefineSound
         if (tag->tag != 14) {
             continue;
@@ -331,7 +331,7 @@ swf_object_replace_melodata(swf_object_t *swf, int sound_id,
         fprintf(stderr, "swf_object_replace_melodata: swf == NULL\n");
         return 1;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_melo_data(tag, sound_id,
                                            melo_data, melo_data_len);
         if (! result) {
@@ -351,7 +351,7 @@ swf_object_get_editstring(swf_object_t *swf,
         fprintf(stderr, "swf_object_get_editstring: swf == NULL\n");
         return NULL;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         data = swf_tag_get_edit_string(tag, variable_name,
                                        variable_name_len, swf);
         if (data) {
@@ -372,7 +372,7 @@ swf_object_replace_editstring(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_editstring: swf == NULL\n");
         return 1;
     }
-    for (tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_edit_string(tag, variable_name,
                                              variable_name_len,
                                              initial_text,
@@ -390,7 +390,7 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     swf_tag_t *tag;
     swf_tag_action_detail_t *swf_tag_action;
     int i = 0;
-    for(tag = swf->tag; tag; tag = tag->next) {
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         if (i == tag_seqno) {
             break;
         }

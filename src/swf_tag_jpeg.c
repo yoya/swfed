@@ -211,7 +211,7 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
                                   swf_tag_jpeg->jpeg_data_len);
     if (jpeg_seg) {
-        for(node = jpeg_seg->head ; node ; node = node->next) {
+        for (node=jpeg_seg->head ; node ; node=node->next) {
             char *name = jpeg_segment_get_marker_name(node->marker);
             printf("\t\t%s(0x%02X): len=%lu\n", name?name:"Unknwon",
                    node->marker, node->data_len);

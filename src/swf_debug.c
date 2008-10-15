@@ -16,14 +16,14 @@ static struct malloc_debug_ {
 
 void malloc_debug_start(void) {
     int i;
-    for(i=0; i<MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         malloc_debug_table[i].ptr = NULL;
     }
 }
 
 void malloc_debug_end(void) {
     int i;
-    for(i=0; i<MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr) {
             fprintf(stderr, "XXX (%d) ptr=%p (%s, %d)\n",
                     i, malloc_debug_table[i].ptr,
@@ -39,7 +39,7 @@ calloc_debug(size_t nmemb, size_t size, char *filename, int linenum) {
     void *ptr;
     ptr = calloc(nmemb, size);
 //    fprintf(stderr, "calloc_debug: ptr=%p (%s,%d)\n", ptr, filename, linenum);
-    for(i=0; i<MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr == NULL) {
             malloc_debug_table[i].ptr = ptr;
             malloc_debug_table[i].filename = filename;
@@ -55,7 +55,7 @@ malloc_debug(size_t size, char *filename, int linenum) {
     void *ptr;
     ptr = malloc(size);
 //    fprintf(stderr, "malloc_debug: ptr=%p (%s,%d)\n", ptr, filename, linenum);
-    for(i=0; i<MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr == NULL) {
             malloc_debug_table[i].ptr = ptr;
             malloc_debug_table[i].filename = filename;
@@ -72,7 +72,7 @@ void
 free_debug(void *ptr, char *filename, int linenum) {
     int i;
 //    fprintf(stderr, "free_debug: ptr=%p (%s,%d)\n", ptr, filename, linenum);
-    for(i = 0; i < MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr == ptr) {
             malloc_debug_table[i].ptr = NULL;
             break;
@@ -95,7 +95,7 @@ realloc_debug(void *ptr, size_t size, char *filename, int linenum) {
     new_ptr = realloc(ptr, size);
 //    fprintf(stderr, "realloc_debug: ptr=%p => new_ptr=%p (%s,%d)\n",
 //            ptr, new_ptr, filename, linenum);
-    for(i=0; i<MALLOC_DEBUG_TABLE_NUM; i++) {
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr == ptr) {
             malloc_debug_table[i].ptr = new_ptr;
             malloc_debug_table[i].filename = filename;
@@ -112,7 +112,7 @@ void
 print_hexbin(unsigned char *data, int data_len) {
     int i;
     printf("\n");
-    for(i=0; i<data_len; i++) {
+    for (i=0 ; i < data_len ; i++) {
         if ((i%HEXBIN_DISP_UNIT) == 0) {
             printf("0x%08x: ", i);
         }
@@ -128,7 +128,7 @@ print_hexbin(unsigned char *data, int data_len) {
             if ((i%HEXBIN_DISP_UNIT) == 0) {
                 printf("\n");
             }
-            for(j=7; j>=0; j--) {
+            for (j=7 ; j >= 0 ; j--) {
                 printf("%d", (c >> j) & 1);
 
             }

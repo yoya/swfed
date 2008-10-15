@@ -36,7 +36,7 @@ jpeg_marker_name_t jpeg_marker_name_table[] = {
      
 char *jpeg_segment_get_marker_name(int marker) {
     int i, marker_name_num = NumOfTable(jpeg_marker_name_table);
-    for(i=0; i < marker_name_num; i++) {
+    for (i=0 ; i < marker_name_num ; i++) {
         if (marker == jpeg_marker_name_table[i].marker) {
             return jpeg_marker_name_table[i].name;
         }
@@ -138,7 +138,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
 
 int jpeg_segment_contain(jpeg_segment_t *jpeg_seg, int marker) {
     jpeg_segment_node_t *node;
-    for (node = jpeg_seg->head; node; node = node->next) {
+    for (node=jpeg_seg->head ; node ; node=node->next) {
         if (node->marker == marker) {
             return 1;
         }            
@@ -152,7 +152,7 @@ unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,
     jpeg_segment_node_t *node;
     unsigned char *data;
     *length = 0;
-    for (node = jpeg_seg->head; node; node = node->next) {
+    for (node=jpeg_seg->head ; node ; node=node->next) {
         if (node->marker == marker) {
             data = node->data_ref;
             *length = node->data_len;
@@ -169,7 +169,7 @@ int
 jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
     jpeg_segment_node_t *node;
     int count = 0;
-    for (node = jpeg_seg->head; node; node = node->next) {
+    for (node=jpeg_seg->head ; node ; node=node->next) {
         if (node->marker == marker) {
             node->marker = -1; // remove mark;
             if (node->data_ref) {
@@ -185,7 +185,7 @@ jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
 int
 jpeg_segment_peek_marker(jpeg_segment_t *jpeg_seg) {
     jpeg_segment_node_t *node;
-    for (node = jpeg_seg->head; node; node = node->next) {
+    for (node=jpeg_seg->head ; node ; node=node->next) {
         if (node->marker != -1) {
             return node->marker;
         }     
@@ -201,7 +201,7 @@ void jpeg_segment_print(jpeg_segment_t *jpeg_seg) {
         return ;
     }
     node = jpeg_seg->head;
-    for (i=0; node; i++) {
+    for (i=0 ; node ; i++) {
         char *marker_name;
         if (node->marker >= 0) {
             marker_name = jpeg_segment_get_marker_name(node->marker);
@@ -221,7 +221,7 @@ extern unsigned char *jpeg_segment_output(jpeg_segment_t *jpeg_seg,
     *length = 0;
     node = jpeg_seg->head;
     bs = bitstream_open();
-    for (; node; node = node->next) {
+    for (; node ; node=node->next) {
         int marker2 = node->marker;
         if (marker2 == -1) {
             continue;

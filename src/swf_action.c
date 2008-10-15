@@ -125,7 +125,7 @@ swf_action_info_t swf_action_info_table[] = {
 swf_action_info_t *
 get_swf_action_info(int action_id) {
     int i, action_info_num = NumOfTable(swf_action_info_table);
-    for (i=0; i < action_info_num; i++) {
+    for (i=0 ; i < action_info_num; i++) {
         if (action_id == swf_action_info_table[i].id) {
             return &(swf_action_info_table[i]);
         }
@@ -192,7 +192,7 @@ swf_action_print(swf_action_t *act) {
             d = act->action_data;
             n = GetUShortLE(act->action_data);  d += 2;
             printf(":\n");
-            for(i=0; i<n; i++) {
+            for (i=0 ; i < n ; i++) {
                 printf("\t\t[%d]'", i);
                 d += printf("%s", d) + 1;
                 printf("'\n");
@@ -244,7 +244,7 @@ swf_action_list_output(swf_action_list_t *list, unsigned long *length) {
     unsigned char *data;
     *length = 0;
     bs = bitstream_open();
-    for (action = list->head; action ; action = action->next) {
+    for (action=list->head ; action ; action=action->next) {
         swf_action_build(bs, action);
     }
     data = bitstream_steal(bs, length);

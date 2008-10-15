@@ -24,7 +24,7 @@ typedef struct my_png_buffer_ {
  * png read
  */
 
-static void png_data_read_func(png_structp png_ptr, png_bytep buf, png_size_t size){
+static void png_data_read_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     my_png_buffer *png_buff = (my_png_buffer *)png_get_io_ptr(png_ptr);
     if (png_buff->data_offset + size <= png_buff->data_len) {
         memcpy(buf, png_buff->data + png_buff->data_offset, size);
@@ -45,7 +45,7 @@ static void png_data_read(png_structp png_ptr, my_png_buffer *png_buff) {
  * png write
  */
 
-void png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size){
+void png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     my_png_buffer *png_buff = (my_png_buffer *)png_get_io_ptr(png_ptr);
     unsigned long new_data_len;
     if (png_buff->data_offset + size > png_buff->data_len) {
@@ -111,7 +111,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         png_destroy_read_struct((png_structpp) &png_ptr,
                                 (png_infopp) &png_info_ptr, NULL);
         if (png_image_data) {
-            for ( y = 0 ; y < png_height ; y++) {
+            for (y=0 ; y < png_height ; y++) {
                 free(png_image_data[y]);
             }
             free(png_image_data);
@@ -170,7 +170,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     }
     
     png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
-    for (y=0; y < png_height; y++) {
+    for (y=0 ; y < png_height ; y++) {
         png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
     }
     png_read_image(png_ptr, png_image_data);
@@ -182,7 +182,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         *colormap_count = palette_num;
         if (num_trans == 0) {
             swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);   // Lossless
-            for (i = 0 ; i < palette_num ; i++) {
+            for (i=0 ; i < palette_num ; i++) {
                 result_colormap[i].red   = palette[i].red;
                 result_colormap[i].green = palette[i].green;
                 result_colormap[i].blue  = palette[i].blue;
@@ -190,7 +190,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             *colormap = result_colormap;
         } else {
               swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);   // Lossless2
-            for (i = 0 ; i < palette_num ; i++) {
+            for (i=0 ; i < palette_num ; i++) {
                 result_colormap[i].red   = palette[i].red;
                 result_colormap[i].green = palette[i].green;
                 result_colormap[i].blue  = palette[i].blue;
@@ -203,8 +203,8 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             *colormap = result_colormap;
         }
         unsigned char *indices_data = malloc(((png_width+ 3) & -4) * png_height);
-        for (y=0; y < png_height; y++) {
-            for (x=0; x < png_width; x++) {
+        for (y=0 ; y < png_height ; y++) {
+            for (x=0 ; x < png_width ; x++) {
                 indices_data[x+y*((png_width + 3) & -4)] = png_image_data[y][x]; // XXX
             }
         }
@@ -212,8 +212,8 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
         swf_xrgb_t *xrgb_list;
         xrgb_list = malloc(sizeof(swf_xrgb_t) * png_width * png_height);
-        for (y=0; y < png_height; y++) {
-            for (x=0; x < png_width; x++) {
+        for (y=0 ; y < png_height ; y++) {
+            for (x=0 ; x < png_width ; x++) {
                 xrgb_list[x+y*png_width].red   = png_image_data[y][3*x + 0];
                 xrgb_list[x+y*png_width].green = png_image_data[y][3*x + 1];
                 xrgb_list[x+y*png_width].blue  = png_image_data[y][3*x + 2];
@@ -223,8 +223,8 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     } else { // PNG_COLOR_TYPE_RGB_ALPHA
         swf_argb_t *argb_list;
         argb_list = malloc(sizeof(swf_argb_t) * png_width * png_height);
-        for (y=0; y < png_height; y++) {
-            for (x=0; x < png_width; x++) {
+        for (y=0 ; y < png_height ; y++) {
+            for (x=0 ; x < png_width ; x++) {
                 argb_list[x+y*png_width].red   = png_image_data[y][4*x + 0];
                 argb_list[x+y*png_width].green = png_image_data[y][4*x + 1];
                 argb_list[x+y*png_width].blue  = png_image_data[y][4*x + 2];
@@ -233,7 +233,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         }
         image_data = argb_list;
     }
-    for (y=0; y < png_height; y++) {
+    for (y=0 ; y < png_height ; y++) {
         free(png_image_data[y]);
     }
     free(png_image_data);
@@ -273,7 +273,7 @@ pngconv_lossless2png(void *image_data,
         fprintf(stderr, "pngconv_lossless2png: libpng error jump occured\n");
         free(png_palette);
         if (png_image_data) {
-            for ( y = 0; y < png_height ; y++) {
+            for (y=0 ; y < png_height ; y++) {
                 free(png_image_data[y]);
             }
             free(png_image_data);
@@ -323,14 +323,14 @@ pngconv_lossless2png(void *image_data,
         png_set_packing(png_ptr);
         if (tag_no == 20) {
             swf_rgb_t *rgb_list  = index_data;
-            for (i=0; i<index_data_count; i++) {
+            for (i=0 ; i < index_data_count ; i++) {
                 png_palette[i].red   = rgb_list[i].red;
                 png_palette[i].green = rgb_list[i].green;
                 png_palette[i].blue  = rgb_list[i].blue;
             }
         } else {
             swf_rgba_t *rgba_list  = index_data;
-            for (i=0; i<index_data_count; i++) {
+            for (i=0 ; i < index_data_count ; i++) {
                 png_palette[i].red   = rgba_list[i].red;
                 png_palette[i].green = rgba_list[i].green;
                 png_palette[i].blue  = rgba_list[i].blue;
@@ -343,9 +343,9 @@ pngconv_lossless2png(void *image_data,
     png_set_gAMA(png_ptr, png_info_ptr, 1.0);
     png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
-        for (y=0; y < png_height; y++) {
+        for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
-            for (x=0; x < png_width; x++) {
+            for (x=0 ; x < png_width ; x++) {
                 unsigned char *data = image_data;
                 png_image_data[y][x] = data[x + y*((png_width +3) & -4)];
             }
@@ -353,10 +353,10 @@ pngconv_lossless2png(void *image_data,
         
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
         swf_xrgb_t *xrgb_list = image_data;
-        for (y=0; y < png_height; y++) {
+        for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr)) \
                 ;
-            for (x=0; x < png_width; x++) {
+            for (x=0 ; x < png_width ; x++) {
                 png_image_data[y][3*x]   =  xrgb_list[x+y*png_width].red;
                 png_image_data[y][3*x+1] =  xrgb_list[x+y*png_width].green;
                 png_image_data[y][3*x+2] =  xrgb_list[x+y*png_width].blue;
@@ -364,9 +364,9 @@ pngconv_lossless2png(void *image_data,
         }
     } else {
         swf_argb_t *argb_list = image_data;
-        for (y=0; y < png_height; y++) {
+        for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
-            for (x=0; x < png_width; x++) {
+            for (x=0 ; x < png_width ; x++) {
                 png_image_data[y][4*x]   = argb_list[x+y*png_width].red;
                 png_image_data[y][4*x+1] = argb_list[x+y*png_width].green;
                 png_image_data[y][4*x+2] = argb_list[x+y*png_width].blue;
@@ -384,7 +384,7 @@ pngconv_lossless2png(void *image_data,
     png_write_image(png_ptr, png_image_data);
     png_write_end(png_ptr, png_info_ptr);
     //
-    for (y=0; y < png_height; y++) {
+    for (y=0 ; y < png_height ; y++) {
         free(png_image_data[y]);
     }
     free(png_image_data);

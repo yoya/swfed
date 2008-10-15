@@ -61,7 +61,7 @@ swf_tag_info_t swf_tag_info_table[] = {
 
 swf_tag_info_t *get_swf_tag_info(int tag_id) {
     int i, tag_info_num = NumOfTable(swf_tag_info_table);
-    for(i=0; i < tag_info_num; i++) {
+    for (i=0 ; i < tag_info_num ; i++) {
         if (tag_id == swf_tag_info_table[i].id) {
             return &(swf_tag_info_table[i]);
         }
@@ -169,7 +169,7 @@ extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *sw
     if (tag->data) {
         swf_tag_and_length_build(bs, tag);
         bitstream_putstring(bs, tag->data, tag->length);
-    } else if (tag->detail){
+    } else if (tag->detail) {
         tag_info = get_swf_tag_info(tag->tag);
         if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
             fprintf(stderr, "swf_tag_build: not implemented yet. detail build tag->tag=%d\n",

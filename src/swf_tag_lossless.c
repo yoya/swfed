@@ -117,7 +117,7 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             }
         } else { // tag == 36 (Lossless2)
             swf_tag_lossless->colormap2 = malloc(sizeof(swf_rgba_t) * swf_tag_lossless->colormap_count);
-            for (i=0; i<swf_tag_lossless->colormap_count; i++) {
+            for (i=0 ; i < swf_tag_lossless->colormap_count ; i++) {
                 swf_rgba_t *rgba = swf_tag_lossless->colormap2 + i;
                 swf_rgba_parse(bs2, rgba);
             }
@@ -155,13 +155,13 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->tag == 20) { // Lossless
             swf_tag_lossless->bitmap = malloc(bitmap_count * sizeof(swf_xrgb_t));
-            for (i=0; i<bitmap_count; i++) {
+            for (i=0 ; i < bitmap_count ; i++) {
                 swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
                 swf_xrgb_parse(bs2, xrgb);
             }
         } else { // tag == 36 (Lossless2)
             swf_tag_lossless->bitmap2 = malloc(bitmap_count * sizeof(swf_argb_t));
-            for (i=0; i<bitmap_count; i++) {
+            for (i=0 ; i < bitmap_count ; i++) {
                 swf_argb_t *argb = swf_tag_lossless->bitmap2 + i;
                 swf_argb_parse(bs2, argb);
             }
@@ -217,12 +217,12 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         bitstream_putbyte(bs, swf_tag_lossless->colormap_count - 1); /* XXX */
         bs2 = bitstream_open();
         if (tag->tag == 20) { // Lossless
-            for (i=0; i<swf_tag_lossless->colormap_count; i++) {
+            for (i=0 ; i < swf_tag_lossless->colormap_count ; i++) {
                 swf_rgb_t *rgb = swf_tag_lossless->colormap + i;
                 swf_rgb_build(bs2, rgb);
             }
         } else { // tag == 36 (Lossless2)
-            for (i=0; i<swf_tag_lossless->colormap_count; i++) {
+            for (i=0 ; i < swf_tag_lossless->colormap_count ; i++) {
                 swf_rgba_t *rgba = swf_tag_lossless->colormap2 + i;
                 swf_rgba_build(bs2, rgba);
             }
@@ -242,13 +242,13 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         bs2 = bitstream_open();
         if (tag->tag == 20) { // Lossless
             bitmap_size = swf_tag_lossless->width * swf_tag_lossless->height;
-            for (i=0; i<bitmap_size; i++) {
+            for (i=0 ; i < bitmap_size ; i++) {
                 swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
                 swf_xrgb_build(bs2, xrgb);
             }
         } else { // tag == 36 (Lossless2)
             bitmap_size = swf_tag_lossless->width * swf_tag_lossless->height;
-            for (i=0; i<bitmap_size; i++) {
+            for (i=0 ; i < bitmap_size ; i++) {
                 swf_argb_t *argb = swf_tag_lossless->bitmap2 + i;
                 swf_argb_build(bs2, argb);
             }
