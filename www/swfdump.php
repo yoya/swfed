@@ -40,7 +40,7 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
    $swfdata = file_get_contents($tmp_filename);
 }
 
-echo "<a href=\"./swfimagelist.php?id=$id\"> 画像一覧 </a> <br />\n";
+echo "<a href=\"./swfimagelist.php?id=$id\" target=\"_blank\"> 画像一覧 </a> <br />\n";
 
 $swf = new SWFEditor();
 $swf->input($swfdata);
