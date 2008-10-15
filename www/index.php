@@ -24,11 +24,11 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
     $tmp_filename = "$tmp_prefix$id.swf";
     if ((! is_readable($tmp_filename)) &&
         (! file_put_contents($tmp_filename, $swfdata))) {
-        fprintf(stderr, "swfdump.php: file_put_contents failed. zero size?\n");
+        fprintf(stderr, "index.php: file_put_contents failed. zero size?\n");
         unlink($tmp_filename);
         exit(0);
     }
-    header("Location: ./swfdump.php?id=$id");
+    header("Location: ./index.php?id=$id");
     exit(0);
 } else {
    if (empty($_REQUEST['id']))  {
