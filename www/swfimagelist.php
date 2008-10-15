@@ -2,11 +2,7 @@
 
 require_once('define.php');
 
-if (@$argc > 1) {
-    $id = $argv[1];
-} else {
-    $id = $_REQUEST['id'];
-}
+$id = $_REQUEST['id'];
 
 $filename = "$tmp_prefix$id.swf";
 $swfdata = file_get_contents($filename);

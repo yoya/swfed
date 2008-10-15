@@ -2,15 +2,9 @@
 
 require_once('define.php');
 
-if (@$argc > 3) {
-    $id = $argv[1];
-    $image_id = $argv[2];
-    $ext = $argv[3];
-} else {
-    $id = $_REQUEST['id'];
-    $image_id = $_REQUEST['image_id'];
-    $ext = $_REQUEST['ext'];
-}
+$id       = $_REQUEST['id'];
+$image_id = $_REQUEST['image_id'];
+$ext      = $_REQUEST['ext'];
 
 $image_filename = "$tmp_prefix$id-$image_id$ext";
 $image_data = file_get_contents($image_filename);
