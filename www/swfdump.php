@@ -35,7 +35,7 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
         unlink($tmp_filename);
         exit(0);
     }
-    header("Location: ./index.php?id=$id");
+    header("Location: ./swfdump.php?id=$id");
     exit(0);
 } else {
    if (empty($_REQUEST['id']))  {
