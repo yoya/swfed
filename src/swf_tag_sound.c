@@ -204,9 +204,9 @@ swf_tag_sound_replace_melo_data(void *detail, int sound_id,
     (void) melo_data_len;
     swf_tag_sound->sound_id = sound_id;
     swf_tag_sound->sound_format = 15;
-    swf_tag_sound->sound_rate = 0;
-    swf_tag_sound->sound_is_16bits = 0;
-    swf_tag_sound->sound_is_stereo = 0;
+    swf_tag_sound->sound_rate          = 0;
+    swf_tag_sound->sound_is_16bits     = 0;
+    swf_tag_sound->sound_is_stereo     = 0;
     swf_tag_sound->sound_samples_count = 0;
     free(swf_tag_sound->sound_data);
     swf_tag_sound->sound_data = malloc(melo_data_len);
@@ -216,6 +216,5 @@ swf_tag_sound_replace_melo_data(void *detail, int sound_id,
     }
     memcpy(swf_tag_sound->sound_data, melo_data, melo_data_len);
     swf_tag_sound->sound_data_len = melo_data_len;
-        // dummy
     return 0;
 }
