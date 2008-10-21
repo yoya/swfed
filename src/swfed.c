@@ -255,7 +255,8 @@ PHP_METHOD(swfed, input) {
 
 PHP_METHOD(swfed, output) {
     unsigned long len = 0;
-    unsigned char *data, *new_buff;
+    unsigned char *data;
+    char *new_buff;
     swf_object_t *swf;
     if (ZEND_NUM_ARGS() != 0) {
         WRONG_PARAM_COUNT;
@@ -451,7 +452,8 @@ PHP_METHOD(swfed, getTagData) {
 PHP_METHOD(swfed, getJpegData) {
     unsigned long image_id = 0;
     unsigned long len = 0;
-    unsigned char *data, *new_buff;
+    unsigned char *data;
+    char *new_buff;
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "l", &image_id) == FAILURE) {
@@ -476,7 +478,8 @@ PHP_METHOD(swfed, getJpegData) {
 PHP_METHOD(swfed, getJpegAlpha) {
     unsigned long image_id = 0;
     unsigned long len = 0;
-    unsigned char *data, *new_buff;
+    unsigned char *data;
+    char *new_buff;
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "l", &image_id) == FAILURE) {
@@ -534,7 +537,8 @@ PHP_METHOD(swfed, replaceJpegData) {
 PHP_METHOD(swfed, getPNGData) {
     unsigned long image_id = 0;
     unsigned long len = 0;
-    unsigned char *data, *new_buff;
+    unsigned char *data;
+    char *new_buff;
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "l", &image_id) == FAILURE) {
@@ -585,7 +589,8 @@ PHP_METHOD(swfed, replacePNGData) {
 PHP_METHOD(swfed, getSoundData) {
     unsigned long sound_id = 0;
     unsigned long len = 0;
-    unsigned char *data, *new_buff;
+    unsigned char *data;
+    char *new_buff;
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "l", &sound_id) == FAILURE) {
@@ -682,7 +687,8 @@ PHP_METHOD(swfed, replaceEditString) {
 PHP_METHOD(swfed, getActionData) {
     long tag_seqno;
     swf_object_t *swf;
-    char *data_ref, *new_buff;
+    unsigned char *data_ref;
+    char *new_buff;
     unsigned long data_len;
     
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
@@ -715,7 +721,7 @@ PHP_METHOD(swfed, disasmActionData) {
     }
     array_init(return_value);
     bs = bitstream_open();
-    bitstream_input(bs, data, data_len);
+    bitstream_input(bs, (unsigned char*) data, data_len);
     action_list = swf_action_list_create(bs);
     bitstream_close(bs);
     if (action_list) {
