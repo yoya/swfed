@@ -48,7 +48,6 @@ static int le_swfed;
  * Every user visible function must have an entry in swfed_functions[].
  */
 zend_function_entry swfed_functions[] = {
-	PHP_FE(confirm_swfed_compiled,	NULL)		/* For testing, remove later. */
 	PHP_ME(swfed,  __construct, NULL, 0)
    	PHP_ME(swfed,  input, NULL, 0)
    	PHP_ME(swfed,  output, NULL, 0)
