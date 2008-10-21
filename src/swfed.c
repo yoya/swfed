@@ -355,7 +355,7 @@ PHP_METHOD(swfed, getTagDetail) {
                               "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
-
+    swf = get_swf_object(getThis() TSRMLS_CC);
     i = 0;
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (i == tag_seqno) {
@@ -714,7 +714,6 @@ PHP_METHOD(swfed, disasmActionData) {
     int data_len;
     bitstream_t *bs;
     swf_action_list_t *action_list;
-    swf_action_t *action;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
