@@ -24,12 +24,20 @@ jpeg_marker_name_t jpeg_marker_name_table[] = {
     {0xFE, "COM"},
     {0xDB, "DQT"},
     {0xC0, "SOF0"}, {0xC1, "SOF1"}, {0xC2, "SOF2"}, {0xC3, "SOF3"},
+                    {0xC5, "SOF5"}, {0xC6, "SOF6"}, {0xC7, "SOF7"},
+    {0xC8, "JPG"},  {0xC9, "SOF9"}, {0xCA, "SOF10"},{0xCB, "SOF11"},
+    {0xCC, "dAC"},  {0xCD, "SOF13"},{0xCE, "SOF14"},{0xCF, "SOF15"},
     {0xC4, "DHT"},
     {0xDA, "SOS"},
     {0xD0, "RST0"}, {0xD1, "RST1"}, {0xD2, "RST2"}, {0xD3, "RST3"},
-    {0xD4, "RST4"} ,{0xD5, "RST5"}, {0xD6, "RST6"}, {0xD7, "RST7"},
+    {0xD4, "RST4"}, {0xD5, "RST5"}, {0xD6, "RST6"}, {0xD7, "RST7"},
     {0xDD, "DRI"},
     {0xD9, "EOI"},
+    {0xDC, "DNL"}, {0xDE, "DHP"},  {0xDF, "EXP"},
+    {0xF0, "JPG0"}, {0xF1, "JPG1"}, {0xF2, "JPG2"}, {0xF3, "JPG3"},
+    {0xF4, "JPG4"}, {0xF5, "JPG5"}, {0xF6, "JPG6"}, {0xF7, "JPG7"},
+    {0xF8, "JPG8"}, {0xF9, "JPG9"}, {0xFA, "JPG10"},{0xFB, "JPG11"},
+    {0xFC, "JPG12"},{0xFD, "JPG13"},
 };
 
 #define NumOfTable(t) (sizeof(t) / sizeof(*t))
