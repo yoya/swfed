@@ -23,7 +23,7 @@ jpeg_marker_name_t jpeg_marker_name_table[] = {
     {0xEC, "APP12"},{0xED, "APP13"},{0xEE, "APP14"},{0xEF, "APP15"},
     {0xFE, "COM"},
     {0xDB, "DQT"},
-    {0xC0, "SOF0"}, {0xC1, "SOF1"}, {0xC21, "SOF2"},
+    {0xC0, "SOF0"}, {0xC1, "SOF1"}, {0xC2, "SOF2"}, {0xC3, "SOF3"},
     {0xC4, "DHT"},
     {0xDA, "SOS"},
     {0xD0, "RST0"}, {0xD1, "RST1"}, {0xD2, "RST2"}, {0xD3, "RST3"},
