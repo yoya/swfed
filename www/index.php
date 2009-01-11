@@ -1,16 +1,6 @@
-<?php require_once('define.php') ?>
-
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-</head>
-<body>
-<form enctype="multipart/form-data" action="" method="POST">
-    <input type="hidden" name="MAX_FILE_SIZE" value="67108864" />
-    SWF ファイルをアップロード: <input name="swffile" type="file" />
-    <input type="submit" value="ファイルを送信" />
-</form>
 <?php
+
+require_once('define.php');
 
 if (! empty($_FILES['swffile']['tmp_name'])) {
     $filename = $_FILES['swffile']['tmp_name'];
@@ -30,15 +20,29 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
     }
     header("Location: ./index.php?id=$id");
     exit(0);
-} else {
-   if (empty($_REQUEST['id']))  {
-        echo "ファイルを指定してください。(64MBytes 以内に限定してます)";
-        exit(0);
-   }
-   $id = $_REQUEST['id'];
-   $tmp_filename = "$tmp_prefix$id.swf";
-   $swfdata = file_get_contents($tmp_filename);
 }
+
+?>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+<form enctype="multipart/form-data" action="" method="POST">
+    <input type="hidden" name="MAX_FILE_SIZE" value="67108864" />
+    SWF ファイルをアップロード: <input name="swffile" type="file" />
+    <input type="submit" value="ファイルを送信" />
+</form>
+
+<?php
+    
+if (empty($_REQUEST['id']))  {
+     echo "ファイルを指定してください。(64MBytes 以内に限定してます)";
+     exit(0);
+}
+$id = $_REQUEST['id'];
+$tmp_filename = "$tmp_prefix$id.swf";
+$swfdata = file_get_contents($tmp_filename);
 
 echo "<a href=\"./swfimagelist.php?id=$id\" target=\"_blank\"> 画像一覧 </a> <br />\n";
 
