@@ -14,7 +14,7 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
     $image_id = $_REQUEST['image_id'];
     $ext = $_REQUEST['ext'];
     $id_image = substr($tmp_name, 0, 16); // XXX
-    $tmp_filename = "$tmp_prefix$id$ext";
+    $tmp_filename = "$tmp_prefix$id_image$ext";
     if ((! is_readable($tmp_filename)) &&
         (! file_put_contents($tmp_filename, $imagedata))) {
         fprintf(stderr, "swfimagereplace.php: file_put_contents failed. zero size?\n");
@@ -49,13 +49,14 @@ FORM;
    }
    $id = $_REQUEST['id'];
    $image_id = $_REQUEST['image_id'];
+   $id_image = $_REQUEST['id_image'];
    $ext = $_REQUEST['ext'];
    if (($ext != '.png') && ($ext != '.jpg')) {
       exit(1);
    }
    $swf_filename = "$tmp_prefix$id.swf";
    $swfdata = file_get_contents($swf_filename);
-   $image_filename = "$tmp_prefix$id$ext";
+   $image_filename = "$tmp_prefix$id_image$ext";
    $imagedata = file_get_contents($image_filename);
 }
 
