@@ -21,12 +21,27 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
         unlink($tmp_filename);
         exit(0);
     }
-    header("Location: ./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext");
+//    header("Location: ./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext");
+echo <<< FORM
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+</head>
+<body>
+<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
+codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">
+<param name="movie" value="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext">
+<param name="quality" value="high">
+</object>
+</body>
+</html>
+FORM;
     exit(0);
-} else {
-   if (empty($_REQUEST['id_image']))  {
-      $id       = $_REQUEST['id'];
-      $image_id = $_REQUEST['image_id'];
+}
+
+if (empty($_REQUEST['id_image']))  {
+    $id       = $_REQUEST['id'];
+    $image_id = $_REQUEST['image_id'];
 echo <<< FORM
 <html>
 <head>
@@ -45,23 +60,24 @@ echo <<< FORM
 </body>
 </html>
 FORM;
-        exit(0);
-   }
-   $id = $_REQUEST['id'];
-   $image_id = $_REQUEST['image_id'];
-   $id_image = $_REQUEST['id_image'];
-   $ext = $_REQUEST['ext'];
-   if (($ext != '.png') && ($ext != '.jpg')) {
-      exit(1);
-   }
-   $swf_filename = "$tmp_prefix$id.swf";
-   $swfdata = file_get_contents($swf_filename);
-   $image_filename = "$tmp_prefix$id_image$ext";
-   $imagedata = file_get_contents($image_filename);
+    exit(0);
 }
+
+$id = $_REQUEST['id'];
+$image_id = $_REQUEST['image_id'];
+$id_image = $_REQUEST['id_image'];
+$ext = $_REQUEST['ext'];
+if (($ext != '.png') && ($ext != '.jpg')) {
+    exit(1);
+}
+$swf_filename = "$tmp_prefix$id.swf";
+$swfdata = file_get_contents($swf_filename);
+$image_filename = "$tmp_prefix$id_image$ext";
+$imagedata = file_get_contents($image_filename);
 
 $swf = new SWFEditor();
 $swf->input($swfdata);
+
 if ($ext == '.jpg') {
     $swf->replaceJpegData(intval($image_id), $imagedata);
 } else {
