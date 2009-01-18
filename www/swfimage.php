@@ -13,6 +13,9 @@ switch ($ext) {
   case '.png':
     header("Content-type: image/png");
     break;
+  case '.gif':
+    header("Content-type: image/gif");
+    break;
   default:
     exit(1);
 }
