@@ -50,6 +50,8 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 39, "DefineSprite", NULL } ,
     { 43, "FrameLabel", NULL } ,
     { 48, "DefineFont2", NULL } ,
+    { 56, "Export", NULL } ,
+    { 59, "DoInitAction", NULL } ,
     { 69, "FileAttributes", NULL },
     { 73, "DefineFontAlignZones", NULL },
     { 74, "CSMTextSettings", NULL },
