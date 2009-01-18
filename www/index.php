@@ -86,7 +86,18 @@ foreach ($swf->getTagList() as $tag_seqno => $tagblock) {
         if (@$header_info['version'] < 6) { // for flash lite
             $detail_str = mb_convert_encoding($detail_str, "UTF-8", "SJIS-win");
         }
-        echo "<td> ".htmlspecialchars($detail_str)."</td>";
+        $detail_str = htmlspecialchars($detail_str);
+        switch ($tag) {
+          case 6:  // 'DefineBitsJPEG'
+          case 21: // 'DefineBitsJPEG2'
+          case 35: // 'DefineBitsJPEG3'
+          case 20: // 'DefineBitsLossless'
+          case 36: // 'DefineBitsLossless2'
+            $image_id = $detail_info['image_id'];
+            $detail_str .= " <a href=\"swfimagereplace.php?id=$id&image_id=$image_id\"> replace </a>";
+            break;
+        }
+        echo "<td> $detail_str </td>";
     } else {
         echo "<td> - </td>";
     }
