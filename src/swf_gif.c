@@ -109,7 +109,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     GifFileType *GifFile = NULL;
     ColorMapObject *ColorMap = NULL;
     my_gif_buffer gif_buff;
-    int bpp; // , color_type;
+    int bpp;
     gif_uint_32 gif_width = 0, gif_height = 0;
     gif_bytep gif_image_data_ref = NULL;
     gif_uint_32 x, y;
@@ -117,8 +117,6 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     void *image_data = NULL;
     gif_colorp palette = NULL;
     int palette_num = 0;
-//    gif_bytep trans = NULL;
-//    int num_trans = 0;
     int trans_index = -1;
 
     SavedImage Image;
@@ -167,18 +165,17 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
      * image copy
      */
     int i;
-//    *colormap_count = palette_num;
     *colormap_count = 256; // XXX
-    if (trans_index == 0) {
-        swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);   // Lossless
+    if (trans_index == -1) {  // Lossless
+        swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);
         for (i=0 ; i < palette_num ; i++) {
             result_colormap[i].red   = palette[i].red;
             result_colormap[i].green = palette[i].green;
             result_colormap[i].blue  = palette[i].blue;
         }
         *colormap = result_colormap;
-    } else {
-        swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);   // Lossless2
+    } else {  // Lossless2
+        swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);  
         for (i=0 ; i < palette_num ; i++) {
             result_colormap[i].red   = palette[i].red;
             result_colormap[i].green = palette[i].green;
