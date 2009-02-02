@@ -436,6 +436,54 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     return result;
 }
 
+int
+swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
+                         unsigned char *gif_data,
+                         unsigned long gif_data_len) {
+    swf_tag_info_t *tag_info;
+    swf_tag_detail_handler_t *detail_handler;
+    int result;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_replace_gif_data: tag == NULL\n");
+        return 1;
+    }
+    // DefineBitsJPEG or 2 or 3
+    // BitsLossless or 2
+    if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35) &&
+        (tag->tag != 20) && (tag->tag != 36)) {
+        return 1;
+    }
+    tag_info = get_swf_tag_info(tag->tag);
+    detail_handler = tag_info->detail_handler();
+    if (detail_handler->identity(tag, image_id)) {
+        return 1;
+    }
+    if (tag->detail) {
+        detail_handler->destroy(tag);
+        tag->detail = NULL;
+    }
+    if (tag->tag == 20) {
+        tag->tag = 20;
+    } else {
+        tag->tag = 36;
+    }
+    
+    tag_info = get_swf_tag_info(tag->tag);
+    detail_handler = tag_info->detail_handler();
+    tag->detail = detail_handler->create();
+    result= swf_tag_lossless_replace_gif_data(tag->detail, image_id,
+                                              gif_data, gif_data_len, tag);
+    if (result == 0) {
+        free(tag->data);
+        tag->data = NULL;
+        tag->length = 0;
+    } else {
+        detail_handler->destroy(tag);
+        tag->detail = NULL;
+    }
+    return result;
+}
+
 /*
  * DefineSound
  */

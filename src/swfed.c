@@ -61,6 +61,7 @@ zend_function_entry swfed_functions[] = {
    	PHP_ME(swfed,  replaceJpegData, NULL, 0)
         PHP_ME(swfed,  getPNGData, NULL, 0)
         PHP_ME(swfed,  replacePNGData, NULL, 0)
+        PHP_ME(swfed,  replaceGIFData, NULL, 0)
         PHP_ME(swfed,  getSoundData, NULL, 0)
         PHP_ME(swfed,  replaceMLDData, NULL, 0)
    	PHP_ME(swfed,  getEditString, NULL, 0)
@@ -578,6 +579,32 @@ PHP_METHOD(swfed, replacePNGData) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_pngdata(swf, image_id,
+                                        (unsigned char *)data,
+                                        (unsigned long) data_len);
+    if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, replaceGIFData) {
+    char *data = NULL;
+    int data_len = 0;
+    int image_id;
+    swf_object_t *swf;
+    int result = 0;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_replace_gifdata(swf, image_id,
                                         (unsigned char *)data,
                                         (unsigned long) data_len);
     if (result) {

@@ -12,6 +12,7 @@
 #include "swf_define.h"
 #include "swf_tag_lossless.h"
 #include "swf_png.h"
+#include "swf_gif.h"
 
 swf_tag_detail_handler_t lossless_detail_handler;
 
@@ -438,6 +439,62 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
             fprintf(stderr, "swf_tag_lossless_replace_lossless_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
             return 1;
         }
+    } else {
+        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
+        return 1;
+    }
+    return 0;
+}
+
+int
+swf_tag_lossless_replace_gif_data(void *detail, int image_id,
+                                  unsigned char *gif_data,
+                                  unsigned long gif_data_len, swf_tag_t *tag) {
+    int tag_no, format;
+    unsigned short width, height;
+    unsigned char *result_data;
+    void *colormap = NULL;
+    int colormap_count = 0;
+    swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
+    if (detail == NULL) {
+        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: detail == NULL at line(%d)\n", __LINE__);
+        return 1;
+    }
+    swf_tag_lossless->image_id = image_id;
+    result_data = gifconv_gif2lossless(gif_data, gif_data_len,
+                                       &tag_no, &format,
+                                       &width, &height,
+                                       &colormap, &colormap_count);
+
+    if (result_data == NULL) {
+        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: gifconv_gif2lossless failed at line(%d)\n", __LINE__);
+        return 1;
+    }
+    tag->tag = tag_no;
+    swf_tag_lossless->format = format;
+    swf_tag_lossless->width  = width;
+    swf_tag_lossless->height = height;
+    if (format == 3) {
+        free(swf_tag_lossless->colormap);
+        free(swf_tag_lossless->colormap2);
+        free(swf_tag_lossless->indices);
+        free(swf_tag_lossless->bitmap);
+        free(swf_tag_lossless->bitmap2);
+        swf_tag_lossless->colormap = NULL;
+        swf_tag_lossless->colormap2 = NULL;
+        swf_tag_lossless->indices = NULL;
+        swf_tag_lossless->bitmap = NULL;
+        swf_tag_lossless->bitmap2 = NULL;
+        if (tag_no == 20) {
+            swf_tag_lossless->colormap = (swf_rgb_t*) colormap;
+        } else if (tag_no == 36) {
+            swf_tag_lossless->colormap2 = (swf_rgba_t*) colormap;
+        } else {
+            fprintf(stderr, "swf_tag_lossless_replace_lossless_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
+            return 1;
+        }
+        swf_tag_lossless->colormap_count = colormap_count;
+        swf_tag_lossless->indices = (unsigned char *) result_data;
     } else {
         fprintf(stderr, "swf_tag_lossless_replace_lossless_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
         return 1;

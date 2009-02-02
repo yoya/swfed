@@ -299,6 +299,26 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
     return result;
 }
 
+int
+swf_object_replace_gifdata(swf_object_t *swf, int image_id,
+                            unsigned char *gif_data,
+                            unsigned long gif_data_len) {
+    int result = 1;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_replace_gifdata: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        result = swf_tag_replace_gif_data(tag, image_id,
+                                          gif_data, gif_data_len);
+        if (! result) {
+            break;
+        }
+    }
+    return result;
+}
+
 unsigned char *
 swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id) {
     swf_tag_t *tag;
