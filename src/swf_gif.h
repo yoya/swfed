@@ -4,6 +4,9 @@
   +----------------------------------------------------------------------+
 */
 
+#ifndef __SWF_GIF_H__
+#define __SWF_GIF_H__
+
 extern void *
 gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
                      int *tag, int *format,
@@ -17,3 +20,5 @@ gifconv_lossless2gif(void *image_data,
                      unsigned short index_data_count,
                      int tag, int format,
                      unsigned long *length);
+
+#endif /* __SWF_GIF_H__ */
