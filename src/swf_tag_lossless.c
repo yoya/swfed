@@ -382,7 +382,7 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
     int colormap_count = 0;
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
     if (detail == NULL) {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: detail == NULL at line(%d)\n", __LINE__);
+        fprintf(stderr, "swf_tag_lossess_replace_png_data: detail == NULL at line(%d)\n", __LINE__);
         return 1;
     }
     swf_tag_lossless->image_id = image_id;
@@ -392,7 +392,7 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
                                        &colormap, &colormap_count);
 
     if (result_data == NULL) {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: pngconv_png2lossless failed at line(%d)\n", __LINE__);
+        fprintf(stderr, "swf_tag_lossess_replace_png_data: pngconv_png2lossless failed at line(%d)\n", __LINE__);
         return 1;
     }
     tag->tag = tag_no;
@@ -415,7 +415,7 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
         } else if (tag_no == 36) {
             swf_tag_lossless->colormap2 = (swf_rgba_t*) colormap;
         } else {
-            fprintf(stderr, "swf_tag_lossless_replace_lossless_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
+            fprintf(stderr, "swf_tag_lossess_replace_png_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
             return 1;
         }
         swf_tag_lossless->colormap_count = colormap_count;
@@ -436,11 +436,11 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
         } else if (tag_no == 36) {
             swf_tag_lossless->bitmap2 = (swf_argb_t*) result_data;
         } else {
-            fprintf(stderr, "swf_tag_lossless_replace_lossless_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
+            fprintf(stderr, "swf_tag_lossless_replace_png_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
             return 1;
         }
     } else {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
+        fprintf(stderr, "swf_tag_lossless_replace_png_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
         return 1;
     }
     return 0;
@@ -457,7 +457,7 @@ swf_tag_lossless_replace_gif_data(void *detail, int image_id,
     int colormap_count = 0;
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
     if (detail == NULL) {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: detail == NULL at line(%d)\n", __LINE__);
+        fprintf(stderr, "swf_tag_lossless_replace_gif_data: detail == NULL at line(%d)\n", __LINE__);
         return 1;
     }
     swf_tag_lossless->image_id = image_id;
@@ -467,7 +467,7 @@ swf_tag_lossless_replace_gif_data(void *detail, int image_id,
                                        &colormap, &colormap_count);
 
     if (result_data == NULL) {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: gifconv_gif2lossless failed at line(%d)\n", __LINE__);
+        fprintf(stderr, "swf_tag_lossless_replace_gif_data: gifconv_gif2lossless failed at line(%d)\n", __LINE__);
         return 1;
     }
     tag->tag = tag_no;
@@ -490,13 +490,13 @@ swf_tag_lossless_replace_gif_data(void *detail, int image_id,
         } else if (tag_no == 36) {
             swf_tag_lossless->colormap2 = (swf_rgba_t*) colormap;
         } else {
-            fprintf(stderr, "swf_tag_lossless_replace_lossless_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
+            fprintf(stderr, "swf_tag_lossless_replace_gif_data: internal error tag_no(%d) at line(%d).\n", tag_no, __LINE__);
             return 1;
         }
         swf_tag_lossless->colormap_count = colormap_count;
         swf_tag_lossless->indices = (unsigned char *) result_data;
     } else {
-        fprintf(stderr, "swf_tag_lossless_replace_lossless_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
+        fprintf(stderr, "swf_tag_lossless_replace_gif_data: format(%d) not implemented yet. at line(%d)\n", format, __LINE__);
         return 1;
     }
     return 0;
