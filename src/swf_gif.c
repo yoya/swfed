@@ -142,6 +142,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     gif_height = GifFile->SHeight;
     bpp = ColorMap->BitsPerPixel;
     trans_index = getTransparentIndex(Image);
+    palette_num = ColorMap->ColorCount;
 
     *width  = (unsigned short) gif_width;
     *height = (unsigned short) gif_height;
@@ -165,21 +166,21 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
      * image copy
      */
     int i;
-    *colormap_count = 256; // XXX
+    *colormap_count = palette_num;
     if (trans_index == -1) {  // Lossless
         swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);
         for (i=0 ; i < palette_num ; i++) {
-            result_colormap[i].red   = palette[i].red;
-            result_colormap[i].green = palette[i].green;
-            result_colormap[i].blue  = palette[i].blue;
+            result_colormap[i].red   = ColorMap->Colors[i].Red;
+            result_colormap[i].green = ColorMap->Colors[i].Green;
+            result_colormap[i].blue  = ColorMap->Colors[i].Blue;
         }
         *colormap = result_colormap;
     } else {  // Lossless2
         swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);  
         for (i=0 ; i < palette_num ; i++) {
-            result_colormap[i].red   = palette[i].red;
-            result_colormap[i].green = palette[i].green;
-            result_colormap[i].blue  = palette[i].blue;
+            result_colormap[i].red   = ColorMap->Colors[i].Red;
+            result_colormap[i].green = ColorMap->Colors[i].Green;
+            result_colormap[i].blue  = ColorMap->Colors[i].Blue;
             if (i == trans_index) {
                 result_colormap[i].alpha  = 0x0;
             } else {
