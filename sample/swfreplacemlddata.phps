@@ -9,13 +9,19 @@ $swf_filename = $argv[1];
 
 $swfdata = file_get_contents($swf_filename);
 $obj = new SWFEditor();
-$obj->input($swfdata);
+if ($obj->input($swfdata) == false) {
+    fprintf(STDERR, "input failed\n");
+    exit(1);
+}
 
 for ($i=2 ; $i < $argc ; $i+=2) {
-	$sound_id = $argv[$i];
-	$mld_filename = $argv[$i+1];
-	$mlddata = file_get_contents($mld_filename);
-	$obj->replaceMLDData($sound_id, $mlddata);
+    $sound_id = $argv[$i];
+    $mld_filename = $argv[$i+1];
+    $mlddata = file_get_contents($mld_filename);
+    if ($obj->replaceMLDData($sound_id, $mlddata) == false) {
+	fprintf(STDERR, "replaceMLDdata($sound_id, ...) failed\n");
+        exit(1);
+    }
 }
 
 echo $obj->output();

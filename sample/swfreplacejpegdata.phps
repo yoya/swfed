@@ -23,8 +23,8 @@ if (! empty($alpha_filename)) {
 
 $obj = new SWFEditor();
 if ($obj->input($swfdata) == false) {
-	fprintf(STDERR, "input failed\n");
-	exit (1);
+    fprintf(STDERR, "input failed\n");
+    exit(1);
 }
 
 if (empty($alphadata)) {
@@ -34,8 +34,8 @@ if (empty($alphadata)) {
 }
 
 if ($result == false) {
-	fprintf(STDERR, "replaceJpegdata($image_id, ...) failed\n");
-	exit (1);
+    fprintf(STDERR, "replaceJpegdata($image_id, ...) failed\n");
+    exit(1);
 }
 
 echo $obj->output();
