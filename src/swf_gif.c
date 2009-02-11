@@ -31,7 +31,6 @@ typedef struct {
 } gif_color;
 typedef gif_color *   gif_colorp;
 
-
 /*
  * gif read
  */
@@ -115,11 +114,11 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     gif_uint_32 x, y;
     
     void *image_data = NULL;
-    gif_colorp palette = NULL;
     int palette_num = 0;
     int trans_index = -1;
-
     SavedImage Image;
+    int i;
+    unsigned char *indices_data;
 
     gif_buff.data = gif_data;
     gif_buff.data_len = gif_data_len;
@@ -141,8 +140,9 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     gif_width  = GifFile->SWidth;
     gif_height = GifFile->SHeight;
     bpp = ColorMap->BitsPerPixel;
-    trans_index = getTransparentIndex(Image);
     palette_num = ColorMap->ColorCount;
+
+    trans_index = getTransparentIndex(Image);
 
     *width  = (unsigned short) gif_width;
     *height = (unsigned short) gif_height;
@@ -165,7 +165,6 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     /*
      * image copy
      */
-    int i;
     *colormap_count = palette_num;
     if (trans_index == -1) {  // Lossless
         swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);
@@ -176,7 +175,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         }
         *colormap = result_colormap;
     } else {  // Lossless2
-        swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);  
+        swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);
         for (i=0 ; i < palette_num ; i++) {
             result_colormap[i].red   = ColorMap->Colors[i].Red;
             result_colormap[i].green = ColorMap->Colors[i].Green;
@@ -189,7 +188,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         }
         *colormap = result_colormap;
     }
-    unsigned char *indices_data = malloc(((gif_width+ 3) & -4) * gif_height);
+    indices_data = malloc(((gif_width+ 3) & -4) * gif_height);
     gif_image_data_ref = Image.RasterBits;
     i = 0;
     for (y=0 ; y < gif_height ; y++) {
