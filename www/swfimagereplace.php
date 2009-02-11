@@ -2,6 +2,20 @@
 
 require_once('define.php');
 
+function detect_image_ext(&$imagedata) {
+    $image_sig = substr($imagedata, 0, 0x10);
+    if (strpos($image_sig, 'JFIF') === 6) {
+        $ext = '.jpg';
+    } elseif (strpos($image_sig, 'PNG') === 1) {
+        $ext = '.png';
+    } elseif (strpos($image_sig, 'GIF') === 0) {
+        $ext = '.gif';
+    } else {
+        $ext = false;
+    }
+    return $ext;
+}
+
 if (! empty($_FILES['imagefile']['tmp_name'])) {
     $filename = $_FILES['imagefile']['tmp_name'];
     $imagedata = file_get_contents($filename);
@@ -12,7 +26,12 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
     $tmp_name = sha1($imagedata, false);
     $id = $_REQUEST['id'];
     $image_id = $_REQUEST['image_id'];
-    $ext = $_REQUEST['ext'];
+    $ext = detect_image_ext($imagedata);
+    if ($ext == false) {
+        $image_sig = substr($imagedata, 0, 8);
+        echo "unknown image signature: ".bin2hex($image_sig)."\n";
+        exit(1);
+    }
     $id_image = substr($tmp_name, 0, 16); // XXX
     $tmp_filename = "$tmp_prefix$id_image$ext";
     if ((! is_readable($tmp_filename)) &&
@@ -53,9 +72,7 @@ echo <<< FORM
     画像ファイルをアップロード: <input name="imagefile" type="file" />
     <input type="hidden" name="id" value="$id" />
     <input type="hidden" name="image_id" value="$image_id" />
-    <input type="submit" name="ext" value=".png" />
-    <input type="submit" name="ext" value=".jpg" />
-    <input type="submit" name="ext" value=".gif" />
+    <input type="submit" name="action" value="replace" />
 </form>
           ファイルを指定してください。(64MBytes 以内に限定してます)
 </body>
@@ -68,31 +85,42 @@ $id = $_REQUEST['id'];
 $image_id = $_REQUEST['image_id'];
 $id_image = $_REQUEST['id_image'];
 $ext = $_REQUEST['ext'];
-if (($ext != '.png') && ($ext != '.jpg') && ($ext != '.gif')) {
-    echo "unknown ext($ext)\n";
+
+if (($ext != '.jpg') && ($ext != '.png') && ($ext != '.gif')) {
+    echo "unknown ext=($ext)..\n";
     exit(1);
 }
+
 $swf_filename = "$tmp_prefix$id.swf";
 $swfdata = file_get_contents($swf_filename);
 $image_filename = "$tmp_prefix$id_image$ext";
 $imagedata = file_get_contents($image_filename);
 
 $swf = new SWFEditor();
-$swf->input($swfdata);
+
+if ($swf->input($swfdata) == false) {
+    echo "input failed\n";
+    exit(1);
+}
 
 switch ($ext) {
   case '.jpg':
-    $swf->replaceJpegData(intval($image_id), $imagedata);
+    $result = $swf->replaceJpegData(intval($image_id), $imagedata);
     break;
   case '.png':
-    $swf->replacePNGData(intval($image_id), $imagedata);
+    $result = $swf->replacePNGData(intval($image_id), $imagedata);
     break;
   case '.gif':
-    $swf->replaceGIFData(intval($image_id), $imagedata);
+    $result = $swf->replaceGIFData(intval($image_id), $imagedata);
     break;
   default:
-    echo "unknown ext($ext)\n";
+    echo "unknown ext($ext)...\n";
     exit(1);
+}
+
+if ($result == false) {
+    echo "replace failed ext=$ext\n";
+    exit(0);
 }
 
 header('Content-type: application/x-shockwave-flash');
