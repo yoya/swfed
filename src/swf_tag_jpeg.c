@@ -178,7 +178,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_t *bs;
     unsigned char *data, *new_buff;
     unsigned long offset_to_alpha;
-    unsigned long compsize;
+    unsigned long compsize, old_size;
     (void) swf;
     *length = 0;
     bs = bitstream_open();
@@ -186,8 +186,10 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putbytesLE(bs, swf_tag_jpeg->jpeg_data_len, 4);
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
-    new_buff = malloc(swf_tag_jpeg->alpha_data_len); // too enough memory
-    compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, swf_tag_jpeg->alpha_data_len);
+    old_size = swf_tag_jpeg->alpha_data_len;
+    compsize = old_size;
+    new_buff = malloc(compsize); // too enough memory
+    compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
     bitstream_putstring(bs, new_buff, compsize);
     free(new_buff);
     data = bitstream_steal(bs, length);

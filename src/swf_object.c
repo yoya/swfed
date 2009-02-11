@@ -130,13 +130,14 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         ; // OK
     } else if (memcmp(swf->header.magic, "CWS", SWF_MAGIC_SIZE) == 0) {
         int result;
-        unsigned long compsize;
+        unsigned long compsize, old_size;
         unsigned char *new_buff, *old_buff_ref;
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
-        new_buff = malloc(swf->header.file_length - SWF_HEADER_SIZE);
-        result = compress(new_buff, &compsize, old_buff_ref,
-                          bs->data_len - SWF_HEADER_SIZE);
+        old_size = bs->data_len - SWF_HEADER_SIZE;
+        compsize = old_size;
+        new_buff = malloc(compsize);
+        result = compress(new_buff, &compsize, old_buff_ref, old_size);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
                 fprintf(stderr, "swf_object_output: compress Z_MEM_ERROR: can't malloc\n");
