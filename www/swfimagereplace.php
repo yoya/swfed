@@ -55,6 +55,7 @@ echo <<< FORM
     <input type="hidden" name="image_id" value="$image_id" />
     <input type="submit" name="ext" value=".png" />
     <input type="submit" name="ext" value=".jpg" />
+    <input type="submit" name="ext" value=".gif" />
 </form>
           ファイルを指定してください。(64MBytes 以内に限定してます)
 </body>
@@ -67,7 +68,8 @@ $id = $_REQUEST['id'];
 $image_id = $_REQUEST['image_id'];
 $id_image = $_REQUEST['id_image'];
 $ext = $_REQUEST['ext'];
-if (($ext != '.png') && ($ext != '.jpg')) {
+if (($ext != '.png') && ($ext != '.jpg') && ($ext != '.gif')) {
+    echo "unknown ext($ext)\n";
     exit(1);
 }
 $swf_filename = "$tmp_prefix$id.swf";
@@ -78,10 +80,19 @@ $imagedata = file_get_contents($image_filename);
 $swf = new SWFEditor();
 $swf->input($swfdata);
 
-if ($ext == '.jpg') {
+switch ($ext) {
+  case '.jpg':
     $swf->replaceJpegData(intval($image_id), $imagedata);
-} else {
+    break;
+  case '.png':
     $swf->replacePNGData(intval($image_id), $imagedata);
+    break;
+  case '.gif':
+    $swf->replaceGIFData(intval($image_id), $imagedata);
+    break;
+  default:
+    echo "unknown ext($ext)\n";
+    exit(1);
 }
 
 header('Content-type: application/x-shockwave-flash');
