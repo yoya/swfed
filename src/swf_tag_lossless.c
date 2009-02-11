@@ -206,6 +206,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
     unsigned long i;
     unsigned char *tmp_buff, *old_buff_ref;
     unsigned long compsize, old_size;
+    int result;
     (void) swf;
     *length = 0;
     bs = bitstream_open();
@@ -235,7 +236,20 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         old_size = bitstream_length(bs2);
         compsize = old_size;
         tmp_buff = malloc(compsize);
-        compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        result = compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        if (result != Z_OK) {
+            if (result == Z_MEM_ERROR) {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_MEM_ERROR: can't malloc\n");
+            } else if (result == Z_BUF_ERROR) {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_BUF_ERROR: not enough buff size\n");
+            } else {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress failed by unknown reason\n");
+            }
+            bitstream_close(bs2);
+            bitstream_close(bs);
+            free(tmp_buff);
+            return NULL; // FAILURE
+        }
         bitstream_putstring(bs, tmp_buff, compsize);
         bitstream_close(bs2);
         free(tmp_buff);
@@ -259,7 +273,20 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         old_size = bitstream_length(bs2);
         compsize = old_size;
         tmp_buff = malloc(compsize);
-        compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        result = compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        if (result != Z_OK) {
+            if (result == Z_MEM_ERROR) {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_MEM_ERROR: can't malloc\n");
+            } else if (result == Z_BUF_ERROR) {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_BUF_ERROR: not enough buff size\n");
+            } else {
+                fprintf(stderr, "swf_tag_lossless_output_detail: compress failed by unknown reason\n");
+            }
+            bitstream_close(bs2);
+            bitstream_close(bs);
+            free(tmp_buff);
+            return NULL; // FAILURE
+        }
         bitstream_putstring(bs, tmp_buff, compsize);
         bitstream_close(bs2);
         free(tmp_buff);

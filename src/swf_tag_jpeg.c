@@ -179,6 +179,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     unsigned char *data, *new_buff;
     unsigned long offset_to_alpha;
     unsigned long compsize, old_size;
+    int result;
     (void) swf;
     *length = 0;
     bs = bitstream_open();
@@ -189,7 +190,19 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     old_size = swf_tag_jpeg->alpha_data_len;
     compsize = old_size;
     new_buff = malloc(compsize); // too enough memory
-    compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
+    result = compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
+    if (result != Z_OK) {
+        if (result == Z_MEM_ERROR) {
+            fprintf(stderr, "swf_tag_jpeg_output_detail: compress Z_MEM_ERROR: can't malloc\n");
+        } else if (result == Z_BUF_ERROR) {
+            fprintf(stderr, "swf_tag_jpeg_output_detail: compress Z_BUF_ERROR: not enough buff size\n");
+        } else {
+            fprintf(stderr, "swf_tag_jpeg_output_detail: compress failed by unknown reason\n");
+        }
+        free(new_buff);
+        bitstream_close(bs);
+        return NULL; // FAILURE
+    }
     bitstream_putstring(bs, new_buff, compsize);
     free(new_buff);
     data = bitstream_steal(bs, length);
