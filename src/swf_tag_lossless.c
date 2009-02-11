@@ -233,7 +233,8 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                             indices_len);
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        tmp_buff = malloc(old_size); // too enough size
+        compsize = old_size;
+        tmp_buff = malloc(compsize);
         compress(tmp_buff, &compsize, old_buff_ref, old_size);
         bitstream_putstring(bs, tmp_buff, compsize);
         bitstream_close(bs2);
@@ -256,7 +257,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         }
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        compsize = old_size; // too enough size
+        compsize = old_size;
         tmp_buff = malloc(compsize);
         compress(tmp_buff, &compsize, old_buff_ref, old_size);
         bitstream_putstring(bs, tmp_buff, compsize);
