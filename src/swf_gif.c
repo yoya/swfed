@@ -153,14 +153,6 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     } else {
         *tag_no = 20; // DefineBitsLossless
     }
-
-    if (bpp != 8) {
-        fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented yet. accept only bpp=8\n", bpp);
-        if (GifFile) {
-            DGifCloseFile(GifFile);
-        }
-        return NULL;
-    }
     
     /*
      * image copy
