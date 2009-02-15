@@ -191,13 +191,17 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         } else {
               swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);   // Lossless2
             for (i=0 ; i < palette_num ; i++) {
-                result_colormap[i].red   = palette[i].red;
-                result_colormap[i].green = palette[i].green;
-                result_colormap[i].blue  = palette[i].blue;
                 if (i <= num_trans) {
-                    result_colormap[i].alpha  = trans[i];
+                    int alpha_value = trans[i];
+                    result_colormap[i].red   = palette[i].red   * alpha_value / 0xff;
+                    result_colormap[i].green = palette[i].green * alpha_value / 0xff;
+                    result_colormap[i].blue  = palette[i].blue  * alpha_value / 0xff;
+                    result_colormap[i].alpha = alpha_value;
                 } else {
-                    result_colormap[i].alpha  = 0xff; // XXX
+                    result_colormap[i].red   = palette[i].red;
+                    result_colormap[i].green = palette[i].green;
+                    result_colormap[i].blue  = palette[i].blue;
+                    result_colormap[i].alpha = 0xff; // opaque
                 }
             }
             *colormap = result_colormap;
@@ -225,10 +229,11 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         argb_list = malloc(sizeof(swf_argb_t) * png_width * png_height);
         for (y=0 ; y < png_height ; y++) {
             for (x=0 ; x < png_width ; x++) {
-                argb_list[x+y*png_width].red   = png_image_data[y][4*x + 0];
-                argb_list[x+y*png_width].green = png_image_data[y][4*x + 1];
-                argb_list[x+y*png_width].blue  = png_image_data[y][4*x + 2];
-                argb_list[x+y*png_width].alpha = png_image_data[y][4*x + 3];
+                int alpha_value = png_image_data[y][4*x + 3];
+                argb_list[x+y*png_width].red   = png_image_data[y][4*x + 0] * alpha_value / 0xff;
+                argb_list[x+y*png_width].green = png_image_data[y][4*x + 1] * alpha_value / 0xff;
+                argb_list[x+y*png_width].blue  = png_image_data[y][4*x + 2] * alpha_value / 0xff;
+                argb_list[x+y*png_width].alpha = alpha_value;
             }
         }
         image_data = argb_list;

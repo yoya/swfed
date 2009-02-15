@@ -173,9 +173,12 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
             result_colormap[i].green = ColorMap->Colors[i].Green;
             result_colormap[i].blue  = ColorMap->Colors[i].Blue;
             if (i == trans_index) {
-                result_colormap[i].alpha  = 0x0;
+                result_colormap[i].red   = 0x0;
+                result_colormap[i].green = 0x0;
+                result_colormap[i].blue  = 0x0;
+                result_colormap[i].alpha = 0x0;
             } else {
-                result_colormap[i].alpha  = 0xff;
+                result_colormap[i].alpha = 0xff;
             }
         }
         *colormap = result_colormap;
