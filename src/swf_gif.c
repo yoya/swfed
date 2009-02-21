@@ -169,15 +169,15 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     } else {  // Lossless2
         swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);
         for (i=0 ; i < palette_num ; i++) {
-            result_colormap[i].red   = ColorMap->Colors[i].Red;
-            result_colormap[i].green = ColorMap->Colors[i].Green;
-            result_colormap[i].blue  = ColorMap->Colors[i].Blue;
             if (i == trans_index) {
                 result_colormap[i].red   = 0x0;
                 result_colormap[i].green = 0x0;
                 result_colormap[i].blue  = 0x0;
                 result_colormap[i].alpha = 0x0;
             } else {
+                result_colormap[i].red   = ColorMap->Colors[i].Red;
+                result_colormap[i].green = ColorMap->Colors[i].Green;
+                result_colormap[i].blue  = ColorMap->Colors[i].Blue;
                 result_colormap[i].alpha = 0xff;
             }
         }
