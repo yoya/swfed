@@ -20,6 +20,8 @@ Make sure that the comment is aligned:
 if test "$PHP_SWFED" != "no"; then
   dnl Write more examples of tests here...
 
+  sinclude(config-lib.m4)
+
   dnl # --with-swfed -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
   dnl SEARCH_FOR="/include/swfed.h"  # you most likely want to change this
