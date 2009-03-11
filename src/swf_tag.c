@@ -366,6 +366,9 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     return result;
 }
 
+
+#ifdef HAVE_PNG
+
 unsigned char *
 swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     swf_tag_info_t *tag_info;
@@ -436,6 +439,10 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     return result;
 }
 
+#endif /* HAVE_PNG */
+
+#ifdef HAVE_GIF
+
 int
 swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                          unsigned char *gif_data,
@@ -483,6 +490,8 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
     }
     return result;
 }
+
+#endif /* HAVE_GIF */
 
 /*
  * DefineSound

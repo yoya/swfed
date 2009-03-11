@@ -6,6 +6,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "swf_define.h"
+
+#ifdef HAVE_PNG
+
 #include <png.h>
 #include "bitstream.h"
 #include "swf_rgb.h"  // Lossless  format=3
@@ -398,3 +402,5 @@ pngconv_lossless2png(void *image_data,
     *length = png_buff.data_offset;
     return png_buff.data;
 }
+
+#endif /* HAVE_PNG */

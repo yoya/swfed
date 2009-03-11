@@ -3,6 +3,10 @@
 
 #include <stdlib.h>
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #define SWF_TWIPS 20
 #define SWF_MAGIC_SIZE 4
 #define SWF_FILE_LENGTH_SIZE 4

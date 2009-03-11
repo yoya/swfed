@@ -348,7 +348,9 @@ swf_tag_lossless_destroy_detail(swf_tag_t *tag) {
     }
     return ;
 }
-    
+
+#ifdef HAVE_PNG
+
 unsigned char *swf_tag_lossless_get_png_data(void *detail,
                                           unsigned long *length,
                                              int image_id,
@@ -474,6 +476,10 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
     return 0;
 }
 
+#endif /* HAVE_PNG */
+
+#ifdef HAVE_GIF
+
 int
 swf_tag_lossless_replace_gif_data(void *detail, int image_id,
                                   unsigned char *gif_data,
@@ -529,3 +535,5 @@ swf_tag_lossless_replace_gif_data(void *detail, int image_id,
     }
     return 0;
 }
+
+#endif /* HAVE_GIF */

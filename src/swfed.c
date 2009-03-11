@@ -536,6 +536,10 @@ PHP_METHOD(swfed, replaceJpegData) {
 }
 
 PHP_METHOD(swfed, getPNGData) {
+#ifndef HAVE_PNG
+    fprintf(stderr, "replacePNGData: no png library\n");
+    RETURN_FALSE;
+#else /* HAVE_PNG */
     unsigned long image_id = 0;
     unsigned long len = 0;
     unsigned char *data;
@@ -559,9 +563,14 @@ PHP_METHOD(swfed, getPNGData) {
     memcpy(new_buff, data, len);
     free(data);
     RETURN_STRINGL(new_buff, (int) len, 0);
+#endif /* HAVE_PNG */
 }
 
 PHP_METHOD(swfed, replacePNGData) {
+#ifndef HAVE_PNG
+    fprintf(stderr, "replacePNGData: no png library\n");
+    RETURN_FALSE;
+#else  /* HAVE_PNG */
     char *data = NULL;
     int data_len = 0;
     int image_id;
@@ -585,9 +594,14 @@ PHP_METHOD(swfed, replacePNGData) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
+#endif /* HAVE_PNG */
 }
 
 PHP_METHOD(swfed, replaceGIFData) {
+#ifndef HAVE_GIF
+    fprintf(stderr, "replaceGIFData: no gif library\n");
+    RETURN_FALSE;
+#else /* HAVE_GIF */
     char *data = NULL;
     int data_len = 0;
     int image_id;
@@ -611,6 +625,7 @@ PHP_METHOD(swfed, replaceGIFData) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
+#endif /* HAVE_GIF */
 }
 
 PHP_METHOD(swfed, getSoundData) {

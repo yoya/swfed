@@ -257,6 +257,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
     return result;
 }
 
+#ifdef HAVE_PNG
 
 unsigned char *
 swf_object_get_pngdata(swf_object_t *swf, unsigned long *length, int image_id) {
@@ -300,6 +301,11 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
     return result;
 }
 
+
+#endif /* HAVE_PNG */
+
+#ifdef HAVE_GIF
+
 int
 swf_object_replace_gifdata(swf_object_t *swf, int image_id,
                             unsigned char *gif_data,
@@ -319,6 +325,8 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
     }
     return result;
 }
+
+#endif /* HAVE_GIF */
 
 unsigned char *
 swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id) {

@@ -6,8 +6,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <gif_lib.h>
 #include <string.h>
+#include "swf_define.h"
+
+#ifdef HAVE_GIF
+
+#include <gif_lib.h>
 #include "bitstream.h"
 #include "swf_rgb.h"  // Lossless  format=3
 #include "swf_rgba.h" // Lossless2 format=3
@@ -284,3 +288,5 @@ gifconv_lossless2gif(void *image_data,
     *length = gif_buff.data_offset;
     return gif_buff.data;
 }
+
+#endif /* HAVE_GIF */

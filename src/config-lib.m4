@@ -60,9 +60,11 @@ fi
 #
   if test "$PHP_PNG_DIR" != "no" && test "$PHP_PNG_DIR" != "yes"; then
     if test -f "$PHP_PNG_DIR/include/libpng/png.h"; then
+      AC_DEFINE(HAVE_PNG,1,[ ])
       PHP_PNG_DIR="$PHP_PNG_DIR"
       PHP_PNG_INCDIR="$PHP_PNG_DIR/include/libpng"
     elif test -f "$PHP_PNG_DIR/include/png.h"; then
+      AC_DEFINE(HAVE_PNG,1,[ ])
       PHP_PNG_DIR="$PHP_PNG_DIR"
       PHP_PNG_INCDIR="$PHP_PNG_DIR/include"
     else
@@ -71,9 +73,11 @@ fi
   else
     for i in /usr/local /usr; do
       if test -f "$i/include/libpng/png.h"; then
+	AC_DEFINE(HAVE_PNG,1,[ ])
         PHP_PNG_DIR="$i"
         PHP_PNG_INCDIR="$i/include/libpng"
       elif test -f "$i/include/png.h"; then
+	AC_DEFINE(HAVE_PNG,1,[ ])
         PHP_PNG_DIR="$i"
         PHP_PNG_INCDIR="$i/include"
       fi
@@ -83,7 +87,7 @@ fi
   dnl # libpng
   AC_MSG_CHECKING([for the location of libpng])
   if test "$PHP_PNG_DIR" = "no"; then
-    AC_MSG_ERROR([swfed support requires PNG. Use --with-png-dir=<DIR> to specify prefix where PNG include and library are located])
+    AC_MSG_RESULT([png.h not found.])
   else
     AC_MSG_RESULT([$PHP_PNG_DIR])
     if test "z$PHP_LIBDIR" != "z"; then
@@ -101,9 +105,11 @@ fi
 #
   if test "$PHP_GIF_DIR" != "no" && test "$PHP_GIF_DIR" != "yes"; then
     if test -f "$PHP_GIF_DIR/include/giflib/gif_lib.h"; then
+      AC_DEFINE(HAVE_GIF,1,[ ])
       PHP_GIF_DIR="$PHP_GIF_DIR"
       PHP_GIF_INCDIR="$PHP_GIF_DIR/include/giflib"
     elif test -f "$PHP_GIF_DIR/include/gif_lib.h"; then
+      AC_DEFINE(HAVE_GIF,1,[ ])
       PHP_GIF_DIR="$PHP_GIF_DIR"
       PHP_GIF_INCDIR="$PHP_GIF_DIR/include"
     else
@@ -112,9 +118,11 @@ fi
   else
     for i in /usr/local /usr; do
       if test -f "$i/include/giflib/gif_lib.h"; then
+	AC_DEFINE(HAVE_GIF,1,[ ])
         PHP_GIF_DIR="$i"
         PHP_GIF_INCDIR="$i/include/giflib"
       elif test -f "$i/include/gif_lib.h"; then
+	AC_DEFINE(HAVE_GIF,1,[ ])
         PHP_GIF_DIR="$i"
         PHP_GIF_INCDIR="$i/include"
       fi
@@ -124,7 +132,7 @@ fi
   dnl # giflib
   AC_MSG_CHECKING([for the location of giflib])
   if test "$PHP_GIF_DIR" = "no"; then
-    AC_MSG_ERROR([swfed support requires GIF. Use --with-gif-dir=<DIR> to specify prefix where GIF include and library are located])
+    AC_MSG_RESULT([gif_lib.h not found.])
   else
     AC_MSG_RESULT([$PHP_GIF_DIR])
     if test "z$PHP_LIBDIR" != "z"; then
