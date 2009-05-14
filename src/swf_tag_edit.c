@@ -258,18 +258,20 @@ swf_tag_edit_get_string(void *detail,
                         char *variable_name, int variable_name_len) {
     swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
     char *data, *initial_text;
+    int initial_text_len = 0;
     if (strcmp(swf_tag_edit->edit_variable_name, variable_name)) {
         if (atoi(variable_name) != swf_tag_edit->edit_id) {
             return NULL;
         }
     }
     initial_text = swf_tag_edit->edit_initial_text;
-    data = malloc(variable_name_len + 1);
+    initial_text_len = strlen(initial_text);
+    data = malloc(initial_text_len + 1);
     if (data == NULL) {
         fprintf(stderr, "swf_tag_edit_get_string: Can't malloc\n");
         return NULL;
     }
-    memcpy(data, initial_text, variable_name_len + 1);
+    memcpy(data, initial_text, initial_text_len + 1);
     return data;
 }
 
