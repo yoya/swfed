@@ -94,10 +94,14 @@ swf_tag_sprite_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
-    (void) tag;
+    swf_tag_t *_tag;
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_sprite->sprite_id, 2);
+    bitstream_putbytesLE(bs, swf_tag_sprite->frame_count, 2);
+    for (_tag=swf_tag_sprite->tag ; _tag ; _tag=_tag->next) {
+        swf_tag_build(bs, _tag, swf);
+    }
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
     return data;
