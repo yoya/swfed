@@ -14,6 +14,7 @@
 #include "swf_tag_edit.h"
 #include "swf_tag_action.h"
 #include "swf_tag_sound.h"
+#include "swf_tag_sprite.h"
 
 swf_tag_info_t swf_tag_info_table[] = {
     { 0, "End", NULL },
@@ -47,7 +48,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 35, "DefineBitsJPEG3", swf_tag_jpeg3_detail_handler },
     { 36, "DefineBitsLossless2", swf_tag_lossless_detail_handler },
     { 37, "DefineEditText", swf_tag_edit_detail_handler },
-    { 39, "DefineSprite", NULL } ,
+    { 39, "DefineSprite", swf_tag_sprite_detail_handler },
     { 43, "FrameLabel", NULL } ,
     { 48, "DefineFont2", NULL } ,
     { 56, "Export", NULL } ,

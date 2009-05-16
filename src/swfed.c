@@ -33,6 +33,7 @@
 #include "swf_tag_edit.h"
 #include "swf_tag_sound.h"
 #include "swf_tag_action.h"
+#include "swf_tag_sprite.h"
 #include "swf_tag.h"
 #include "swf_object.h"
 
@@ -378,6 +379,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_edit_detail_t     *tag_edit;
         swf_tag_sound_detail_t    *tag_sound;
         swf_tag_action_detail_t   *tag_action;
+        swf_tag_sprite_detail_t   *tag_sprite;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
@@ -438,6 +440,12 @@ PHP_METHOD(swfed, getTagDetail) {
                                 sizeof("initial_text"),
                                 (char *)tag_edit->edit_initial_text, 1);
         }
+        break;
+      case 39: // DefineSprite;
+        tag_sprite = tag->detail;
+        array_init(return_value);
+        add_assoc_long(return_value, "sprite_id", tag_sprite->sprite_id);
+        add_assoc_long(return_value, "frame_count", tag_sprite->frame_count);
         break;
       default:
         RETURN_FALSE;
