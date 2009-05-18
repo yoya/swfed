@@ -8,7 +8,7 @@
 #define __SWF_TAG_SHAPE__H__
 
 #include "swf_rect.h"
-// #include "swf_morph_shape_with_style.h"
+#include "swf_morph_shape_with_style.h"
 // #include "swf_shape_with_style.h"
 #include "swf_tag.h"
 
