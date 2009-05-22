@@ -9,7 +9,7 @@
 
 #include "swf_rect.h"
 #include "swf_morph_shape_with_style.h"
-// #include "swf_shape_with_style.h"
+#include "swf_shape_with_style.h"
 #include "swf_tag.h"
 
 typedef struct swf_tag_shape_detail_ {
@@ -30,9 +30,9 @@ typedef struct swf_tag_shape_detail_ {
     unsigned char define_shape_scaling_strokes;
     // is_morph
     unsigned long offset_morph;
-//     swf_morph_shape_with_style_t  morph_shape_with_style;
+     swf_morph_shape_with_style_t  morph_shape_with_style;
     // else
-//     swf_shape_with_style_t  morph_shape_with_style;
+    swf_shape_with_style_t  shape_with_style;
 } swf_tag_shape_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);

@@ -9,8 +9,11 @@
 
 #include "swf_shape_record.h"
 
-typedef struct swf_shape_record_ {
-    int dummy; // 
+typedef union swf_shape_record_ {
+    int dummy; int dummy2;
+//    swf_shape_record_end_t   shape_end;
+//    swf_shape_record_setup_t shape_setup;
+//    swf_shape_record_edge_t  shape_edge;
 } swf_shape_record_t;
 
 extern int swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *color);
