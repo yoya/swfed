@@ -15,6 +15,14 @@ typedef struct swf_matrix_ {
     unsigned char scale_bits; //  : 5;
     signed long scale_x; // : scale_bits;
     signed long scale_y; // : scale_bits;
+    unsigned has_rotate : 1;
+    
+    unsigned rotate_bits : 5; // f_has_rotate
+    signed /* fixed */ rotate_skew0; // : f_rotate_bits;
+    signed /* fixed */ rotate_skew1; // : f_rotate_bits;
+
+    signed translate_x ; // : f_rotate_bits;
+    signed translate_y ; // : f_rotate_bits;
 } swf_matrix_t;
 
 extern int swf_matrix_parse(bitstream_t *bs, swf_matrix_t *color);
