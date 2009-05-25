@@ -109,23 +109,25 @@ swf_tag_sprite_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_sprite_print_detail(swf_tag_t *tag,
-                          struct swf_object_ *swf) {
+                            struct swf_object_ *swf,
+                            int indent_depth) {
     swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
     int i;
     swf_tag_t *_tag;
-    printf("\tsprite_id=%d\n", swf_tag_sprite->sprite_id);
-    printf("\tframe_count=%d\n", swf_tag_sprite->frame_count);
+    print_indent(indent_depth);
+    printf("sprite_id=%d\n", swf_tag_sprite->sprite_id);
+    print_indent(indent_depth);
+    printf("frame_count=%d\n", swf_tag_sprite->frame_count);
     _tag = swf_tag_sprite->tag;
-    printf("---- start sprite_id=%d ----\n", swf_tag_sprite->sprite_id);
     for (i=0 ; _tag ; i++) {
+        print_indent(indent_depth);
         printf("  [%d] ", i);
-        swf_tag_print(_tag, swf);
+        swf_tag_print(_tag, swf, indent_depth + 1);
         if (_tag->tag == 0) { // END Tag
             break;
         }
         _tag = _tag->next;
     }
-    printf("---- end sprite_id=%d ----\n", swf_tag_sprite->sprite_id);
     return ;
 }
 

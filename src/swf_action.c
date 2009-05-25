@@ -172,11 +172,13 @@ swf_action_build(bitstream_t *bs, swf_action_t *act) {
 }
 
 int
-swf_action_print(swf_action_t *act) {
+swf_action_print(swf_action_t *act, int indent_depth) {
     swf_action_info_t *act_info = get_swf_action_info(act->action_id);
     if (act_info && act_info->name) {
+        print_indent(indent_depth);
         printf("%s", act_info->name);
     } else {
+        print_indent(indent_depth);
         printf("0x%02x", act->action_id);
     }
     if (act->action_has_length) {
@@ -192,6 +194,7 @@ swf_action_print(swf_action_t *act) {
             d = act->action_data;
             n = GetUShortLE(act->action_data);  d += 2;
             printf(":\n");
+            print_indent(indent_depth);
             for (i=0 ; i < n ; i++) {
                 printf("\t\t[%d]'", i);
                 d += printf("%s", d) + 1;
@@ -269,13 +272,14 @@ swf_action_list_destroy(swf_action_list_t *action_list) {
 }
 
 void
-swf_action_list_print(swf_action_list_t *action_list) {
+swf_action_list_print(swf_action_list_t *action_list, int indent_depth) {
     
     if (action_list) {
         swf_action_t *action = action_list->head;
+        print_indent(indent_depth);
+        printf("action list:\n");
         while(action) {
-            printf("\t");
-            swf_action_print(action);
+            swf_action_print(action, indent_depth);
             action = action->next;
         }
     }

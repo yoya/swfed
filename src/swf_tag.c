@@ -202,7 +202,7 @@ extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *sw
 }
 
 void
-swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
+swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     swf_tag_info_t *tag_info;
     const char *tag_name;
     if (tag == NULL) {
@@ -211,6 +211,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
     }
     tag_info = get_swf_tag_info(tag->tag);
     tag_name = (tag_info)?tag_info->name:"Unknown";
+//  print_indent(indent_depth);
     printf("tag=%s(%d)", tag_name, tag->tag);
     if (tag->length > 0) {
         printf("  length=%lu",  tag->length);
@@ -222,7 +223,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->print) {
-            detail_handler->print(tag, swf);
+            detail_handler->print(tag, swf, indent_depth + 1);
         }
     }
 }

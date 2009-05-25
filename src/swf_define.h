@@ -12,6 +12,11 @@
 #define SWF_FILE_LENGTH_SIZE 4
 #define SWF_HEADER_SIZE 8
 
+#define INDENT_UNIT 4
+
+#define print_indent(depth) printf("%*s", INDENT_UNIT*depth, " ")
+
+
 extern int swf_debug;
 
 extern void malloc_debug_start(void);
@@ -41,7 +46,6 @@ extern void print_hexbin(unsigned char *data, int data_len);
 
 #define NumOfTable(t) (sizeof(t) / sizeof(*t))
 
-
 #define GV2B(a,b) ((a << 8) + b)
 #define GV4B(a,b,c,d) GV2B(GV2B(GV2B(a,b),c),d)
 #define GV8B(a,b,c,d,e,f,g,h) GV2B(GV2B(GV2B(GV2B(GV2B(GV2B(GV2B(a,b),c),d),e),f),g),h)
@@ -52,4 +56,3 @@ extern void print_hexbin(unsigned char *data, int data_len);
 #define GetDoubleIEEE(data) ((double) GV8B(data[4], data[5], data[6], data[7], data[0], data[1], data[2], data[3]))
 
 #endif /* __SWF_DEFINE__H__ */
-

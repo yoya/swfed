@@ -118,7 +118,7 @@ swf_tag_sound_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_sound_print_detail(swf_tag_t *tag,
-                           struct swf_object_ *swf) {
+                           struct swf_object_ *swf, int indent_depth) {
     swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
     char *format_name = "Unknown";
     (void) swf;
@@ -140,15 +140,17 @@ swf_tag_sound_print_detail(swf_tag_t *tag,
         break;
         
     }
-    printf("\tsound_id=%d\n", swf_tag_sound->sound_id);
-    
-    printf("\tformat=%u(%s) rate=%u is_16bits=%u is_stereo=%u samples_count=%lu\n",
+    print_indent(indent_depth);
+    printf("sound_id=%d\n", swf_tag_sound->sound_id);
+    print_indent(indent_depth);    
+    printf("format=%u(%s) rate=%u is_16bits=%u is_stereo=%u samples_count=%lu\n",
            swf_tag_sound->sound_format & 0x0f, format_name,
            swf_tag_sound->sound_rate  & 0x03,
            swf_tag_sound->sound_is_16bits?1:0,
            swf_tag_sound->sound_is_stereo?1:0,
            swf_tag_sound->sound_samples_count);
-    printf("\tsound_data(length=%lu)\n",
+    print_indent(indent_depth);    
+    printf("sound_data(length=%lu)\n",
            swf_tag_sound->sound_data_len);
     return ;
 }

@@ -56,7 +56,8 @@ swf_rect_build(bitstream_t *bs, swf_rect_t *rect) {
 }
 
 int
-swf_rect_print(swf_rect_t *rect) {
+swf_rect_print(swf_rect_t *rect, int indent_depth) {
+    print_indent(indent_depth);
     printf("rect=(%d, %d)-(%d, %d) (f_size=%d)\n",
            rect->x_min / SWF_TWIPS,
            rect->y_min / SWF_TWIPS,

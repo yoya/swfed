@@ -19,6 +19,6 @@ typedef union swf_fill_style_gradient_ {
 
 extern int swf_fill_style_gradient_parse(bitstream_t *bs, swf_fill_style_gradient_t *color);
 extern int swf_fill_style_gradient_build(bitstream_t *bs, swf_fill_style_gradient_t *color);
-extern int swf_fill_style_gradient_print(swf_fill_style_gradient_t *color);
+extern int swf_fill_style_gradient_print(swf_fill_style_gradient_t *color, int indent_depth);
 
 #endif /* __SWF_FILL_STYLE_GRADIENT_H__ */

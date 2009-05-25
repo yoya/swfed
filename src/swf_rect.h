@@ -17,6 +17,6 @@ typedef struct swf_rect_ {
 
 extern int swf_rect_parse(bitstream_t *bs, swf_rect_t *rect);
 extern int swf_rect_build(bitstream_t *bs, swf_rect_t *rect);
-extern int swf_rect_print(swf_rect_t *rect);
+extern int swf_rect_print(swf_rect_t *rect, int indent_depth);
 
 #endif /* __SWF_RECT_H__ */

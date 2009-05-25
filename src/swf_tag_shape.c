@@ -90,10 +90,11 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_shape_print_detail(swf_tag_t *tag,
-                          struct swf_object_ *swf) {
+                           struct swf_object_ *swf, int indent_depth) {
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     int i;
     swf_tag_t *_tag;
+    print_indent(indent_depth);
     printf("\tshape_id=%d\n", swf_tag_shape->shape_id);
     return ;
 }

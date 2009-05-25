@@ -186,13 +186,14 @@ swf_tag_edit_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_edit_print_detail(swf_tag_t *tag,
-                          struct swf_object_ *swf) {
+                          struct swf_object_ *swf, int indent_depth) {
     swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
     (void) tag;
-    printf("\tedit_id=%d\n", swf_tag_edit->edit_id);
-    printf("\t");
-    swf_rect_print(&swf_tag_edit->rect);
-    printf("\ttext=%d wwrap=%d multi=%d pass=%d ro=%d col=%d maxlen=%d font=%d\n",
+    print_indent(indent_depth);
+    printf("edit_id=%d\n", swf_tag_edit->edit_id);
+    swf_rect_print(&swf_tag_edit->rect, indent_depth + 1);
+    print_indent(indent_depth);
+    printf("text=%d wwrap=%d multi=%d pass=%d ro=%d col=%d maxlen=%d font=%d\n",
            swf_tag_edit->edit_has_text?1:0,
            swf_tag_edit->edit_word_wrap?1:0,
            swf_tag_edit->edit_multiline?1:0,
@@ -202,27 +203,31 @@ swf_tag_edit_print_detail(swf_tag_t *tag,
            swf_tag_edit->edit_has_max_length?1:0,
            swf_tag_edit->edit_has_font?1:0);
     if (swf->header.version >= 6) {
-        printf("\tauto_size=%d\n", swf_tag_edit->edit_auto_size);
+            print_indent(indent_depth);
+            printf("auto_size=%d\n", swf_tag_edit->edit_auto_size);
     }
-    printf("\tlayout=%d no_sel=%d border=%d\n",
+    print_indent(indent_depth);
+    printf("layout=%d no_sel=%d border=%d\n",
            swf_tag_edit->edit_has_layout?1:0,
            swf_tag_edit->edit_no_select?1:0,
            swf_tag_edit->edit_border?1:0);
     if (swf_tag_edit->edit_has_font) {
-        printf("\tfont_id=%d font_height=%d\n",
+        print_indent(indent_depth);
+        printf("font_id=%d font_height=%d\n",
                swf_tag_edit->edit_font_id_ref,
                swf_tag_edit->edit_font_height / SWF_TWIPS);
     }
     if (swf_tag_edit->edit_has_color) {
-        printf("\t");
-        swf_rgba_print(&swf_tag_edit->edit_color);
+        swf_rgba_print(&swf_tag_edit->edit_color, indent_depth + 1);
     }
     if (swf_tag_edit->edit_has_max_length) {
-        printf("\tmax_length=%d\n",
+        print_indent(indent_depth);
+        printf("max_length=%d\n",
                swf_tag_edit->edit_max_length);
     }
     if (swf_tag_edit->edit_has_layout) {
-        printf("\talign=%d (left,right)_margine=(%d,%d) indent=%d leading=%d\n",
+        print_indent(indent_depth);
+        printf("align=%d (left,right)_margine=(%d,%d) indent=%d leading=%d\n",
                swf_tag_edit->edit_align,
                swf_tag_edit->edit_left_margine,
                swf_tag_edit->edit_right_margine,
@@ -230,11 +235,13 @@ swf_tag_edit_print_detail(swf_tag_t *tag,
                swf_tag_edit->edit_leading);
     }
     if (swf_tag_edit->edit_variable_name) {
-        printf("\tvariable_name=%s\n",
+        print_indent(indent_depth);
+        printf("variable_name=%s\n",
                swf_tag_edit->edit_variable_name);
     }
     if (swf_tag_edit->edit_initial_text) {
-        printf("\tinitial_text=%s\n",
+        print_indent(indent_depth);
+        printf("initial_text=%s\n",
                swf_tag_edit->edit_initial_text);
     }
     return ;

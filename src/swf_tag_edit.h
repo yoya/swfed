@@ -56,7 +56,8 @@ extern unsigned char *swf_tag_edit_output_detail(swf_tag_t *tag,
                                                  unsigned long *length,
                                                  struct swf_object_ *swf);
 extern void swf_tag_edit_print_detail(swf_tag_t *tag,
-                                      struct swf_object_ *swf);
+                                      struct swf_object_ *swf,
+                                      int indent_depth);
 extern void swf_tag_edit_destroy_detail(swf_tag_t *tag);
 
 extern char *swf_tag_edit_get_string(void *detail,

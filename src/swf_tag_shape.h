@@ -44,7 +44,8 @@ extern unsigned char *swf_tag_shape_output_detail(swf_tag_t *tag,
                                                    unsigned long *length,
                                                    struct swf_object_ *swf);
 extern void swf_tag_shape_print_detail(swf_tag_t *tag,
-                                        struct swf_object_ *swf);
+                                       struct swf_object_ *swf,
+                                       int indent_depth);
 extern void swf_tag_shape_destroy_detail(swf_tag_t *tag);
 
 #endif /* __SWF_TAG_SHAPE__H__ */

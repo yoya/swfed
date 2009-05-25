@@ -26,6 +26,6 @@ typedef union swf_shape_record_edge_ {
 
 extern int swf_shape_record_edge_parse(bitstream_t *bs, swf_shape_record_edge_t *color);
 extern int swf_shape_record_edge_build(bitstream_t *bs, swf_shape_record_edge_t *color);
-extern int swf_shape_record_edge_print(swf_shape_record_edge_t *color);
+extern int swf_shape_record_edge_print(swf_shape_record_edge_t *color, int indent_depth);
 
 #endif /* __SWF_SHAPE_RECORD_EDGE_H__ */

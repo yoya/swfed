@@ -14,6 +14,6 @@ typedef union swf_shape_record_end_ {
 
 extern int swf_shape_record_end_parse(bitstream_t *bs, swf_shape_record_end_t *color);
 extern int swf_shape_record_end_build(bitstream_t *bs, swf_shape_record_end_t *color);
-extern int swf_shape_record_end_print(swf_shape_record_end_t *color);
+extern int swf_shape_record_end_print(swf_shape_record_end_t *color, int indent_deptha);
 
 #endif /* __SWF_SHAPE_RECORD_END_H__ */

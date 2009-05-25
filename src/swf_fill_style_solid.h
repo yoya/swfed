@@ -19,6 +19,6 @@ typedef union swf_fill_style_solid_ {
 
 extern int swf_fill_style_solid_parse(bitstream_t *bs, swf_fill_style_solid_t *color);
 extern int swf_fill_style_solid_build(bitstream_t *bs, swf_fill_style_solid_t *color);
-extern int swf_fill_style_solid_print(swf_fill_style_solid_t *color);
+extern int swf_fill_style_solid_print(swf_fill_style_solid_t *color, int indent_depth);
 
 #endif /* __SWF_FILL_STYLE_SOLID_H__ */

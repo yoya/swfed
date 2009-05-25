@@ -16,6 +16,6 @@ typedef struct swf_rgb_ {
 
 extern int swf_rgb_parse(bitstream_t *bs, swf_rgb_t *color);
 extern int swf_rgb_build(bitstream_t *bs, swf_rgb_t *color);
-extern int swf_rgb_print(swf_rgb_t *color);
+extern int swf_rgb_print(swf_rgb_t *color, int indent_depth);
 
 #endif /* __SWF_RGB_H__ */

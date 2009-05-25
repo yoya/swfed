@@ -14,6 +14,6 @@ typedef struct swf_styles_count_ {
 
 extern int swf_styles_count_parse(bitstream_t *bs, swf_styles_count_t *color);
 extern int swf_styles_count_build(bitstream_t *bs, swf_styles_count_t *color);
-extern int swf_styles_count_print(swf_styles_count_t *color);
+extern int swf_styles_count_print(swf_styles_count_t *color, int indent_depth);
 
 #endif /* __SWF_STYLES_COUNT_H__ */

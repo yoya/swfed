@@ -56,7 +56,7 @@ int swf_header_print(swf_header_t *header) {
 }
 
 int swf_header_movie_print(swf_header_movie_t *header_movie) {
-    swf_rect_print(&header_movie->frame_size);
+    swf_rect_print(&header_movie->frame_size, 0);
     printf("frame_rate=%d.%d  frame_count=%d\n",
            header_movie->frame_rate_integral,
            header_movie->frame_rate_decimal,

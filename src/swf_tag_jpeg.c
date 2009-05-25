@@ -212,7 +212,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_jpeg_print_detail(swf_tag_t *tag,
-                          struct swf_object_ *swf) {
+                          struct swf_object_ *swf, int indent_depth) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     jpeg_segment_t *jpeg_seg;
     jpeg_segment_node_t *node;
@@ -221,22 +221,26 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
         fprintf(stderr, "swf_tag_jpeg_print_detail: swf_tag_jpeg == NULL\n");
         return ;
     }
-    printf("\timage_id=%d  jpeg_data_size=%lu\n",
+    print_indent(indent_depth);
+    printf("image_id=%d  jpeg_data_size=%lu\n",
            swf_tag_jpeg->image_id, swf_tag_jpeg->jpeg_data_len);
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
                                   swf_tag_jpeg->jpeg_data_len);
     if (jpeg_seg) {
         for (node=jpeg_seg->head ; node ; node=node->next) {
             char *name = jpeg_segment_get_marker_name(node->marker);
-            printf("\t\t%s(0x%02X): len=%lu\n", name?name:"Unknwon",
+            print_indent(indent_depth + 1);
+            printf("%s(0x%02X): len=%lu\n", name?name:"Unknwon",
                    node->marker, node->data_len);
         }
         jpeg_segment_destroy(jpeg_seg);
     } else {
-        printf("\t\t(invalid jpeg data)\n");
+        print_indent(indent_depth + 1);
+        printf("(invalid jpeg data)\n");
     }
     if (swf_tag_jpeg->alpha_data) {
-        printf("  alpha_data_size=%lu\n",
+        print_indent(indent_depth);
+        printf("alpha_data_size=%lu\n",
                swf_tag_jpeg->alpha_data_len);
     }
 }

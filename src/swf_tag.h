@@ -27,7 +27,8 @@ typedef struct swf_tag_detail_handler_ {
     int             (*identity) (swf_tag_t *tag, int id);
     unsigned char * (*output)   (swf_tag_t *tag, unsigned long *length,
                                  struct swf_object_ *swf);
-    void            (*print)    (swf_tag_t *tag, struct swf_object_ *swf);
+    void            (*print)    (swf_tag_t *tag, struct swf_object_ *swf,
+                                 int indent_depth);
     void            (*destroy)  (swf_tag_t *tag);
 } swf_tag_detail_handler_t;
 
@@ -42,7 +43,7 @@ extern swf_tag_info_t *get_swf_tag_info(int tag_id);
 extern swf_tag_t *swf_tag_create(bitstream_t *bs);
 extern void swf_tag_destroy(swf_tag_t *tag);
 extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf);
-extern void swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf);
+extern void swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth);
 
 /* image */
 

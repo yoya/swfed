@@ -28,6 +28,6 @@ typedef union swf_shape_record_setup_ {
 
 extern int swf_shape_record_setup_parse(bitstream_t *bs, swf_shape_record_setup_t *color);
 extern int swf_shape_record_setup_build(bitstream_t *bs, swf_shape_record_setup_t *color);
-extern int swf_shape_record_setup_print(swf_shape_record_setup_t *color);
+extern int swf_shape_record_setup_print(swf_shape_record_setup_t *color, int indent_depth);
 
 #endif /* __SWF_SHAPE_RECORD_SETUP_H__ */

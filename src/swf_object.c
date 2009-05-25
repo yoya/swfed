@@ -169,7 +169,7 @@ swf_object_print(swf_object_t *swf) {
     tag = swf->tag;
     for (i=0 ; tag ; i++) {
         printf("[%d] ", i);
-        swf_tag_print(tag, swf);
+        swf_tag_print(tag, swf, 0);
         if (tag->tag == 0) { // END Tag
             break;
         }

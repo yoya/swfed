@@ -20,6 +20,6 @@ typedef union swf_gradient_record_ {
 
 extern int swf_gradient_record_parse(bitstream_t *bs, swf_gradient_record_t *color);
 extern int swf_gradient_record_build(bitstream_t *bs, swf_gradient_record_t *color);
-extern int swf_gradient_record_print(swf_gradient_record_t *color);
+extern int swf_gradient_record_print(swf_gradient_record_t *color, int indent_depth);
 
 #endif /* __SWF_GRADIENT_RECORD_H__ */

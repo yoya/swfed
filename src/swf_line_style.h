@@ -34,6 +34,6 @@ typedef union swf_line_style_ {
 
 extern int swf_line_style_parse(bitstream_t *bs, swf_line_style_t *color);
 extern int swf_line_style_build(bitstream_t *bs, swf_line_style_t *color);
-extern int swf_line_style_print(swf_line_style_t *color);
+extern int swf_line_style_print(swf_line_style_t *color, int indent_depth);
 
 #endif /* __SWF_LINE_STYLE_H__ */

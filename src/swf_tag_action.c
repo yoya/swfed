@@ -96,11 +96,12 @@ swf_tag_action_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_action_print_detail(swf_tag_t *tag,
-                            struct swf_object_ *swf) {
+                            struct swf_object_ *swf, int indent_depth) {
     bitstream_t *bs;
     swf_action_list_t *action_list;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     (void) swf;
+    print_indent(indent_depth);
     if (tag->tag == 59) { // DoInitAction
         printf("action_sprite=%d  ", swf_tag_action->action_sprite);
     }
@@ -110,7 +111,7 @@ swf_tag_action_print_detail(swf_tag_t *tag,
                     swf_tag_action->action_record_len);
     action_list = swf_action_list_create(bs);
     bitstream_close(bs);
-    swf_action_list_print(action_list);
+    swf_action_list_print(action_list, indent_depth + 1);
     swf_action_list_destroy(action_list);
     return ;
 }

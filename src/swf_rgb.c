@@ -19,7 +19,8 @@ swf_rgb_build(bitstream_t *bs, swf_rgb_t *color) {
 }
 
 int
-swf_rgb_print(swf_rgb_t *color) {
+swf_rgb_print(swf_rgb_t *color, int indent_depth) {
+    print_indent(indent_depth);
     printf("red=0x%02x  green=0x%02X  blue=0x%02x\n",
            color->red, color->green, color->blue);
     return 0;

@@ -16,6 +16,6 @@ typedef struct swf_line_style_array_ {
 
 extern int swf_line_style_array_parse(bitstream_t *bs, swf_line_style_array_t *color);
 extern int swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *color);
-extern int swf_line_style_array_print(swf_line_style_array_t *color);
+extern int swf_line_style_array_print(swf_line_style_array_t *color, int indent_depth);
 
 #endif /* __SWF_LINE_STYLE_ARRAY_H__ */

@@ -298,19 +298,21 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
 
 void
 swf_tag_lossless_print_detail(swf_tag_t *tag,
-                              struct swf_object_ *swf) {
+                              struct swf_object_ *swf, int indent_depth) {
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
     (void) swf;
     if (swf_tag_lossless == NULL) {
         fprintf(stderr, "swf_tag_lossless_print_detail: swf_tag_lossless == NULL\n");
         return ;
     }
-    printf("\timage_id=%d  format=%d  width=%u  height=%u\n",
+    print_indent(indent_depth);
+    printf("image_id=%d  format=%d  width=%u  height=%u\n",
            swf_tag_lossless->image_id, swf_tag_lossless->format,
            swf_tag_lossless->width, swf_tag_lossless->height);
     if (swf_tag_lossless->colormap ||
         swf_tag_lossless->colormap2) {
-        printf("\tcolormap_count=%d",
+        print_indent(indent_depth);
+        printf("colormap_count=%d",
                swf_tag_lossless->colormap_count);
         if (swf_tag_lossless->colormap) {
             printf("  rgb colormap exists");
@@ -323,10 +325,12 @@ swf_tag_lossless_print_detail(swf_tag_t *tag,
         printf("\n");
     }
     if (swf_tag_lossless->bitmap) {
-        printf("\txrgb bitmap exists\n");
+        print_indent(indent_depth);
+        printf("xrgb bitmap exists\n");
     }
     if (swf_tag_lossless->bitmap2) {
-        printf("\targb bitmap exists\n");
+        print_indent(indent_depth);
+        printf("argb bitmap exists\n");
     }
 }
 

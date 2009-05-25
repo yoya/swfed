@@ -26,7 +26,8 @@ extern unsigned char *swf_tag_action_output_detail(swf_tag_t *tag,
                                                    unsigned long *length,
                                                    struct swf_object_ *swf);
 extern void swf_tag_action_print_detail(swf_tag_t *tag,
-                                        struct swf_object_ *swf);
+                                        struct swf_object_ *swf,
+                                        int indent_depth);
 extern void swf_tag_action_destroy_detail(swf_tag_t *tag);
 
 #endif /* __SWF_TAG_ACTION__H__ */

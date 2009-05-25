@@ -19,6 +19,6 @@ typedef struct swf_styles_ {
 
 extern int swf_styles_parse(bitstream_t *bs, swf_styles_t *color);
 extern int swf_styles_build(bitstream_t *bs, swf_styles_t *color);
-extern int swf_styles_print(swf_styles_t *color);
+extern int swf_styles_print(swf_styles_t *color, int indent_depth);
 
 #endif /* __SWF_STYLES_H__ */
