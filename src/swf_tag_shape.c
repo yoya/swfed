@@ -70,7 +70,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         swf_tag_shape->offset_morph = bitstream_getbytesLE(bs, 4);
         ; // swf_morph_shape_with_style_parse(bs, &swf_tag_shape->morph_shape_with_style);
     } else {
-        ; // swf_morph_shape_with_style_parse(bs, &swf_tag_shape->shape_with_style);
+        swf_shape_with_style_parse(bs, &swf_tag_shape->shape_with_style);
     }
         
     bitstream_close(bs);
@@ -141,7 +141,7 @@ swf_tag_shape_print_detail(swf_tag_t *tag,
         printf("offset_morph=%lu\n", swf_tag_shape->offset_morph);
         ; // swf_morph_shape_with_style_print(&swf_tag_shape->morph_shape_with_style, indent_depth);
     } else {
-        ; // swf_morph_shape_with_style_print(&swf_tag_shape->shape_with_style, indent_depth);
+        swf_shape_with_style_print(&swf_tag_shape->shape_with_style, indent_depth);
     }
     return ;
 }
