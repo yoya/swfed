@@ -25,9 +25,9 @@ typedef struct swf_tag_shape_detail_ {
     //// is_morph
     swf_rect_t stroke_rect_morph;   // & MorphShape(1) or 2
     //
-    // 6bit reserved area
-    unsigned char define_shape_non_scaling_strokes;
-    unsigned char define_shape_scaling_strokes;
+    unsigned char define_shape_reserved : 6;    // 6bit reserved area
+    unsigned char define_shape_non_scaling_strokes : 1;
+    unsigned char define_shape_scaling_strokes : 1;
     // is_morph
     unsigned long offset_morph;
      swf_morph_shape_with_style_t  morph_shape_with_style;

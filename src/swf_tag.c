@@ -15,11 +15,12 @@
 #include "swf_tag_action.h"
 #include "swf_tag_sound.h"
 #include "swf_tag_sprite.h"
+#include "swf_tag_shape.h"
 
 swf_tag_info_t swf_tag_info_table[] = {
     { 0, "End", NULL },
     { 1, "ShowFrame", NULL },
-    { 2, "DefineShape", NULL },
+    { 2, "DefineShape", swf_tag_shape_detail_handler },
     { 3, "FreeCharacter", NULL},
     { 4, "PlaceObject", NULL},
     { 5, "RemoveObject", NULL},
@@ -39,10 +40,10 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 19, "SoundStreamBlock", NULL },
     { 20, "DefineBitsLossless", swf_tag_lossless_detail_handler },
     { 21, "DefineBitsJPEG2", swf_tag_jpeg_detail_handler },
-    { 22, "DefineShape2", NULL },
+    { 22, "DefineShape2", swf_tag_shape_detail_handler },
     { 26, "PlaceObject2", NULL },
     { 28, "RemoveObject2", NULL },
-    { 32, "DefineShape3", NULL },
+    { 32, "DefineShape3", swf_tag_shape_detail_handler },
     { 33, "DefineText2", NULL },
     { 34, "DefineButton2", NULL },
     { 35, "DefineBitsJPEG3", swf_tag_jpeg3_detail_handler },
@@ -50,6 +51,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 37, "DefineEditText", swf_tag_edit_detail_handler },
     { 39, "DefineSprite", swf_tag_sprite_detail_handler },
     { 43, "FrameLabel", NULL } ,
+    { 46, "DefineMorphShape", swf_tag_shape_detail_handler },
     { 48, "DefineFont2", NULL } ,
     { 56, "Export", NULL } ,
     { 59, "DoInitAction", NULL } ,
@@ -57,7 +59,8 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 73, "DefineFontAlignZones", NULL },
     { 74, "CSMTextSettings", NULL },
     { 75, "DefineFont3", NULL } ,
-    { 83, "DefineShape4", NULL },
+    { 83, "DefineShape4", swf_tag_shape_detail_handler },
+    { 84, "DefineMorphShape2", swf_tag_shape_detail_handler },
     { 88, "DefineFontName", NULL } ,
     { 777,"Reflex", NULL } ,
 };

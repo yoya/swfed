@@ -48,6 +48,31 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     swf_tag_shape->shape_id = bitstream_getbytesLE(bs, 2);
+    swf_rect_parse(bs, &(swf_tag_shape->rect));
+    // DefineMorphShape, DefineMorphShape2
+    swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
+    // DefineShape4, DefineMorphShape2
+    swf_tag_shape->has_strokes = (tag->tag == 83) || (tag->tag == 84);
+
+    if (swf_tag_shape->is_morph) {
+        swf_rect_parse(bs, &(swf_tag_shape->rect_morph));
+    }
+    if (swf_tag_shape->has_strokes) {
+        swf_rect_parse(bs, &(swf_tag_shape->stroke_rect));
+        if (swf_tag_shape->is_morph) {
+            swf_rect_parse(bs, &(swf_tag_shape->stroke_rect_morph));
+        }
+        swf_tag_shape->define_shape_reserved = bitstream_getbits(bs, 6);
+        swf_tag_shape->define_shape_non_scaling_strokes = bitstream_getbits(bs, 1);
+        swf_tag_shape->define_shape_scaling_strokes = bitstream_getbits(bs, 1);
+    }
+    if (swf_tag_shape->is_morph) {
+        swf_tag_shape->offset_morph = bitstream_getbytesLE(bs, 4);
+        ; // swf_morph_shape_with_style_parse(bs, &swf_tag_shape->morph_shape_with_style);
+    } else {
+        ; // swf_morph_shape_with_style_parse(bs, &swf_tag_shape->shape_with_style);
+    }
+        
     bitstream_close(bs);
     return 0;
 }
@@ -92,10 +117,32 @@ void
 swf_tag_shape_print_detail(swf_tag_t *tag,
                            struct swf_object_ *swf, int indent_depth) {
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-    int i;
-    swf_tag_t *_tag;
+    (void) tag;
     print_indent(indent_depth);
-    printf("\tshape_id=%d\n", swf_tag_shape->shape_id);
+    printf("shape_id=%d\n", swf_tag_shape->shape_id);
+    print_indent(indent_depth);
+    printf("is_morph=%d has_strokes=%d\n",
+           swf_tag_shape->is_morph, swf_tag_shape->has_strokes);
+    if (swf_tag_shape->is_morph) {
+        swf_rect_print(&(swf_tag_shape->rect_morph), indent_depth);
+    }
+    if (swf_tag_shape->has_strokes) {
+        swf_rect_print(&(swf_tag_shape->stroke_rect), indent_depth);
+        if (swf_tag_shape->is_morph) {
+            swf_rect_print(&(swf_tag_shape->stroke_rect_morph), indent_depth);
+        }
+        print_indent(indent_depth);
+        printf("define_shape_non_scaling_strokes=%d define_shape_scaling_strokes=%d\n",
+               swf_tag_shape->define_shape_non_scaling_strokes,
+               swf_tag_shape->define_shape_scaling_strokes);
+    }
+    if (swf_tag_shape->is_morph) {
+        print_indent(indent_depth);
+        printf("offset_morph=%lu\n", swf_tag_shape->offset_morph);
+        ; // swf_morph_shape_with_style_print(&swf_tag_shape->morph_shape_with_style, indent_depth);
+    } else {
+        ; // swf_morph_shape_with_style_print(&swf_tag_shape->shape_with_style, indent_depth);
+    }
     return ;
 }
 
