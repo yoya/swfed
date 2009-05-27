@@ -15,7 +15,9 @@ typedef struct swf_shape_with_style_ {
     swf_shape_record_t *shape_records;
 } swf_shape_with_style_t;
 
-extern int swf_shape_with_style_parse(bitstream_t *bs, swf_shape_with_style_t *color);
+extern int swf_shape_with_style_parse(bitstream_t *bs,
+                                      swf_shape_with_style_t *color,
+                                      swf_tag_t *tag);
 extern int swf_shape_with_style_build(bitstream_t *bs, swf_shape_with_style_t *color);
 extern int swf_shape_with_style_print(swf_shape_with_style_t *color, int indent_depth);
 

@@ -266,7 +266,7 @@ swf_tag_edit_get_string(void *detail,
     swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) detail;
     char *data, *initial_text;
     int initial_text_len = 0;
-    if (strcmp(swf_tag_edit->edit_variable_name, variable_name)) {
+    if (strncmp(swf_tag_edit->edit_variable_name, variable_name, variable_name_len)) {
         if (atoi(variable_name) != swf_tag_edit->edit_id) {
             return NULL;
         }
