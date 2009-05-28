@@ -13,7 +13,7 @@ swf_fill_style_array_parse(bitstream_t *bs,
         shape_with_style->count = bitstream_getbytesLE(bs, 2);
     }
     for (i = 0 ; i < shape_with_style->count ; i++) {
-        ; //        swf_fill_style_parse(bs, &(shape_with_style->line_styles));
+        swf_fill_style_parse(bs, &(shape_with_style->fill_style), tag);
     }
     return 0;
 }

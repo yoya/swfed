@@ -7,6 +7,7 @@
 #ifndef __SWF_FILL_STYLE_H__
 #define __SWF_FILL_STYLE_H__
 
+#include "swf_tag.h"
 #include "swf_fill_style_solid.h"
 #include "swf_fill_style_gradient.h"
 #include "swf_fill_style_bitmap.h"
@@ -18,7 +19,8 @@ typedef union swf_fill_style_ {
     swf_fill_style_bitmap_t   bitmap;
 } swf_fill_style_t;
 
-extern int swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *color);
+extern int swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *color,
+                                swf_tag_t *tag);
 extern int swf_fill_style_build(bitstream_t *bs, swf_fill_style_t *color);
 extern int swf_fill_style_print(swf_fill_style_t *color, int indent_depth);
 
