@@ -15,6 +15,7 @@ typedef union swf_shape_record_ {
     swf_shape_record_end_t   shape_end;
     swf_shape_record_setup_t shape_setup;
     swf_shape_record_edge_t  shape_edge;
+    union swf_shape_record_ *next;
 } swf_shape_record_t;
 
 extern int swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *color);
