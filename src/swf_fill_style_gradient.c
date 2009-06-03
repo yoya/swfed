@@ -3,21 +3,40 @@
 #include "swf_fill_style_gradient.h"
 
 swf_fill_style_gradient_parse(bitstream_t *bs,
-                              swf_fill_style_gradient_t *fill_style_gradient) {
-    ;
+                              swf_fill_style_gradient_t *fill_style_gradient,
+                              swf_tag_t* tag) {
+    swf_matrix_parse(bs, &(fill_style_gradient->gradient_matrix));
+    // DefineMorphShape, DefineMorphShape2
+    if (tag->tag == 46 || tag->tag == 84) {
+        swf_matrix_parse(bs, &(fill_style_gradient->gradient_matrix_morph));
+    }
+    swf_gradient_parse(bs, &(fill_style_gradient->gradient));
     return 0;
 }
 
 int
 swf_fill_style_gradient_build(bitstream_t *bs,
-                              swf_fill_style_gradient_t *fill_style_gradient) {
-    ;
+                              swf_fill_style_gradient_t *fill_style_gradient,
+                              swf_tag_t* tag) {
+    swf_matrix_build(bs, &(fill_style_gradient->gradient_matrix));
+    // DefineMorphShape, DefineMorphShape2
+    if (tag->tag == 46 || tag->tag == 84) {
+        swf_matrix_build(bs, &(fill_style_gradient->gradient_matrix_morph));
+    }
+     swf_gradient_build(bs, &(fill_style_gradient->gradient));
     return 0;
 }
 
 int
 swf_fill_style_gradient_print(swf_fill_style_gradient_t *fill_style_gradient,
-                              int indent_depth) {
-    ;
+                              int indent_depth, swf_tag_t* tag) {
+    swf_matrix_print(&(fill_style_gradient->gradient_matrix),
+                     indent_depth + 1);
+    // DefineMorphShape, DefineMorphShape2
+    if (tag->tag == 46 || tag->tag == 84) {
+        swf_matrix_print(&(fill_style_gradient->gradient_matrix_morph),
+                         indent_depth + 1);
+    }
+    swf_gradient_print(&(fill_style_gradient->gradient), indent_depth);
     return 0;
 }

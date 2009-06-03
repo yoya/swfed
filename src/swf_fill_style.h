@@ -21,7 +21,9 @@ typedef union swf_fill_style_ {
 
 extern int swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *color,
                                 swf_tag_t *tag);
-extern int swf_fill_style_build(bitstream_t *bs, swf_fill_style_t *color);
-extern int swf_fill_style_print(swf_fill_style_t *color, int indent_depth);
+extern int swf_fill_style_build(bitstream_t *bs, swf_fill_style_t *color,
+                                swf_tag_t *tag);
+extern int swf_fill_style_print(swf_fill_style_t *color, int indent_depth,
+                                swf_tag_t *tag);
 
 #endif /* __SWF_FILL_STYLE_H__ */

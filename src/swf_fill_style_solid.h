@@ -9,6 +9,7 @@
 
 #include "swf_rgba.h"
 #include "swf_rgb.h"
+#include "swf_tag.h"
 
 typedef union swf_fill_style_solid_ {
     unsigned char type;
@@ -17,8 +18,8 @@ typedef union swf_fill_style_solid_ {
     swf_rgb_t  rgb;        // other tag
 } swf_fill_style_solid_t;
 
-extern int swf_fill_style_solid_parse(bitstream_t *bs, swf_fill_style_solid_t *color);
-extern int swf_fill_style_solid_build(bitstream_t *bs, swf_fill_style_solid_t *color);
-extern int swf_fill_style_solid_print(swf_fill_style_solid_t *color, int indent_depth);
+extern int swf_fill_style_solid_parse(bitstream_t *bs, swf_fill_style_solid_t *color, swf_tag_t *tag);
+extern int swf_fill_style_solid_build(bitstream_t *bs, swf_fill_style_solid_t *color, swf_tag_t *tag);
+extern int swf_fill_style_solid_print(swf_fill_style_solid_t *color, int indent_depth, swf_tag_t *tag);
 
 #endif /* __SWF_FILL_STYLE_SOLID_H__ */

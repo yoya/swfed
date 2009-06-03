@@ -18,8 +18,11 @@ typedef union swf_shape_record_ {
     union swf_shape_record_ *next;
 } swf_shape_record_t;
 
-extern int swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *color);
-extern int swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *color);
-extern int swf_shape_record_print(swf_shape_record_t *color, int indent_depth);
+extern int swf_shape_record_parse(bitstream_t *bs,
+                                  swf_shape_record_t *shape_record);
+extern int swf_shape_record_build(bitstream_t *bs,
+                                  swf_shape_record_t *shape_record);
+extern int swf_shape_record_print(swf_shape_record_t *shape_record,
+                                  int indent_depth);
 
 #endif /* __SWF_SHAPE_RECORD_H__ */

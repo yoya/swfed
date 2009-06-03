@@ -15,8 +15,15 @@ typedef struct swf_fill_style_array_ {
     swf_fill_style_t *fill_style;
 } swf_fill_style_array_t;
 
-extern int swf_fill_style_array_parse(bitstream_t *bs, swf_fill_style_array_t *color, swf_tag_t *tag);
-extern int swf_fill_style_array_build(bitstream_t *bs, swf_fill_style_array_t *color);
-extern int swf_fill_style_array_print(swf_fill_style_array_t *color, int indent_depth);
+extern int swf_fill_style_array_parse(bitstream_t *bs,
+                                      swf_fill_style_array_t *fill_style_array,
+                                      swf_tag_t *tag);
+extern int swf_fill_style_array_build(bitstream_t *bs,
+                                      swf_fill_style_array_t *fill_style_array,
+                                      swf_tag_t *tag);
+extern int swf_fill_style_array_print(swf_fill_style_array_t *fill_style_array,
+                                      int indent_depth,
+                                      swf_tag_t *tag);
+extern int swf_fill_style_array_delete(swf_fill_style_array_t *fill_style_array);
 
 #endif /* __SWF_FILL_STYLE_ARRAY_H__ */

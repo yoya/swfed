@@ -18,9 +18,12 @@ typedef struct swf_styles_ {
     swf_styles_count_t styles_count;
 } swf_styles_t;
 
-extern int swf_styles_parse(bitstream_t *bs, swf_styles_t *color,
+extern int swf_styles_parse(bitstream_t *bs, swf_styles_t *styles,
                             swf_tag_t *tag);
-extern int swf_styles_build(bitstream_t *bs, swf_styles_t *color);
-extern int swf_styles_print(swf_styles_t *color, int indent_depth);
+extern int swf_styles_build(bitstream_t *bs, swf_styles_t *styles,
+                            swf_tag_t *tag);
+extern int swf_styles_print(swf_styles_t *styles, int indent_depth,
+                            swf_tag_t *tag);
+extern int swf_styles_delete(swf_styles_t *styles);
 
 #endif /* __SWF_STYLES_H__ */

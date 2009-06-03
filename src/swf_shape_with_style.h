@@ -7,6 +7,7 @@
 #ifndef __SWF_SHAPE_WITH_STYLE_H__
 #define __SWF_SHAPE_WITH_STYLE_H__
 
+#include "swf_tag.h"
 #include "swf_styles.h"
 #include "swf_shape_record.h"
 
@@ -18,7 +19,11 @@ typedef struct swf_shape_with_style_ {
 extern int swf_shape_with_style_parse(bitstream_t *bs,
                                       swf_shape_with_style_t *color,
                                       swf_tag_t *tag);
-extern int swf_shape_with_style_build(bitstream_t *bs, swf_shape_with_style_t *color);
-extern int swf_shape_with_style_print(swf_shape_with_style_t *color, int indent_depth);
+extern int swf_shape_with_style_build(bitstream_t *bs,
+                                      swf_shape_with_style_t *color,
+                                      swf_tag_t *tag);
+extern int swf_shape_with_style_print(swf_shape_with_style_t *color,
+                                      int indent_depth,
+                                      swf_tag_t *tag);
 
 #endif /* __SWF_SHAPE_WITH_STYLE_H__ */
