@@ -35,6 +35,8 @@ int
 swf_fill_style_solid_print(swf_fill_style_solid_t *fill_style_solid,
                            int indent_depth, swf_tag_t *tag
 ) {
+    print_indent(indent_depth);
+    printf("fill_style_solid\n");
     if (tag->tag == 46 || tag->tag == 84) { // DefineMorphShape, DefineMorphShape2
         swf_rgba_print(&(fill_style_solid->rgba), indent_depth + 1);
         swf_rgba_print(&(fill_style_solid->rgba_morph), indent_depth + 1);

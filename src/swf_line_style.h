@@ -7,6 +7,7 @@
 #ifndef __SWF_LINE_STYLE_H__
 #define __SWF_LINE_STYLE_H__
 
+#include "swf_tag.h"
 #include "swf_rgba.h"
 #include "swf_fill_style.h"
 #include "swf_rgb.h"
@@ -32,8 +33,11 @@ typedef union swf_line_style_ {
     
 } swf_line_style_t;
 
-extern int swf_line_style_parse(bitstream_t *bs, swf_line_style_t *color);
-extern int swf_line_style_build(bitstream_t *bs, swf_line_style_t *color);
-extern int swf_line_style_print(swf_line_style_t *color, int indent_depth);
+extern int swf_line_style_parse(bitstream_t *bs,
+                                swf_line_style_t *line_style, swf_tag_t *tag);
+extern int swf_line_style_build(bitstream_t *bs,
+                                swf_line_style_t *line_style, swf_tag_t *tag);
+extern int swf_line_style_print(swf_line_style_t *line_style,
+                                int indent_depth, swf_tag_t *tag);
 
 #endif /* __SWF_LINE_STYLE_H__ */

@@ -14,8 +14,14 @@ typedef struct swf_line_style_array_ {
     swf_line_style_t *line_style;
 } swf_line_style_array_t;
 
-extern int swf_line_style_array_parse(bitstream_t *bs, swf_line_style_array_t *color);
-extern int swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *color);
-extern int swf_line_style_array_print(swf_line_style_array_t *color, int indent_depth);
+extern int swf_line_style_array_parse(bitstream_t *bs,
+                                      swf_line_style_array_t *line_style_array,
+                                      swf_tag_t *tag);
+extern int swf_line_style_array_build(bitstream_t *bs,
+                                      swf_line_style_array_t *line_style_array,
+                                      swf_tag_t *tag);
+extern int swf_line_style_array_print(swf_line_style_array_t *line_style_array,
+                                      int indent_depth, swf_tag_t *tag);
+extern int swf_line_style_array_delete(swf_line_style_array_t *line_style_array);
 
 #endif /* __SWF_LINE_STYLE_ARRAY_H__ */

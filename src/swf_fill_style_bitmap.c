@@ -29,6 +29,8 @@ int
 swf_fill_style_bitmap_print(swf_fill_style_bitmap_t *fill_style_bitmap,
                             int indent_depth, swf_tag_t *tag) {
     print_indent(indent_depth);
+    printf("fill_style_bitmap\n");
+    print_indent(indent_depth);
     printf("bitmap_ref=%u\n", fill_style_bitmap->bitmap_ref);
     swf_matrix_print(&(fill_style_bitmap->bitmap_matrix), indent_depth);
     if (tag->tag == 46 || tag->tag == 84) { // DefineMorphShape, DefineMorphShape2

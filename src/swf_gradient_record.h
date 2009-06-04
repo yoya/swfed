@@ -7,6 +7,7 @@
 #ifndef __SWF_GRADIENT_RECORD_H__
 #define __SWF_GRADIENT_RECORD_H__
 
+#include "swf_tag.h"
 #include "swf_rgba.h"
 #include "swf_rgb.h"
 
@@ -18,8 +19,13 @@ typedef union swf_gradient_record_ {
     swf_rgb_t rgb; // other 
 } swf_gradient_record_t;
 
-extern int swf_gradient_record_parse(bitstream_t *bs, swf_gradient_record_t *color);
-extern int swf_gradient_record_build(bitstream_t *bs, swf_gradient_record_t *color);
-extern int swf_gradient_record_print(swf_gradient_record_t *color, int indent_depth);
+extern int swf_gradient_record_parse(bitstream_t *bs,
+                                     swf_gradient_record_t *gradient_record,
+                                     swf_tag_t *tag);
+extern int swf_gradient_record_build(bitstream_t *bs,
+                                     swf_gradient_record_t *gradient_record,
+                                     swf_tag_t *tag);
+extern int swf_gradient_record_print(swf_gradient_record_t *gradient_record,
+                                     int indent_depth, swf_tag_t *tag);
 
 #endif /* __SWF_GRADIENT_RECORD_H__ */

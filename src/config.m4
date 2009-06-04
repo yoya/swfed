@@ -61,6 +61,6 @@ if test "$PHP_SWFED" != "no"; then
   dnl
   dnl PHP_SUBST(SWFED_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(swfed, swfed.c swf_object.c swf_header.c swf_rect.c swf_tag.c swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c swf_action.c swf_jpeg.c bitstream.c jpeg_segment.c swf_png.c swf_gif.c  swf_shape_with_style.c swf_styles.c swf_fill_style_array.c swf_fill_style.c swf_morph_shape_with_style.c swf_fill_style_solid.c swf_fill_style_gradient.c swf_fill_style_bitmap.c swf_line_style_array.c swf_line_style.c swf_styles_count.c swf_shape_record.c swf_gradient.c swf_matrix.c swf_debug.c, $ext_shared)
+  PHP_NEW_EXTENSION(swfed, swfed.c swf_object.c swf_header.c swf_rect.c swf_tag.c swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c swf_action.c swf_jpeg.c bitstream.c jpeg_segment.c swf_png.c swf_gif.c  swf_shape_with_style.c swf_styles.c swf_fill_style_array.c swf_fill_style.c swf_morph_shape_with_style.c swf_fill_style_solid.c swf_fill_style_gradient.c swf_fill_style_bitmap.c swf_line_style_array.c swf_line_style.c swf_styles_count.c swf_shape_record.c swf_gradient.c swf_matrix.c swf_gradient_record.c swf_debug.c, $ext_shared)
 fi
 
