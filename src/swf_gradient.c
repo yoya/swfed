@@ -72,4 +72,5 @@ swf_gradient_print(swf_gradient_t *gradient, int indent_depth,
 int
 swf_gradient_delete(swf_gradient_t *gradient) {
     free(gradient->gradient_record);
+    return 0;
 }

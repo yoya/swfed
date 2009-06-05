@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_styles_count.h"
 
+int
 swf_styles_count_parse(bitstream_t *bs, swf_styles_count_t *styles_count) {
     styles_count->fill_bits_count = bitstream_getbits(bs, 4);
     styles_count->line_bits_count = bitstream_getbits(bs, 4);

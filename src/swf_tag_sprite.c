@@ -41,6 +41,7 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned long length = tag->length;
     bitstream_t *bs;
     swf_tag_t **_tag;
+    (void) swf;
     if (swf_tag_sprite == NULL) {
         fprintf(stderr, "ERROR: swf_tag_sprite_input_detail: swf_tag_sprite == NULL\n");
         return 1;

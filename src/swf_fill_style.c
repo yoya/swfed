@@ -78,4 +78,5 @@ swf_fill_style_print(swf_fill_style_t *fill_style, int indent_depth,
 int
 swf_fill_style_delete(swf_fill_style_t *fill_style) {
     swf_fill_style_gradient_delete(&(fill_style->gradient));
+    return 0;
 }

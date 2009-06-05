@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_shape_record_end.h"
 
+int
 swf_shape_record_end_parse(bitstream_t *bs,
                            swf_shape_record_end_t *shape_record_end) {
     shape_record_end->shape_record_type = bitstream_getbit(bs);

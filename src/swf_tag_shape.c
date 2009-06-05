@@ -40,7 +40,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned char *data  = tag->data;
     unsigned long length = tag->length;
     bitstream_t *bs;
-    swf_tag_t **_tag;
+    (void) swf;
     if (swf_tag_shape == NULL) {
         fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape == NULL\n");
         return 1;
@@ -104,7 +104,7 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
-    swf_tag_t *_tag;
+    (void) swf;
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
@@ -117,7 +117,7 @@ void
 swf_tag_shape_print_detail(swf_tag_t *tag,
                            struct swf_object_ *swf, int indent_depth) {
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-    (void) tag;
+    (void) swf;
     print_indent(indent_depth);
     printf("shape_id=%d\n", swf_tag_shape->shape_id);
     print_indent(indent_depth);

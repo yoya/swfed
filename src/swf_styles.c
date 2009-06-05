@@ -35,4 +35,5 @@ int
 swf_styles_delete(swf_styles_t *styles) {
     swf_fill_style_array_delete(&(styles->fill_styles));
     swf_line_style_array_delete(&(styles->line_styles));
+    return 0;
 }

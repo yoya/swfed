@@ -35,6 +35,7 @@ swf_fill_style_array_build(bitstream_t *bs,
     for (i = 0 ; i < fill_style_array->count ; i++) {
         swf_fill_style_build(bs, &(fill_style_array->fill_style[i]), tag);
     }
+    return 0;
 }
 
 int
@@ -57,4 +58,5 @@ swf_fill_style_array_delete(swf_fill_style_array_t *fill_style_array) {
         swf_fill_style_delete(&(fill_style_array->fill_style[i]));
     }
     free(fill_style_array->fill_style);
+    return 0;
 }

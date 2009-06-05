@@ -33,6 +33,7 @@ swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *shape_with_s
     for (i = 0 ; i < shape_with_style->count ; i++) {
         swf_line_style_build(bs, &(shape_with_style->line_style[i]), tag);
     }
+    return 0;
 }
 
 int
@@ -50,4 +51,5 @@ swf_line_style_array_print(swf_line_style_array_t *shape_with_style, int indent_
 int
 swf_line_style_array_delete(swf_line_style_array_t *line_style_array) {
     free(line_style_array->line_style);
+    return 0;
 }

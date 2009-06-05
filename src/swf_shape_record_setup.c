@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_shape_record_setup.h"
 
+int
 swf_shape_record_setup_parse(bitstream_t *bs,
                              swf_shape_record_setup_t *shape_record_setup,
                              swf_tag_t *tag, swf_styles_count_t *count) {

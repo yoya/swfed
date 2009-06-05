@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_morph_shape_with_style.h"
 
+int
 swf_morph_shape_with_style_parse(bitstream_t *bs,
                                  swf_morph_shape_with_style_t *morph_shape_with_style,
                                  swf_tag_t *tag) {
@@ -48,4 +49,5 @@ swf_morph_shape_with_style_print(swf_morph_shape_with_style_t *morph_shape_with_
 int
 swf_morph_shape_with_style_delete(swf_morph_shape_with_style_t *morph_shape_with_style) {
     swf_styles_delete(&(morph_shape_with_style->styles));
+    return 0;
 }

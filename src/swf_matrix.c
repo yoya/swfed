@@ -68,7 +68,7 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
     printf("has_scale=%d\n", matrix->has_scale);
     if (matrix->has_scale) {
         print_indent(indent_depth);
-        printf("scale_(x,y)=(%d,%d)\n",
+        printf("scale_(x,y)=(%lu,%lu)\n",
                matrix->scale_x, matrix->scale_y);
     }
     print_indent(indent_depth);

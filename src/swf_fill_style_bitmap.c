@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_fill_style_bitmap.h"
 
+int
 swf_fill_style_bitmap_parse(bitstream_t *bs,
                             swf_fill_style_bitmap_t *fill_style_bitmap,
                             swf_tag_t *tag) {

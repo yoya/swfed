@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_fill_style_solid.h"
 
+int
 swf_fill_style_solid_parse(bitstream_t *bs,
                            swf_fill_style_solid_t *fill_style_solid,
                            swf_tag_t *tag) {

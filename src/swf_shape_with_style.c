@@ -2,7 +2,7 @@
 #include "bitstream.h"
 #include "swf_shape_with_style.h"
 
-
+int
 swf_shape_with_style_parse(bitstream_t *bs,
                            swf_shape_with_style_t *shape_with_style,
                            swf_tag_t *tag) {

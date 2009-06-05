@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_fill_style_gradient.h"
 
+int
 swf_fill_style_gradient_parse(bitstream_t *bs,
                               swf_fill_style_gradient_t *fill_style_gradient,
                               swf_tag_t* tag) {
@@ -47,4 +48,5 @@ swf_fill_style_gradient_print(swf_fill_style_gradient_t *fill_style_gradient,
 int
 swf_fill_style_gradient_delete(swf_fill_style_gradient_t *fill_style_gradient) {
     swf_gradient_delete(&(fill_style_gradient->gradient));
+    return 0;
 }

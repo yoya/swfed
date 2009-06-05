@@ -13,7 +13,7 @@
 
 typedef struct swf_shape_with_style_ {
     swf_styles_t       styles;
-    swf_shape_record_t *shape_records;
+    swf_shape_record_t shape_records;
 } swf_shape_with_style_t;
 
 extern int swf_shape_with_style_parse(bitstream_t *bs,

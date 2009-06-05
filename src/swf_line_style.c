@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_line_style.h"
 
+int
 swf_line_style_parse(bitstream_t *bs, swf_line_style_t *line_style,
                      swf_tag_t *tag) {
     if (tag->tag == 46) { // DefineMorphShape
@@ -90,6 +91,6 @@ swf_line_style_build(bitstream_t *bs, swf_line_style_t *line_style,
 int
 swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
                      swf_tag_t *tag) {
-    ;
+    printf("swf_line_style_print: not implemented yet\n");
     return 0;
 }

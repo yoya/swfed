@@ -2,6 +2,7 @@
 #include "bitstream.h"
 #include "swf_shape_record.h"
 
+int
 swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
                        swf_tag_t *tag, swf_styles_count_t *count) {
     int first_bit, next_5bits;
@@ -80,4 +81,5 @@ swf_shape_record_delete(swf_shape_record_t *shape_record) {
         free(current);
         current = next;
     }
+    return 0;
 }
