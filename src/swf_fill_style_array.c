@@ -9,8 +9,8 @@ swf_fill_style_array_parse(bitstream_t *bs,
                            swf_tag_t *tag) {
     int i;
     fill_style_array->count = bitstream_getbyte(bs);
-    if (tag->tag != 2 && // ! DefineShape
-        fill_style_array->count == 255) {
+    if ((tag->tag != 2) && // ! DefineShape
+        (fill_style_array->count == 255)) {
         fill_style_array->count = bitstream_getbytesLE(bs, 2);
     }
     fill_style_array->fill_style = calloc(fill_style_array->count, sizeof(swf_fill_style_t));
@@ -25,8 +25,8 @@ swf_fill_style_array_build(bitstream_t *bs,
                            swf_fill_style_array_t *fill_style_array,
                            swf_tag_t *tag) {
     int i;
-    if (tag->tag != 2 && // ! DefineShape
-        255 <= fill_style_array->count) {
+    if ((tag->tag != 2) || // ! DefineShape
+        (255 <= fill_style_array->count)) {
         bitstream_putbyte(bs, 255);
         bitstream_putbytesLE(bs, fill_style_array->count, 2);
     } else {

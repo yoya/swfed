@@ -7,7 +7,8 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
                        swf_tag_t *tag, swf_styles_count_t *count) {
     int first_bit, next_5bits;
     swf_shape_record_t *current = shape_record;
-    while (current) {
+    int limit;
+    for (limit = 1; current ; limit ++) {
         shape_record->first_6bits = bitstream_getbits(bs, 6);
         first_bit = (shape_record->first_6bits >> 5) & 1;
         next_5bits = shape_record->first_6bits & 0x1f;
@@ -22,8 +23,14 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
         } else {
             swf_shape_record_edge_parse(bs, &(current->shape_edge));
         }
-        current->next = calloc(1, sizeof(*current));
+        if (100 <= limit) {
+            current->next = NULL;
+            fprintf(stderr, "swf_shape_record_parse: limit over\n", limit);
+            return 1;
+        }
+        current->next = calloc(1, sizeof(swf_shape_record_t));
         current = current->next;
+        current->next = NULL; // fail safe
     }
     return 0;
 }
@@ -55,9 +62,12 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
                        swf_tag_t *tag, swf_styles_count_t *count) {
     int first_bit, next_5bits;
     swf_shape_record_t *current = shape_record;
-    while (current) {
+    int i;
+    for (i = 0 ; current ; i++) {
         first_bit = (shape_record->first_6bits >> 5) & 1;
         next_5bits = shape_record->first_6bits & 0x1f;
+        print_indent(indent_depth);
+        printf("shape_record [%d]\n", i);
         if ((first_bit == 0) && (next_5bits == 0)) {
             swf_shape_record_end_print(&(current->shape_end), indent_depth);
             break;
@@ -83,3 +93,4 @@ swf_shape_record_delete(swf_shape_record_t *shape_record) {
     }
     return 0;
 }
+
