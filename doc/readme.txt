@@ -8,10 +8,10 @@
 * require
 
  - php on unix
- - zlib and libpng 
+ - zlib
+ - libpng and giflib (optional)
 
-
-* sample
+* example
 
  - replace image id = 1 jpeg data
  $swf = new SWFEditor(); 
@@ -20,7 +20,7 @@
  echo $swf->output(); 
  
  - other sample code
-   http://svn.sourceforge.jp/svnroot/swfed/trunk/sample/ 
+   http://svn.sourceforge.jp/svnroot/swfed/trunk/sample/
 
 * demo
 
