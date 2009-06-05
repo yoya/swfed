@@ -26,5 +26,6 @@ extern int swf_fill_style_gradient_build(bitstream_t *bs,
                                          swf_tag_t *tag);
 extern int swf_fill_style_gradient_print(swf_fill_style_gradient_t *gradient,
                                          int indent_depth, swf_tag_t *tag);
+extern int swf_fill_style_gradient_delete(swf_fill_style_gradient_t *gradient);
 
 #endif /* __SWF_FILL_STYLE_GRADIENT_H__ */

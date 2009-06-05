@@ -25,8 +25,8 @@ typedef struct swf_matrix_ {
     signed translate_y ; // : f_rotate_bits;
 } swf_matrix_t;
 
-extern int swf_matrix_parse(bitstream_t *bs, swf_matrix_t *color);
-extern int swf_matrix_build(bitstream_t *bs, swf_matrix_t *color);
-extern int swf_matrix_print(swf_matrix_t *color, int indent_depth);
+extern int swf_matrix_parse(bitstream_t *bs, swf_matrix_t *matrix);
+extern int swf_matrix_build(bitstream_t *bs, swf_matrix_t *matrix);
+extern int swf_matrix_print(swf_matrix_t *matrix, int indent_depth);
 
 #endif /* __SWF_MATRIX_H__ */

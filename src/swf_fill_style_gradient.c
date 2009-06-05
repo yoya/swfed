@@ -10,7 +10,7 @@ swf_fill_style_gradient_parse(bitstream_t *bs,
     if (tag->tag == 46 || tag->tag == 84) {
         swf_matrix_parse(bs, &(fill_style_gradient->gradient_matrix_morph));
     }
-    swf_gradient_parse(bs, &(fill_style_gradient->gradient), tag);
+    swf_gradient_parse(bs, &(fill_style_gradient->gradient), tag, fill_style_gradient->type);
     return 0;
 }
 
@@ -23,7 +23,7 @@ swf_fill_style_gradient_build(bitstream_t *bs,
     if (tag->tag == 46 || tag->tag == 84) {
         swf_matrix_build(bs, &(fill_style_gradient->gradient_matrix_morph));
     }
-    swf_gradient_build(bs, &(fill_style_gradient->gradient), tag);
+    swf_gradient_build(bs, &(fill_style_gradient->gradient), tag, fill_style_gradient->type);
     return 0;
 }
 
@@ -39,6 +39,12 @@ swf_fill_style_gradient_print(swf_fill_style_gradient_t *fill_style_gradient,
         swf_matrix_print(&(fill_style_gradient->gradient_matrix_morph),
                          indent_depth + 1);
     }
-    swf_gradient_print(&(fill_style_gradient->gradient), indent_depth, tag);
+    swf_gradient_print(&(fill_style_gradient->gradient), indent_depth, tag, fill_style_gradient->type);
     return 0;
+}
+
+
+int
+swf_fill_style_gradient_delete(swf_fill_style_gradient_t *fill_style_gradient) {
+    swf_gradient_delete(&(fill_style_gradient->gradient));
 }

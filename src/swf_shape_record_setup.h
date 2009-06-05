@@ -26,8 +26,16 @@ typedef union swf_shape_record_setup_ {
     swf_styles_t styles;
 } swf_shape_record_setup_t;
 
-extern int swf_shape_record_setup_parse(bitstream_t *bs, swf_shape_record_setup_t *color);
-extern int swf_shape_record_setup_build(bitstream_t *bs, swf_shape_record_setup_t *color);
-extern int swf_shape_record_setup_print(swf_shape_record_setup_t *color, int indent_depth);
+extern int swf_shape_record_setup_parse(bitstream_t *bs,
+                                        swf_shape_record_setup_t *setup,
+                                        swf_tag_t *tag,
+                                        swf_styles_count_t *count);
+extern int swf_shape_record_setup_build(bitstream_t *bs,
+                                        swf_shape_record_setup_t *setup,
+                                        swf_tag_t *tag,
+                                        swf_styles_count_t *count);
+extern int swf_shape_record_setup_print(swf_shape_record_setup_t *setup,
+                                        int indent_depth, swf_tag_t *tag,
+                                        swf_styles_count_t *count);
 
 #endif /* __SWF_SHAPE_RECORD_SETUP_H__ */

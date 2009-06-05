@@ -33,6 +33,6 @@ swf_styles_print(swf_styles_t *shape_with_style, int indent_depth,
 
 int
 swf_styles_delete(swf_styles_t *styles) {
-    swf_fill_styles_array_delete(&(styles->fill_styles));
-    swf_line_styles_array_delete(&(styles->line_styles));
+    swf_fill_style_array_delete(&(styles->fill_styles));
+    swf_line_style_array_delete(&(styles->line_styles));
 }

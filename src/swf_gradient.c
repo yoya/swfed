@@ -4,7 +4,7 @@
 
 int
 swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
-                   swf_tag_t *tag) {
+                   swf_tag_t *tag, int type) {
     int i;
     if (tag->tag == 83) { // DefineShape4
         gradient->spread_mode = bitstream_getbits(bs, 2);
@@ -14,8 +14,12 @@ swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
         gradient->pad = bitstream_getbits(bs, 4);
         gradient->count = bitstream_getbits(bs, 4);
     }
+    gradient->gradient_record = calloc(gradient->count, sizeof(*gradient->gradient_record)); // XXX
     for (i = 0 ; i < gradient->count ; i++) {
-        swf_grandient_record_parse(bs, &(gradient->gradient_record[i]));
+        swf_gradient_record_parse(bs, &(gradient->gradient_record[i]), tag);
+        gradient->focal_point = bitstream_getbytesLE(bs, 2);
+    }
+    if (type == 0x13) {
         gradient->focal_point = bitstream_getbytesLE(bs, 2);
     }
     return 0;
@@ -23,13 +27,49 @@ swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
 
 int
 swf_gradient_build(bitstream_t *bs, swf_gradient_t *gradient,
-                   swf_tag_t *tag) {
+                   swf_tag_t *tag, int type) {
+    int i;
+    if (tag->tag == 83) { // DefineShape4
+        bitstream_putbits(bs, gradient->spread_mode, 2);
+        bitstream_putbits(bs, gradient->interpolation_mode, 2);
+        bitstream_putbits(bs, gradient->count, 4);
+    } else {
+        bitstream_putbits(bs, gradient->pad, 4);
+        bitstream_putbits(bs, gradient->count, 4);
+    }
+    for (i = 0 ; i < gradient->count ; i++) {
+        swf_gradient_record_build(bs, &(gradient->gradient_record[i]), tag);
+    }
+    if (type == 0x13) {
+        bitstream_putbytesLE(bs, gradient->focal_point, 2);
+    }
     return 0;
 }
 
 int
 swf_gradient_print(swf_gradient_t *gradient, int indent_depth,
-                   swf_tag_t *tag) {
-    print_indent(indent_depth);
+                   swf_tag_t *tag, int type) {
+    int i;
+    if (tag->tag == 83) { // DefineShape4
+        print_indent(indent_depth);
+        printf("spread_mode=%d  interpolation_mode=%d  count=%d\n",
+               gradient->spread_mode, gradient->interpolation_mode,
+               gradient->count);
+    } else {
+        print_indent(indent_depth);
+        printf("pad=%d  count=%d\n", gradient->pad, gradient->count);
+    }
+    for (i = 0 ; i < gradient->count ; i++) {
+        swf_gradient_record_print(&(gradient->gradient_record[i]), indent_depth+1, tag);
+    }
+    if (type == 0x13) {
+        print_indent(indent_depth);
+        printf("focal_point=%d\n", gradient->focal_point);
+    }
     return 0;
+}
+
+int
+swf_gradient_delete(swf_gradient_t *gradient) {
+    free(gradient->gradient_record);
 }

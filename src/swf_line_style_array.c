@@ -13,7 +13,7 @@ swf_line_style_array_parse(bitstream_t *bs,
         shape_with_style->count == 255) {
         shape_with_style->count = bitstream_getbytesLE(bs, 2);
     }
-    shape_with_style->line_style = calloc(shape_with_style->count, sizeof(swf_line_style_t)); // XXX free !!! XXX
+    shape_with_style->line_style = calloc(shape_with_style->count, sizeof(swf_line_style_t));
     for (i = 0 ; i < shape_with_style->count ; i++) {
         swf_line_style_parse(bs, &(shape_with_style->line_style[i]), tag);
     }
@@ -31,7 +31,7 @@ swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *shape_with_s
         bitstream_putbyte(bs, shape_with_style->count);
     }
     for (i = 0 ; i < shape_with_style->count ; i++) {
-        swf_line_style_built(bs, &(shape_with_style->line_style[i]), tag);
+        swf_line_style_build(bs, &(shape_with_style->line_style[i]), tag);
     }
 }
 

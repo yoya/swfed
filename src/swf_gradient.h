@@ -21,10 +21,12 @@ typedef union swf_gradient_ {
 } swf_gradient_t;
 
 extern int swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
-                              swf_tag_t *tag);
+                              swf_tag_t *tag, int type);
 extern int swf_gradient_build(bitstream_t *bs, swf_gradient_t *gradient,
-                              swf_tag_t *tag);
+                              swf_tag_t *tag, int type);
 extern int swf_gradient_print(swf_gradient_t *gradient, int indent_depth,
-                              swf_tag_t *tag);
+                              swf_tag_t *tag, int type);
+
+extern int swf_gradient_delete(swf_gradient_t *gradient);
 
 #endif /* __SWF_GRADIENT_H__ */
