@@ -318,9 +318,13 @@ bitstream_align(bitstream_t *bs) {
 
 int
 bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
-                             unsigned long bit_incr) {
+                  signed long bit_incr) {
     bs->byte_offset += byte_incr;
     bs->bit_offset += bit_incr;
+    while (bs->bit_offset < 0) {
+        bs->bit_offset += 8;
+        bs->byte_offset --;
+    }
     while (bs->bit_offset >= 8) {
         bs->bit_offset -= 8;
         bs->byte_offset ++;

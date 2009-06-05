@@ -50,7 +50,7 @@ extern void bitstream_align(bitstream_t *bs);
 
 /* seeking */
 extern int bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
-                             unsigned long bit_incr);
+                             signed long bit_incr);
 extern int bitstream_setpos(bitstream_t *bs, unsigned long byte_offset,
 			    unsigned long bit_offset);
 extern unsigned long bitstream_getbytepos(bitstream_t *bs);
