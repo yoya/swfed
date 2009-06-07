@@ -78,6 +78,7 @@ int
 swf_shape_record_setup_print(swf_shape_record_setup_t *shape_record_setup,
                              int indent_depth, swf_tag_t *tag, 
                              swf_styles_count_t *count) {
+    (void) count; // XXX
     if (tag->tag != 2) { // DefineShape
         print_indent(indent_depth);
         printf("shape_record_type=%d\n",
