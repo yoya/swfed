@@ -362,3 +362,13 @@ unsigned long
 bitstream_length(bitstream_t *bs) {
     return bs->data_len;
 }
+
+unsigned long
+bitstream_hexdump(bitstream_t *bs, int length) {
+    unsigned long i;
+    printf("%08lu: ", bs->byte_offset);
+    for ( i = bs->byte_offset ; i < bs->byte_offset + length ; i++) {
+        printf("%02x ", bs->data[i] & 0xff);
+    }
+    printf("\n");
+}

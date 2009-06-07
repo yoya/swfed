@@ -61,4 +61,7 @@ extern int bitstream_realloc(bitstream_t *bs);
 extern unsigned char *bitstream_buffer(bitstream_t *bs, unsigned long byte_offset);
 extern unsigned long bitstream_length(bitstream_t *bs);
 
+/* debug function */
+extern unsigned long bitstream_hexdump(bitstream_t *bs, int length);
+
 #endif /* __BITSTREAM_H__ */
