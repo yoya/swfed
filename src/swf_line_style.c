@@ -91,6 +91,51 @@ swf_line_style_build(bitstream_t *bs, swf_line_style_t *line_style,
 int
 swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
                      swf_tag_t *tag) {
-    printf("swf_line_style_print: not implemented yet\n");
+    if (tag->tag == 46) { // DefineMorphShape
+        print_indent(indent_depth);
+        printf("witdh=%d  width_morph=%d\n",
+               line_style->width, line_style->width_morph);
+        swf_rgba_print(&(line_style->rgba), indent_depth);
+        swf_rgba_print(&(line_style->rgba_morph), indent_depth);
+    } else if (tag->tag == 83 || tag->tag == 84) {
+        // DefineShape4 || DefineMorphShape2
+        if (tag->tag == 84) { // DefineMorphShape2
+            print_indent(indent_depth);
+            printf("width_morph=%d\n", line_style->width_morph);
+        }
+        print_indent(indent_depth);
+        printf("start_cap_style=%u  join_style=%u  has_fill=%u\n",
+               line_style->start_cap_style,
+               line_style->join_style, line_style->has_fill);
+        print_indent(indent_depth);
+        printf("no_hscale=%u  no_vscale=%u  pixel_hinting=%u\n",
+               line_style->no_hscale, line_style->no_vscale,
+               line_style->pixel_hinting);
+        print_indent(indent_depth);
+        printf("(reserved=%u)  no_close=%u end_cap_style=%u\n",
+               line_style->reserved, line_style->no_close,
+               line_style->end_cap_style);
+        if (line_style->join_style == 2) {
+            print_indent(indent_depth);
+            printf("miter_limit_factor=%u\n", line_style->miter_limit_factor);
+        }
+        if (line_style->has_fill) {
+            swf_fill_style_print(&(line_style->fill_style), indent_depth + 1,
+                tag);
+        } else {
+            swf_rgba_print(&(line_style->rgba), indent_depth);
+            if (tag->tag == 84) { // DefineMorphShape2
+                swf_rgba_print(&(line_style->rgba_morph), indent_depth);
+            }
+        }
+    } else if (tag->tag == 32) { // DefineShape3
+        print_indent(indent_depth);
+        printf("witdh=%u\n", line_style->width);
+        swf_rgba_print(&(line_style->rgba), indent_depth + 1);
+    } else {
+        print_indent(indent_depth);
+        printf("witdh=%u\n", line_style->width);
+        swf_rgb_print(&(line_style->rgb), indent_depth + 1);
+    }
     return 0;
 }
