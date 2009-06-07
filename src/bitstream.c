@@ -372,3 +372,10 @@ bitstream_hexdump(bitstream_t *bs, int length) {
     }
     printf("\n");
 }
+void
+bitstream_print(bitstream_t *bs) {
+    printf("data=%p  data_len=%lu data_alloc_len=%lu\n",
+           bs->data, bs->data_len, bs->data_alloc_len);
+    printf("byte_offset=%lu  bit_offset=%lu\n",
+           bs->byte_offset, bs->bit_offset);
+}

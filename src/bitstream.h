@@ -63,5 +63,6 @@ extern unsigned long bitstream_length(bitstream_t *bs);
 
 /* debug function */
 extern unsigned long bitstream_hexdump(bitstream_t *bs, int length);
+extern void bitstream_print(bitstream_t *bs);
 
 #endif /* __BITSTREAM_H__ */
