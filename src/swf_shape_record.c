@@ -25,7 +25,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
         }
         if (100 <= limit) {
             current->next = NULL;
-            fprintf(stderr, "swf_shape_record_parse: limit over\n", limit);
+            fprintf(stderr, "swf_shape_record_parse: limit(%d) over\n", limit);
             return 1;
         }
         current->next = calloc(1, sizeof(swf_shape_record_t));
