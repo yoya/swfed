@@ -13,12 +13,14 @@
 #include "swf_shape_record_setup.h"
 #include "swf_shape_record_edge.h"
 
-typedef union swf_shape_record_ {
-    unsigned char first_6bits : 6;
-    swf_shape_record_end_t   shape_end;
-    swf_shape_record_setup_t shape_setup;
-    swf_shape_record_edge_t  shape_edge;
-    union swf_shape_record_ *next;
+typedef struct swf_shape_record_ {
+    union {
+        unsigned char first_6bits : 6;
+        swf_shape_record_end_t   shape_end;
+        swf_shape_record_setup_t shape_setup;
+        swf_shape_record_edge_t  shape_edge;
+    } shape;
+    struct swf_shape_record_ *next;
 } swf_shape_record_t;
 
 extern int swf_shape_record_parse(bitstream_t *bs,
