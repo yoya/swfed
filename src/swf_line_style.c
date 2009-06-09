@@ -93,7 +93,7 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
                      swf_tag_t *tag) {
     if (tag->tag == 46) { // DefineMorphShape
         print_indent(indent_depth);
-        printf("witdh=%d  width_morph=%d\n",
+        printf("width=%d  width_morph=%d\n",
                line_style->width, line_style->width_morph);
         swf_rgba_print(&(line_style->rgba), indent_depth);
         swf_rgba_print(&(line_style->rgba_morph), indent_depth);
@@ -130,11 +130,11 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
         }
     } else if (tag->tag == 32) { // DefineShape3
         print_indent(indent_depth);
-        printf("witdh=%u\n", line_style->width);
+        printf("width=%u\n", line_style->width);
         swf_rgba_print(&(line_style->rgba), indent_depth + 1);
     } else {
         print_indent(indent_depth);
-        printf("witdh=%u\n", line_style->width);
+        printf("width=%u\n", line_style->width);
         swf_rgb_print(&(line_style->rgb), indent_depth + 1);
     }
     return 0;
