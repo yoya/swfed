@@ -108,6 +108,7 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
+    swf_rect_build(bs, &(swf_tag_shape->rect));
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
     return data;
@@ -120,6 +121,7 @@ swf_tag_shape_print_detail(swf_tag_t *tag,
     (void) swf;
     print_indent(indent_depth);
     printf("shape_id=%d\n", swf_tag_shape->shape_id);
+    swf_rect_print(&(swf_tag_shape->rect), indent_depth);
     print_indent(indent_depth);
     printf("is_morph=%d has_strokes=%d\n",
            swf_tag_shape->is_morph, swf_tag_shape->has_strokes);
