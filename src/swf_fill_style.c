@@ -51,6 +51,10 @@ swf_fill_style_build(bitstream_t *bs, swf_fill_style_t *fill_style,
 int
 swf_fill_style_print(swf_fill_style_t *fill_style, int indent_depth,
     swf_tag_t *tag) {
+    if (fill_style == NULL) {
+        fprintf(stderr, "swf_fill_style_print: fill_style == NULL\n");
+        return 1;
+    }
     print_indent(indent_depth);
     printf("type=0x%02x\n", fill_style->type);
     switch (fill_style->type) {
