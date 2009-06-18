@@ -8,14 +8,34 @@ swf_line_style_array_parse(bitstream_t *bs,
                            swf_line_style_array_t *shape_with_style,
                            swf_tag_t *tag) {
     int i;
-    shape_with_style->count = bitstream_getbyte(bs);
+    int result;
+    result = bitstream_getbyte(bs);
+    if (result == -1) {
+        fprintf(stderr, "swf_line_style_array_parse: bitstream_getbyte failed at (L%d)\n", __LINE__);
+        return 1;
+    }
+    shape_with_style->count = result;
     if ((tag->tag != 2) && // ! DefineShape
          (shape_with_style->count == 255)) {
-        shape_with_style->count = bitstream_getbytesLE(bs, 2);
+        result = bitstream_getbytesLE(bs, 2);
+        if (result == -1) {
+            fprintf(stderr, "swf_line_style_array_parse: bitstream_getbyte failed at (L%d)\n", __LINE__);
+            return 1;
+        }
+        shape_with_style->count = result;
+    }
+    if (1000 < shape_with_style->count) { // XXX
+        fprintf(stderr, "swf_line_style_array_parse: too many count(%d)\n",
+                shape_with_style->count);
+        return 1;
     }
     shape_with_style->line_style = calloc(shape_with_style->count, sizeof(swf_line_style_t));
     for (i = 0 ; i < shape_with_style->count ; i++) {
-        swf_line_style_parse(bs, &(shape_with_style->line_style[i]), tag);
+        result = swf_line_style_parse(bs, &(shape_with_style->line_style[i]), tag);
+        if (result) {
+            shape_with_style->count = i; // XXX
+            return result;
+        }
     }
     return 0;
 }

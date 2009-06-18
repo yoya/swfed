@@ -6,10 +6,15 @@ int
 swf_shape_with_style_parse(bitstream_t *bs,
                            swf_shape_with_style_t *shape_with_style,
                            swf_tag_t *tag) {
-    swf_styles_parse(bs, &(shape_with_style->styles), tag);
-    swf_shape_record_parse(bs, &(shape_with_style->shape_records), tag,
-                           &(shape_with_style->styles.styles_count));
-    return 0;
+    int result;
+    result = swf_styles_parse(bs, &(shape_with_style->styles), tag);
+    if (result) {
+        return result;
+    }
+    result = swf_shape_record_parse(bs, &(shape_with_style->shape_records),
+                                    tag,
+                                    &(shape_with_style->styles.styles_count));
+    return result;
 }
 
 int

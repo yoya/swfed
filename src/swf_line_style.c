@@ -5,8 +5,13 @@
 int
 swf_line_style_parse(bitstream_t *bs, swf_line_style_t *line_style,
                      swf_tag_t *tag) {
+    int result;
     if (tag->tag == 46) { // DefineMorphShape
-        line_style->width = bitstream_getbytesLE(bs, 2);
+        result = bitstream_getbytesLE(bs, 2);
+        if (result == -1) {
+            return 1;
+        }
+        line_style->width = result;
         line_style->width_morph = bitstream_getbytesLE(bs, 2);
         swf_rgba_parse(bs, &(line_style->rgba));
         swf_rgba_parse(bs, &(line_style->rgba_morph));
@@ -15,7 +20,11 @@ swf_line_style_parse(bitstream_t *bs, swf_line_style_t *line_style,
         if (tag->tag == 84) { // DefineMorphShape2
             line_style->width_morph = bitstream_getbytesLE(bs, 2);
         }
-        line_style->start_cap_style = bitstream_getbits(bs, 2);
+        result = bitstream_getbits(bs, 2);
+        if (result == -1) {
+            return 1;
+        }
+        line_style->start_cap_style = result;
         line_style->join_style = bitstream_getbits(bs, 2);
         line_style->has_fill = bitstream_getbits(bs, 1);
         line_style->no_hscale = bitstream_getbits(bs, 1);
@@ -36,10 +45,18 @@ swf_line_style_parse(bitstream_t *bs, swf_line_style_t *line_style,
             }
         }
     } else if (tag->tag == 32) { // DefineShape3
-        line_style->width = bitstream_getbytesLE(bs, 2);
+        result = bitstream_getbytesLE(bs, 2);
+        if (result == -1) {
+            return 1;
+        }
+        line_style->width = result;
         swf_rgba_parse(bs, &(line_style->rgba));
     } else {
-        line_style->width = bitstream_getbytesLE(bs, 2);
+        result = bitstream_getbytesLE(bs, 2);
+        if (result == -1) {
+            return 1;
+        }
+        line_style->width = result;
         swf_rgb_parse(bs, &(line_style->rgb));
     }
     return 0;
