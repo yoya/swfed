@@ -213,13 +213,18 @@ swf_tag_edit_print_detail(swf_tag_t *tag,
            swf_tag_edit->edit_border?1:0);
     if (swf_tag_edit->edit_has_font) {
         print_indent(indent_depth);
-        printf("font_id=%d font_height=%d\n",
+        printf("font_id=%d font_height=%d",
                swf_tag_edit->edit_font_id_ref,
                swf_tag_edit->edit_font_height / SWF_TWIPS);
     }
     if (swf_tag_edit->edit_has_color) {
-        swf_rgba_print(&swf_tag_edit->edit_color, indent_depth + 1);
+        printf("  color=#02x#02x#02x(#02x)",
+               swf_tag_edit->edit_color.red,
+               swf_tag_edit->edit_color.green,
+               swf_tag_edit->edit_color.blue,
+               swf_tag_edit->edit_color.alpha);
     }
+    printf("\n");
     if (swf_tag_edit->edit_has_max_length) {
         print_indent(indent_depth);
         printf("max_length=%d\n",
