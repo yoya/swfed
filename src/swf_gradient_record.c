@@ -45,6 +45,10 @@ swf_gradient_record_build(bitstream_t *bs,
 int
 swf_gradient_record_print(swf_gradient_record_t *gradient_record,
                           int indent_depth, swf_tag_t *tag) {
+    if (gradient_record == NULL) {
+        fprintf(stderr, "swf_gradient_record_print: gradient_record == NULL\n");
+        return 1;
+    }
     if (tag->tag == 46 || tag->tag == 84) { // DefineMorph || DefineMorphShape2
         print_indent(indent_depth);
         printf("position=%d\n", gradient_record->position);
