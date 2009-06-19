@@ -13,4 +13,13 @@ if ($obj->input($swfdata) == false) {
     fprintf(STDERR, "input failed\n");
     exit(1);
 }
-echo $obj->getJpegAlpha($image_id);
+
+$result = $obj->getJpegAlpha($image_id);
+
+if ($result === false) {
+    echo "getJpetAlpha failed\n";
+    exit (0);
+}
+
+echo $result;
+
