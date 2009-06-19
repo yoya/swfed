@@ -110,8 +110,8 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
     offset = 2 + 4 + offset_to_alpha;
     alpha_data_len = length - offset;
-    origsize = 256 * alpha_data_len;
-    new_buff = malloc(origsize); // enough size
+    origsize = 384 * alpha_data_len; // XXX
+    new_buff = malloc(origsize); // enough size?
     old_buff_ref = bitstream_buffer(bs, offset);
     result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
     if (result == Z_OK) {
