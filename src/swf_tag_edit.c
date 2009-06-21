@@ -218,7 +218,7 @@ swf_tag_edit_print_detail(swf_tag_t *tag,
                swf_tag_edit->edit_font_height / SWF_TWIPS);
     }
     if (swf_tag_edit->edit_has_color) {
-        printf("  color=#02x#02x#02x(#02x)",
+        printf("  color=#%02x#%02x#%02x(#%02x)",
                swf_tag_edit->edit_color.red,
                swf_tag_edit->edit_color.green,
                swf_tag_edit->edit_color.blue,
