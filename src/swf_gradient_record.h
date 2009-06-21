@@ -11,7 +11,7 @@
 #include "swf_rgba.h"
 #include "swf_rgb.h"
 
-typedef union swf_gradient_record_ {
+typedef struct swf_gradient_record_ {
     unsigned char position;
     swf_rgba_t rgba; // DefineMorphShape, DefineMorphShape2, DefineShape3, DefineShape4
     unsigned char position_morph; // DefineMorphShape, DefineMorphShape2

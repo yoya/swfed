@@ -9,7 +9,7 @@
 
 #include "swf_styles.h"
 
-typedef union swf_shape_record_edge_ {
+typedef struct swf_shape_record_edge_ {
     unsigned shape_record_type : 1;
     unsigned shape_edge_type : 1;
     unsigned shape_coord_size : 4;

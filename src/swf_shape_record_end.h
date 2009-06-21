@@ -7,7 +7,7 @@
 #ifndef __SWF_SHAPE_RECORD_END_H__
 #define __SWF_SHAPE_RECORD_END_H__
 
-typedef union swf_shape_record_end_ {
+typedef struct swf_shape_record_end_ {
     unsigned shape_record_type : 1;
     unsigned end_of_shape : 5;
 } swf_shape_record_end_t;

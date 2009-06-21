@@ -10,7 +10,7 @@
 #include "swf_tag.h"
 #include "swf_gradient_record.h"
 
-typedef union swf_gradient_ {
+typedef struct swf_gradient_ {
     unsigned char spread_mode : 2; // DefineShape4
     unsigned char interpolation_mode : 2; // DefineShape4
     unsigned char pad : 4;    // other tag

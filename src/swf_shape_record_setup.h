@@ -9,7 +9,7 @@
 
 #include "swf_styles.h"
 
-typedef union swf_shape_record_setup_ {
+typedef struct swf_shape_record_setup_ {
     unsigned shape_record_type : 1;
     unsigned shape_reserved : 1; // always zero,  DefineShape 
     unsigned shape_has_new_styles : 1;

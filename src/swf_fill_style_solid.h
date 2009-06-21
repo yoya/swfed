@@ -11,7 +11,7 @@
 #include "swf_rgb.h"
 #include "swf_tag.h"
 
-typedef union swf_fill_style_solid_ {
+typedef struct swf_fill_style_solid_ {
     unsigned char type;
     swf_rgba_t rgba;       // DefineMorphShape, DefineMorphShape2, DefineShape3
     swf_rgba_t rgba_morph; // DefineMorphShape, DefineMorphShape2

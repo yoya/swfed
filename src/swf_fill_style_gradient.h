@@ -11,7 +11,7 @@
 #include "swf_matrix.h"
 #include "swf_gradient.h"
 
-typedef union swf_fill_style_gradient_ {
+typedef struct swf_fill_style_gradient_ {
     unsigned char type;
     swf_matrix_t gradient_matrix;
     swf_matrix_t gradient_matrix_morph; // DefineMorphShape, DefineMorphShape2
