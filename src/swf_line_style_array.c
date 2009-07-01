@@ -33,6 +33,8 @@ swf_line_style_array_parse(bitstream_t *bs,
     for (i = 0 ; i < shape_with_style->count ; i++) {
         result = swf_line_style_parse(bs, &(shape_with_style->line_style[i]), tag);
         if (result) {
+            fprintf(stderr, "swf_line_style_array_parse: swf_line_style_parse failed shape_with_style->count %d => %d\n",
+                    shape_with_style->count, i);
             shape_with_style->count = i; // XXX
             return result;
         }
