@@ -160,6 +160,9 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
     bitstream_close(bs);
     return data;
 }
+
+/* --- */
+
 void
 swf_object_print(swf_object_t *swf) {
     int i;
@@ -177,6 +180,42 @@ swf_object_print(swf_object_t *swf) {
     }
 }
 
+extern unsigned char *
+swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
+                       unsigned long *length) {
+    int i;
+    swf_tag_t *tag;
+    tag = swf->tag;
+    for (i=0 ; (i < tag_seqno) &&  tag ; i++) {
+        tag = tag->next;
+    }
+    if (tag) {
+        if (tag->data) {
+            *length = tag->length;
+            return tag->data;
+        }
+        if (tag->detail == NULL) {
+            bitstream_t *bs;
+            unsigned char *data;
+            bs = bitstream_open();
+            swf_tag_build(bs, tag, swf);
+            data = bitstream_steal(bs, length);
+            bitstream_close(bs);
+            return data;
+        }
+        if (tag->detail) {
+            *length = tag->length;
+            return tag->data;
+        }
+    }
+    return NULL;
+}
+
+int
+swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
+                           unsigned char *data, unsigned long *length) {
+    return 1;
+}
 
 /* --- */
 

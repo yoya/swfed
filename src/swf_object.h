@@ -22,9 +22,18 @@ extern swf_object_t *swf_object_open(void);
 extern void swf_object_close(swf_object_t *swf);
 extern int swf_object_input(swf_object_t *swf, unsigned char *data, unsigned long data_len);
 extern unsigned char *swf_object_output(swf_object_t *swf, unsigned long *length);
-extern void swf_object_print(swf_object_t *swf);
 
 /* --- */
+
+extern void swf_object_print(swf_object_t *swf);
+extern unsigned char *swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
+                                             unsigned long *length);
+extern int swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
+                                      unsigned char *data,
+                                      unsigned long *length);
+
+/* --- */
+
 extern unsigned char *swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id);
 extern unsigned char *swf_object_get_alphadata(swf_object_t *swf, unsigned long *length, int image_id);
 extern int swf_object_replace_jpegdata(swf_object_t *swf, int image_id,

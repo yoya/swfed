@@ -53,6 +53,7 @@ PHP_METHOD(swfed, getTagList);
 PHP_METHOD(swfed, getTagDetail);
 PHP_METHOD(swfed, getTagInfo);
 PHP_METHOD(swfed, getTagData);
+PHP_METHOD(swfed, replaceTagData);
 PHP_METHOD(swfed, getJpegData);
 PHP_METHOD(swfed, getJpegAlpha);
 PHP_METHOD(swfed, replaceJpegData);

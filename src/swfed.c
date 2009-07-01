@@ -57,6 +57,7 @@ zend_function_entry swfed_functions[] = {
       	PHP_ME(swfed,  getTagList, NULL, 0)
    	PHP_ME(swfed,  getTagDetail, NULL, 0)
        	PHP_ME(swfed,  getTagData, NULL, 0)
+        PHP_ME(swfed,  replaceTagData, NULL, 0)
    	PHP_ME(swfed,  getJpegData, NULL, 0)
    	PHP_ME(swfed,  getJpegAlpha, NULL, 0)
    	PHP_ME(swfed,  replaceJpegData, NULL, 0)
@@ -454,8 +455,54 @@ PHP_METHOD(swfed, getTagDetail) {
 }
 
 PHP_METHOD(swfed, getTagData) {
-    printf("not implemented yet.\n");
-    RETURN_FALSE;
+    long tag_seqno;
+    swf_object_t *swf;
+    unsigned char *data_ref;
+    char *new_buff;
+    unsigned long data_len;
+    
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    data_ref = swf_object_get_tagdata(swf, tag_seqno, &data_len);
+    if (data_ref == NULL) {
+        fprintf(stderr, "getTagData: Can't get_tagdata\n");
+        RETURN_FALSE;
+    }
+    new_buff = emalloc(data_len);
+    if (new_buff == NULL) {
+        fprintf(stderr, "getTagData: Can't emalloc new_buff\n");
+        RETURN_FALSE;
+    }
+    memcpy(new_buff, data_ref, data_len);
+    RETURN_STRINGL(new_buff, data_len, 0);
+}
+
+PHP_METHOD(swfed, replaceTagData) {
+    char *data = NULL;
+    int data_len = 0;
+    int tag_seqno;
+    swf_object_t *swf;
+    int result = 0;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &tag_seqno, &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_replace_tagdata(swf, tag_seqno,
+                                        (unsigned char *)data,
+                                        (unsigned long) data_len);
+    if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, getJpegData) {
@@ -783,7 +830,6 @@ PHP_METHOD(swfed, disasmActionData) {
     }
     swf_action_list_destroy(action_list);
 }
-    
 
 PHP_METHOD(swfed, swfInfo) {
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
