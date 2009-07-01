@@ -98,14 +98,17 @@ swf_shape_record_setup_print(swf_shape_record_setup_t *shape_record_setup,
                shape_record_setup->shape_move_y);
     }
     if (shape_record_setup->shape_has_fill_style0) {
+        print_indent(indent_depth);
         printf("shape_fill_style0=%d\n",
                shape_record_setup->shape_fill_style0);
     }
     if (shape_record_setup->shape_has_fill_style1) {
+        print_indent(indent_depth);
         printf("shape_fill_style1=%d\n",
                shape_record_setup->shape_fill_style1);
     }
     if (shape_record_setup->shape_has_line_style) {
+        print_indent(indent_depth);
         printf("shape_line_style=%d\n",
                shape_record_setup->shape_line_style);
     }
