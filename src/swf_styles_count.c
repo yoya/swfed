@@ -4,13 +4,20 @@
 
 int
 swf_styles_count_parse(bitstream_t *bs, swf_styles_count_t *styles_count) {
+    int result;
+    bitstream_align(bs);
     styles_count->fill_bits_count = bitstream_getbits(bs, 4);
-    styles_count->line_bits_count = bitstream_getbits(bs, 4);
+    result = bitstream_getbits(bs, 4);
+    if (result == -1) {
+        return 1;
+    }
+    styles_count->line_bits_count = result;
     return 0;
 }
 
 int
 swf_styles_count_build(bitstream_t *bs, swf_styles_count_t *styles_count) {
+    bitstream_align(bs);
     bitstream_putbits(bs, styles_count->fill_bits_count, 4);
     bitstream_putbits(bs, styles_count->line_bits_count, 4);
     return 0;
