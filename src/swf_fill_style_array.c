@@ -8,14 +8,22 @@ swf_fill_style_array_parse(bitstream_t *bs,
                            swf_fill_style_array_t *fill_style_array,
                            swf_tag_t *tag) {
     int i;
+    int result;
+
     fill_style_array->count = bitstream_getbyte(bs);
+    
     if ((tag->tag != 2) && // ! DefineShape
         (fill_style_array->count == 255)) {
         fill_style_array->count = bitstream_getbytesLE(bs, 2);
     }
     fill_style_array->fill_style = calloc(fill_style_array->count, sizeof(swf_fill_style_t));
     for (i = 0 ; i < fill_style_array->count ; i++) {
-        swf_fill_style_parse(bs, &(fill_style_array->fill_style[i]), tag);
+        result = swf_fill_style_parse(bs, &(fill_style_array->fill_style[i]), tag);
+        if (result) {
+            fprintf(stderr, "swf_fill_style_array_parse: swf_fill_style_parse failed i=%d\n", i);
+            fill_style_array->count = i;
+            return 1;
+        }
     }
     return 0;
 }
