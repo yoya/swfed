@@ -21,6 +21,9 @@ swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *fill_style,
       case 0x43: // clipped bitmap fill with hard edges
         swf_fill_style_bitmap_parse(bs, &(fill_style->bitmap), tag);
         break;
+    default:
+        fprintf(stderr, "swf_fill_style_parse: unknown fill_stype->type=%d\n", fill_style->type);
+        return 1;
     }
     return 0;
 }
