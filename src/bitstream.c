@@ -304,6 +304,21 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     return bits;
 }
 
+signed long
+bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
+    int i;
+    int bit;
+    unsigned long bits = 0;
+    for (i=0 ; i < bit_width ; i++) {
+        bit = bitstream_getbit(bs);
+        if (bit == -1) {
+            return -1;
+        }
+        bits |= bit << (bit_width - 1 - i);
+    }
+    return bits;
+}
+
 void
 bitstream_align(bitstream_t *bs) {
     if (bs->bit_offset > 0) {
@@ -362,16 +377,76 @@ unsigned long
 bitstream_length(bitstream_t *bs) {
     return bs->data_len;
 }
+/*
+ * utility
+ */
 
-unsigned long
-bitstream_hexdump(bitstream_t *bs, int length) {
-    unsigned long i;
-    printf("%08lu: ", bs->byte_offset);
-    for ( i = bs->byte_offset ; i < bs->byte_offset + length ; i++) {
-        printf("%02x ", bs->data[i] & 0xff);
+
+
+extern signed long
+bitstream_unsigned2signed(unsigned long num, int size) {
+    unsigned long sig_bit = 1 << (size - 1);
+    if ((sig_bit & num) == 0) {
+        return (signed long) num;
+    } else {
+        unsigned long mask = sig_bit - 1;
+        return - ((num^mask) & mask) - 1;
     }
-    printf("\n");
 }
+
+extern unsigned long
+bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
+    if (0 <= num){
+        return (unsigned long) num;
+    } else {
+        unsigned long sig_bit = 1 << (size - 1);
+        unsigned long mask = sig_bit - 1;
+        return - ((num^mask) & mask) - 1;
+    }
+}
+/*
+ * error handling
+ */
+
+int
+bitstream_iserror(bitstream_t *bs) {
+    (void) bs;
+    return 0;
+}
+
+void
+bitstream_printerror(bitstream_t *bs) {
+    (void) bs;
+}
+/*
+ * for debug
+ */
+
+void
+bitstream_hexdump(bitstream_t *bs, int length) {
+    unsigned long i, j;
+    for ( i = bs->byte_offset ; i < bs->byte_offset + length ; i++) {
+        if ((i == bs->byte_offset) || (i%16) == 0) {
+            printf("%08lu: ", i);
+            if ((i%16) != 0) {
+                for( j = 0 ; j < (i%16) ; j++) {
+                    printf("   ");
+                }
+            }
+        }
+        printf("%02x ", bs->data[i] & 0xff);
+        if ((i%16) == 7) {
+            printf(" ");
+        }
+        if ((i%16) == 15) {
+            printf("\n");
+        }
+    }
+    if ((i%16) != 0) {
+        printf("\n");
+    }
+}
+
 void
 bitstream_print(bitstream_t *bs) {
     printf("data=%p  data_len=%lu data_alloc_len=%lu\n",

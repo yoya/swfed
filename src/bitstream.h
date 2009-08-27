@@ -16,9 +16,15 @@ typedef struct bitstream_ {
     /* seek position */
     unsigned long byte_offset;
     unsigned long bit_offset;
+    /* error */
+    int error;
+    
 } bitstream_t;
 
 #define BITSTREAM_DATA_LEN_MIN 0x100
+
+#define BITSTREAM_ERROR_NONE 0
+#define BITSTREAM_ERROR_NOMORE_DATA 1
 
 extern bitstream_t *bitstream_open(void);
 extern void bitstream_close(bitstream_t * bs);
@@ -46,6 +52,7 @@ extern int bitstream_putbit(bitstream_t *bs, int bit);
 extern int bitstream_getbit(bitstream_t *bs);
 extern int bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width);
 extern unsigned long bitstream_getbits(bitstream_t *bs, int bit_width);
+extern signed long bitstream_getbits_signed(bitstream_t *bs, int bit_width);
 extern void bitstream_align(bitstream_t *bs);
 
 /* seeking */
@@ -61,8 +68,17 @@ extern int bitstream_realloc(bitstream_t *bs);
 extern unsigned char *bitstream_buffer(bitstream_t *bs, unsigned long byte_offset);
 extern unsigned long bitstream_length(bitstream_t *bs);
 
-/* debug function */
-extern unsigned long bitstream_hexdump(bitstream_t *bs, int length);
+/* utility */
+
+extern signed long bitstream_unsigned2signed(unsigned long num, int size);
+extern unsigned long bitstream_signed2unsigned(signed long num, int size);
+
+/* error handling  */
+extern int bitstream_iserror(bitstream_t *bs);
+extern void bitstream_printerror(bitstream_t *bs);
+
+/* for debug */
+extern void bitstream_hexdump(bitstream_t *bs, int length);
 extern void bitstream_print(bitstream_t *bs);
 
 #endif /* __BITSTREAM_H__ */
