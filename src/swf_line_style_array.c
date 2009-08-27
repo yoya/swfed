@@ -27,6 +27,7 @@ swf_line_style_array_parse(bitstream_t *bs,
     if (1000 < shape_with_style->count) { // XXX
         fprintf(stderr, "swf_line_style_array_parse: too many count(%d)\n",
                 shape_with_style->count);
+        shape_with_style->count = 0;
         return 1;
     }
     shape_with_style->line_style = calloc(shape_with_style->count, sizeof(swf_line_style_t));
