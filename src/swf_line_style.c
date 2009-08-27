@@ -108,6 +108,10 @@ swf_line_style_build(bitstream_t *bs, swf_line_style_t *line_style,
 int
 swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
                      swf_tag_t *tag) {
+    if (line_style == NULL) {
+        fprintf(stderr, "swf_line_style_print: line_style == NULL\n");
+        return 1;
+    }
     if (tag->tag == 46) { // DefineMorphShape
         print_indent(indent_depth);
         printf("width=%d  width_morph=%d\n",
