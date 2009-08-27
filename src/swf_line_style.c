@@ -147,12 +147,12 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
         }
     } else if (tag->tag == 32) { // DefineShape3
         print_indent(indent_depth);
-        printf("width=%u\n", line_style->width);
-        swf_rgba_print(&(line_style->rgba), indent_depth + 1);
+        printf("width=%u ", line_style->width);
+        swf_rgba_print(&(line_style->rgba), 0);
     } else {
         print_indent(indent_depth);
-        printf("width=%u\n", line_style->width);
-        swf_rgb_print(&(line_style->rgb), indent_depth + 1);
+        printf("width=%u ", line_style->width);
+        swf_rgb_print(&(line_style->rgb), 0);
     }
     return 0;
 }
