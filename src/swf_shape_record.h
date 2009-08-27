@@ -14,8 +14,8 @@
 #include "swf_shape_record_edge.h"
 
 typedef struct swf_shape_record_ {
+    unsigned char first_6bits; //  : 6
     union {
-        unsigned char first_6bits : 6;
         swf_shape_record_end_t   shape_end;
         swf_shape_record_setup_t shape_setup;
         swf_shape_record_edge_t  shape_edge;
