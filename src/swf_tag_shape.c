@@ -47,6 +47,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
+    
     swf_tag_shape->shape_id = bitstream_getbytesLE(bs, 2);
     swf_rect_parse(bs, &(swf_tag_shape->rect));
     // DefineMorphShape, DefineMorphShape2
@@ -123,8 +124,8 @@ swf_tag_shape_print_detail(swf_tag_t *tag,
     printf("shape_id=%d\n", swf_tag_shape->shape_id);
     swf_rect_print(&(swf_tag_shape->rect), indent_depth);
     print_indent(indent_depth);
-    printf("is_morph=%d has_strokes=%d\n",
-           swf_tag_shape->is_morph, swf_tag_shape->has_strokes);
+//    printf("is_morph=%d has_strokes=%d\n",
+//           swf_tag_shape->is_morph, swf_tag_shape->has_strokes);
     if (swf_tag_shape->is_morph) {
         swf_rect_print(&(swf_tag_shape->rect_morph), indent_depth);
     }
