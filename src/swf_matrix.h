@@ -13,13 +13,13 @@ typedef struct swf_matrix_ {
     // char align;
     unsigned char has_scale:1;
     unsigned char scale_bits; //  : 5;
-    signed long scale_x; // : scale_bits;
-    signed long scale_y; // : scale_bits;
+    signed long scale_x; // : scale_bits; n.16 fixed point
+    signed long scale_y; // : scale_bits; n.16 fixed point
+
     unsigned has_rotate : 1;
-    
-    unsigned rotate_bits : 5; // f_has_rotate
-    signed /* fixed */ rotate_skew0; // : f_rotate_bits;
-    signed /* fixed */ rotate_skew1; // : f_rotate_bits;
+    unsigned rotate_bits; // : 5;
+    signed long rotate_skew0; // : rotate_bits; n.16 fixed point
+    signed long rotate_skew1; // : rotate_bits; n.16 fixed point
 
     signed translate_x ; // : f_rotate_bits;
     signed translate_y ; // : f_rotate_bits;
