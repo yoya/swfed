@@ -481,7 +481,7 @@ PHP_METHOD(swfed, getTagData) {
 
 PHP_METHOD(swfed, replaceTagData) {
     char *data = NULL;
-    int data_len = 0;
+    unsigned long data_len = 0;
     int tag_seqno;
     swf_object_t *swf;
     int result = 0;
@@ -498,7 +498,7 @@ PHP_METHOD(swfed, replaceTagData) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_tagdata(swf, tag_seqno,
                                         (unsigned char *)data,
-                                        (unsigned long) data_len);
+                                        & data_len);
     if (result) {
         RETURN_FALSE;
     }

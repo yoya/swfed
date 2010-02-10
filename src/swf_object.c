@@ -214,6 +214,7 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
 int
 swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
                            unsigned char *data, unsigned long *length) {
+    fprintf(stderr, "swf_object_replace_tagdata: not impremented yet.\n");
     return 1;
 }
 
