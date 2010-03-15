@@ -110,7 +110,9 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
     offset = 2 + 4 + offset_to_alpha;
     alpha_data_len = length - offset;
-    origsize = 384 * alpha_data_len; // XXX
+    // 本来は jpeg を解読して width*height で算出するべきだが…
+    origsize = 512 * alpha_data_len; // XXX jpeg1,2より少し大目
+    
     new_buff = malloc(origsize); // enough size?
     old_buff_ref = bitstream_buffer(bs, offset);
     result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
@@ -318,19 +320,21 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
     }
     swf_tag_jpeg->image_id = image_id;
     if (tag->tag == 6) { // DefineBitsJPEG
-        free(swf_tag_jpeg->jpeg_data);
-        swf_tag_jpeg->jpeg_data = malloc(jpeg_data_len);
-        memcpy(swf_tag_jpeg->jpeg_data, jpeg_data, jpeg_data_len);
-        swf_tag_jpeg->jpeg_data_len = jpeg_data_len;
+        if (jpeg_data && jpeg_data_len) { // fail safe
+            free(swf_tag_jpeg->jpeg_data);
+            swf_tag_jpeg->jpeg_data = malloc(jpeg_data_len);
+            memcpy(swf_tag_jpeg->jpeg_data, jpeg_data, jpeg_data_len);
+            swf_tag_jpeg->jpeg_data_len = jpeg_data_len;
+        }
     } else {
-        if (jpeg_data) {
+        if (jpeg_data && jpeg_data_len) {
             unsigned long length;
             free(swf_tag_jpeg->jpeg_data);
             swf_tag_jpeg->jpeg_data = jpegconv_std2swf(jpeg_data, jpeg_data_len,
                                                        &length);
             swf_tag_jpeg->jpeg_data_len = length;
         }
-        if (alpha_data) {
+        if (alpha_data && alpha_data_len) {
             free(swf_tag_jpeg->alpha_data);
             swf_tag_jpeg->alpha_data = malloc(alpha_data_len);
             memcpy(swf_tag_jpeg->alpha_data, alpha_data, alpha_data_len);
