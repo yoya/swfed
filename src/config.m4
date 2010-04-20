@@ -59,7 +59,7 @@ if test "$PHP_SWFED" != "no"; then
   dnl   -L$SWFED_DIR/lib -lm -ldl
   dnl ])
   dnl
-  dnl PHP_SUBST(SWFED_SHARED_LIBADD)
+  PHP_SUBST(SWFED_SHARED_LIBADD)
 
   PHP_NEW_EXTENSION(swfed, swfed.c \
 	swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \

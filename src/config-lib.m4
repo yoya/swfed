@@ -90,12 +90,12 @@ fi
     AC_MSG_RESULT([png.h not found.])
   else
     AC_MSG_RESULT([$PHP_PNG_DIR])
-    if test "z$PHP_LIBDIR" != "z"; then
+    if test "png$PHP_LIBDIR" != "png"; then
     dnl PHP5+
-      PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_PNG_DIR/$PHP_LIBDIR, SWFED_SHARED_LIBADD)
+      PHP_ADD_LIBRARY_WITH_PATH(png, $PHP_PNG_DIR/$PHP_LIBDIR, SWFED_SHARED_LIBADD)
     else
     dnl PHP4
-      PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_PNG_DIR/lib, SWFED_SHARED_LIBADD)
+      PHP_ADD_LIBRARY_WITH_PATH(png, $PHP_PNG_DIR/lib, SWFED_SHARED_LIBADD)
     fi
     PHP_ADD_INCLUDE($PHP_PNG_INCDIR)
   fi
@@ -135,12 +135,12 @@ fi
     AC_MSG_RESULT([gif_lib.h not found.])
   else
     AC_MSG_RESULT([$PHP_GIF_DIR])
-    if test "z$PHP_LIBDIR" != "z"; then
+    if test "gif$PHP_LIBDIR" != "gif"; then
     dnl PHP5+
-      PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_GIF_DIR/$PHP_LIBDIR, SWFED_SHARED_LIBADD)
+      PHP_ADD_LIBRARY_WITH_PATH(gif, $PHP_GIF_DIR/$PHP_LIBDIR, SWFED_SHARED_LIBADD)
     else
     dnl PHP4
-      PHP_ADD_LIBRARY_WITH_PATH(z, $PHP_GIF_DIR/lib, SWFED_SHARED_LIBADD)
+      PHP_ADD_LIBRARY_WITH_PATH(gif, $PHP_GIF_DIR/lib, SWFED_SHARED_LIBADD)
     fi
     PHP_ADD_INCLUDE($PHP_GIF_INCDIR)
   fi
