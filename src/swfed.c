@@ -851,7 +851,7 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
         return NULL;
     }
     id = Z_LVAL_PP(tmp);
-    swf = zend_list_find(id, &type);
+    swf = (swf_object_t *) zend_list_find(id, &type);
     return swf;
 }
 
