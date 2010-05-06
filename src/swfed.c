@@ -858,5 +858,5 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
 static void free_swfed_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
 {
 //    printf("SWFEditor->destory\n");
-    swf_object_close(resource->ptr);
+    swf_object_close((swf_object_t *) resource->ptr);
 }
