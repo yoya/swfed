@@ -188,7 +188,7 @@ swf_action_print(swf_action_t *act, int indent_depth) {
         case 0x83: // Get URL
             printf(" (String)%s", act->action_data);
             printf(" (String)%s",
-                   act->action_data + strlen(act->action_data) + 1);
+                   act->action_data + strlen((char*) act->action_data) + 1);
             break;
         case 0x88: // Declare Dictionary
             d = act->action_data;
