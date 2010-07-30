@@ -178,8 +178,18 @@ PHP_RSHUTDOWN_FUNCTION(swfed)
  */
 PHP_MINFO_FUNCTION(swfed)
 {
+	int gif_support = 0;
+	int png_support = 0;
 	php_info_print_table_start();
-	php_info_print_table_header(2, "swfed support", "enabled");
+	php_info_print_table_header(2, "SWF Editor support", "enabled");
+#ifdef HAVE_PNG
+	png_support = 1;
+#endif
+#ifdef HAVE_GIF
+	gif_support = 1;
+#endif
+	php_info_print_table_row(2, "SWF Editor PNG support", png_support?"yes":"no");
+	php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
 	php_info_print_table_end();
 
 	/* Remove comments if you have entries in php.ini
