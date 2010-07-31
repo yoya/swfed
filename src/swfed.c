@@ -82,7 +82,7 @@ zend_module_entry swfed_module_entry = {
 	STANDARD_MODULE_HEADER,
 #endif
 	"swfed",
-	swfed_functions,
+	NULL, // no global functions
 	PHP_MINIT(swfed),
 	PHP_MSHUTDOWN(swfed),
 	PHP_RINIT(swfed),		/* Replace with NULL if there's nothing to do at request start */
