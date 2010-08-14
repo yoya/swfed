@@ -307,6 +307,7 @@ PHP_METHOD(swfed, setHeaderInfo) {
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a",
                               &header_info) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "Invalid parameters");
+        RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     header_table = Z_ARRVAL_P(header_info);
