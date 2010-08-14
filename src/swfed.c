@@ -135,11 +135,11 @@ PHP_MINIT_FUNCTION(swfed)
 	zend_class_entry ce;
 	INIT_CLASS_ENTRY(ce, "SWFEditor", swfed_functions);
 	swfeditor_ce = zend_register_internal_class(&ce TSRMLS_CC);
-    le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
+	le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
     
 	zend_declare_property_stringl(swfeditor_ce,
-								 "swf_object", strlen("swf_object"),
-								 "", 0, ZEND_ACC_PUBLIC);
+				"swf_object", strlen("swf_object"),
+				"", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
 	return SUCCESS;
 }
 
