@@ -17,6 +17,10 @@ swf_styles_parse(bitstream_t *bs, swf_styles_t *shape_with_style,
         return result;
     }
     result = swf_styles_count_parse(bs, &(shape_with_style->styles_count));
+    if (result) {
+        return result;
+    }
+
     return result;
 }
 

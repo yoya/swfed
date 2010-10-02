@@ -25,7 +25,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
             break;
         } if (first_bit == 0) {
             swf_shape_record_setup_parse(bs, &(current_record->shape.shape_setup),
-                                         tag, count);
+                                         tag);
 } else {
             swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge));
         }

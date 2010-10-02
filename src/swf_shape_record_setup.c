@@ -1,12 +1,14 @@
 #include <stdio.h>
 #include "bitstream.h"
 #include "swf_shape_record_setup.h"
+#include "swf_tag_shape.h"
 
 int
 swf_shape_record_setup_parse(bitstream_t *bs,
                              swf_shape_record_setup_t *shape_record_setup,
-                             swf_tag_t *tag, swf_styles_count_t *count) {
+                             swf_tag_t *tag) {
     int shape_move_size;
+    swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     shape_record_setup->shape_record_type = bitstream_getbit(bs);
     shape_record_setup->shape_has_new_styles = bitstream_getbit(bs);
     shape_record_setup->shape_has_line_style = bitstream_getbit(bs);
@@ -20,18 +22,18 @@ swf_shape_record_setup_parse(bitstream_t *bs,
         shape_record_setup->shape_move_y = bitstream_getbits(bs, shape_move_size);
     }
     if (shape_record_setup->shape_has_fill_style0) {
-        shape_record_setup->shape_fill_style0 = bitstream_getbits(bs, count->fill_bits_count);
+        shape_record_setup->shape_fill_style0 = bitstream_getbits(bs, swf_tag_shape->_current_styles_count.fill_bits_count);
 
     }
     if (shape_record_setup->shape_has_fill_style1) {
-        shape_record_setup->shape_fill_style1 = bitstream_getbits(bs, count->fill_bits_count);
-
+        shape_record_setup->shape_fill_style1 = bitstream_getbits(bs, swf_tag_shape->_current_styles_count.fill_bits_count);
     }
     if (shape_record_setup->shape_has_line_style) {
-        shape_record_setup->shape_line_style = bitstream_getbits(bs, count->line_bits_count);
+        shape_record_setup->shape_line_style = bitstream_getbits(bs, swf_tag_shape->_current_styles_count.line_bits_count);
     }
     if (shape_record_setup->shape_has_new_styles) {
         swf_styles_parse(bs, &(shape_record_setup->styles), tag);
+	swf_tag_shape->_current_styles_count = shape_record_setup->styles.styles_count;
     }
     return 0;
 }

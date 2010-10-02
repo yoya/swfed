@@ -28,8 +28,7 @@ typedef struct swf_shape_record_setup_ {
 
 extern int swf_shape_record_setup_parse(bitstream_t *bs,
                                         swf_shape_record_setup_t *setup,
-                                        swf_tag_t *tag,
-                                        swf_styles_count_t *count);
+                                        swf_tag_t *tag);
 extern int swf_shape_record_setup_build(bitstream_t *bs,
                                         swf_shape_record_setup_t *setup,
                                         swf_tag_t *tag,
