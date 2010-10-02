@@ -93,9 +93,9 @@ swf_shape_record_setup_print(swf_shape_record_setup_t *shape_record_setup,
            shape_record_setup->shape_has_move_to);
     if (shape_record_setup->shape_has_move_to) {
         print_indent(indent_depth);
-        printf("shape_move_x=%d  shape_move_y=%d\n",
-               shape_record_setup->shape_move_x,
-               shape_record_setup->shape_move_y);
+        printf("shape_move_x=%.2f  shape_move_y=%.2f\n",
+               (float) shape_record_setup->shape_move_x / SWF_TWIPS,
+               (float) shape_record_setup->shape_move_y / SWF_TWIPS);
     }
     if (shape_record_setup->shape_has_fill_style0) {
         print_indent(indent_depth);

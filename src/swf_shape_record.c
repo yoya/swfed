@@ -76,14 +76,14 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
         printf("shape_record [%d]\n", i);
         if ((first_bit == 0) && (next_5bits == 0)) {
             swf_shape_record_end_print(&(current_record->shape.shape_end),
-                                       indent_depth);
+                                       indent_depth + 1);
             break;
         } if (first_bit == 0) {
             swf_shape_record_setup_print(&(current_record->shape.shape_setup),
-                                         indent_depth, tag, count);
+                                         indent_depth + 1, tag, count);
         } else {
             swf_shape_record_edge_print(&(current_record->shape.shape_edge),
-                                        indent_depth);
+                                        indent_depth + 1);
         }
         current_record = current_record->next;
     }

@@ -77,32 +77,32 @@ swf_shape_record_edge_print(swf_shape_record_edge_t *shape_record_edge,
            shape_record_edge->shape_coord_size);
     if (shape_record_edge->shape_edge_type == 0) {
         print_indent(indent_depth);
-        printf("shape_control_delta_(x,y)=(%d,%d)  shape_anchor_delta_(x,y)=(%d,%d)\n",
-               shape_record_edge->shape_control_delta_x,
-               shape_record_edge->shape_control_delta_y,
-               shape_record_edge->shape_anchor_delta_x,
-               shape_record_edge->shape_anchor_delta_y);
+        printf("shape_control_delta_(x,y)=(%.2f,%.2f)  shape_anchor_delta_(x,y)=(%.2f,%.2f)\n",
+               (float) shape_record_edge->shape_control_delta_x / SWF_TWIPS,
+               (float) shape_record_edge->shape_control_delta_y / SWF_TWIPS,
+               (float) shape_record_edge->shape_anchor_delta_x / SWF_TWIPS,
+               (float) shape_record_edge->shape_anchor_delta_y / SWF_TWIPS);
     } else {
         print_indent(indent_depth);
         printf("shape_line_has_x_and_y=%d\n",
                shape_record_edge->shape_line_has_x_and_y);
         if (shape_record_edge->shape_line_has_x_and_y == 1) {
             print_indent(indent_depth);
-            printf("shape_delta_(x,y)=(%d,%d)\n",
-                   shape_record_edge->shape_delta_x,
-                   shape_record_edge->shape_delta_y);
+            printf("shape_delta_(x,y)=(%.2f,%.2f)\n",
+                   (float) shape_record_edge->shape_delta_x / SWF_TWIPS,
+                   (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
         } else {
             print_indent(indent_depth);
             printf("shape_line_has_x_or_y=%d\n",
                    shape_record_edge->shape_line_has_x_or_y);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
                 print_indent(indent_depth);
-                printf("shape_delta_x=%d\n",
-                       shape_record_edge->shape_delta_x);
+                printf("shape_delta_x=%.2f\n",
+                       (float) shape_record_edge->shape_delta_x / SWF_TWIPS);
             } else {
                 print_indent(indent_depth);
-                printf("shape_delta_y=%d\n",
-                       shape_record_edge->shape_delta_y);
+                printf("shape_delta_y=%.2f\n",
+                       (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
             }
         }
     }
