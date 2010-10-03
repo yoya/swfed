@@ -1,3 +1,4 @@
+
 /*
   ref code) http://diary.awm.jp/~yoya/data/2008/02/03/jpegdump.phps
   
@@ -26,7 +27,7 @@ jpeg_marker_name_t jpeg_marker_name_table[] = {
     {0xC0, "SOF0"}, {0xC1, "SOF1"}, {0xC2, "SOF2"}, {0xC3, "SOF3"},
                     {0xC5, "SOF5"}, {0xC6, "SOF6"}, {0xC7, "SOF7"},
     {0xC8, "JPG"},  {0xC9, "SOF9"}, {0xCA, "SOF10"},{0xCB, "SOF11"},
-    {0xCC, "dAC"},  {0xCD, "SOF13"},{0xCE, "SOF14"},{0xCF, "SOF15"},
+    {0xCC, "DAC"},  {0xCD, "SOF13"},{0xCE, "SOF14"},{0xCF, "SOF15"},
     {0xC4, "DHT"},
     {0xDA, "SOS"},
     {0xD0, "RST0"}, {0xD1, "RST1"}, {0xD2, "RST2"}, {0xD3, "RST3"},
@@ -97,7 +98,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
     
     while((marker1 = bitstream_getbyte(bs)) >= 0) {
         if (marker1 != 0xFF) {
-            fprintf(stderr, "marker1=0x%02X", marker1);
+            fprintf(stderr, "marker1=0x%02X\n", marker1);
             jpeg_segment_destroy(jpeg_seg);
             bitstream_close(bs);
             return NULL;
