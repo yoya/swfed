@@ -40,7 +40,7 @@ swf_fill_style_gradient_print(swf_fill_style_gradient_t *fill_style_gradient,
         swf_matrix_print(&(fill_style_gradient->gradient_matrix_morph),
                          indent_depth + 1);
     }
-    swf_gradient_print(&(fill_style_gradient->gradient), indent_depth, tag, fill_style_gradient->type);
+    swf_gradient_print(&(fill_style_gradient->gradient), indent_depth + 1, tag, fill_style_gradient->type);
     return 0;
 }
 
