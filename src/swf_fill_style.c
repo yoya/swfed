@@ -11,8 +11,8 @@ swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *fill_style,
         swf_fill_style_solid_parse(bs, &(fill_style->solid), tag);
         break;
       case 0x10: // linear gradient fill
-      case 0x11: // radial gradient fill
-      case 0x12: // focal  gradient fill
+      case 0x12: // radial gradient fill
+      case 0x13: // focal  gradient fill
         swf_fill_style_gradient_parse(bs, &(fill_style->gradient), tag);
         break;
       case 0x40: // tilled  bitmap fill with smoothed edges
