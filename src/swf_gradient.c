@@ -6,6 +6,7 @@ int
 swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
                    swf_tag_t *tag, int type) {
     int i;
+    bitstream_align(bs);
     if (tag->tag == 83) { // DefineShape4
         gradient->spread_mode = bitstream_getbits(bs, 2);
         gradient->interpolation_mode = bitstream_getbits(bs, 2);
@@ -14,10 +15,14 @@ swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
         gradient->pad = bitstream_getbits(bs, 4);
         gradient->count = bitstream_getbits(bs, 4);
     }
-    gradient->gradient_record = calloc(gradient->count, sizeof(*gradient->gradient_record)); // XXX
-    for (i = 0 ; i < gradient->count ; i++) {
-        swf_gradient_record_parse(bs, &(gradient->gradient_record[i]), tag);
-        gradient->focal_point = bitstream_getbytesLE(bs, 2);
+    if (gradient->count == 0) {
+        gradient->gradient_record = NULL;
+    } else {
+        gradient->gradient_record = calloc(gradient->count, sizeof(*gradient->gradient_record));
+	for (i = 0 ; i < gradient->count ; i++) {
+	    swf_gradient_record_parse(bs, &(gradient->gradient_record[i]),
+				      tag);
+	}
     }
     if (type == 0x13) {
         gradient->focal_point = bitstream_getbytesLE(bs, 2);
@@ -29,6 +34,7 @@ int
 swf_gradient_build(bitstream_t *bs, swf_gradient_t *gradient,
                    swf_tag_t *tag, int type) {
     int i;
+    bitstream_align(bs);
     if (tag->tag == 83) { // DefineShape4
         bitstream_putbits(bs, gradient->spread_mode, 2);
         bitstream_putbits(bs, gradient->interpolation_mode, 2);
@@ -57,7 +63,7 @@ swf_gradient_print(swf_gradient_t *gradient, int indent_depth,
                gradient->count);
     } else {
         print_indent(indent_depth);
-        printf("pad=%d  count=%d\n", gradient->pad, gradient->count);
+        printf("gradient->count=%d\n", gradient->count);
     }
     for (i = 0 ; i < gradient->count ; i++) {
         swf_gradient_record_print(&(gradient->gradient_record[i]), indent_depth+1, tag);
@@ -74,3 +80,4 @@ swf_gradient_delete(swf_gradient_t *gradient) {
     free(gradient->gradient_record);
     return 0;
 }
+
