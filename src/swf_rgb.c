@@ -4,9 +4,14 @@
 
 int
 swf_rgb_parse(bitstream_t *bs, swf_rgb_t *color) {
-    color->red   = bitstream_getbyte(bs);
+    int ret;
+    color->red = bitstream_getbyte(bs);
     color->green = bitstream_getbyte(bs);
-    color->blue  = bitstream_getbyte(bs);
+    ret = bitstream_getbyte(bs);
+    if (ret < 0) {
+      return 1;
+    }
+    color->blue = ret;
     return 0;
 }
 

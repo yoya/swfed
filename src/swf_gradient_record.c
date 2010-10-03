@@ -6,20 +6,21 @@ int
 swf_gradient_record_parse(bitstream_t
                           *bs, swf_gradient_record_t *gradient_record,
                           swf_tag_t *tag) {
+    int ret = 0;
     if (tag->tag == 46 || tag->tag == 84) { // DefineMorph || DefineMorphShape2
         gradient_record->position = bitstream_getbyte(bs);
         swf_rgba_parse(bs, &(gradient_record->rgba));
         gradient_record->position_morph = bitstream_getbyte(bs);
-        swf_rgba_parse(bs, &(gradient_record->rgba_morph));
+        ret = swf_rgba_parse(bs, &(gradient_record->rgba_morph));
     } else if (tag->tag == 32 || tag->tag == 83) {
         // DefineShape3 || DefineShape4
         gradient_record->position = bitstream_getbyte(bs);
-        swf_rgba_parse(bs, &(gradient_record->rgba));
+        ret = swf_rgba_parse(bs, &(gradient_record->rgba));
     } else {
         gradient_record->position = bitstream_getbyte(bs);
-        swf_rgb_parse(bs, &(gradient_record->rgb));
+        ret = swf_rgb_parse(bs, &(gradient_record->rgb));
     }
-    return 0;
+    return ret;
 }
 
 int
