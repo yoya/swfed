@@ -6,7 +6,7 @@
 int
 swf_matrix_parse(bitstream_t *bs, swf_matrix_t *matrix) {
     int translate_bits;
-    bitstream_align(bs);
+    bitstream_align(bs); // The MATRIX record must be byte aligned.
     matrix->has_scale = bitstream_getbit(bs);
     if (matrix->has_scale) {
         int scale_bits = bitstream_getbits(bs, 5);
@@ -29,7 +29,7 @@ int
 swf_matrix_build(bitstream_t *bs, swf_matrix_t *matrix) {
     int translate_bits;
     float log2_x, log2_y;
-    bitstream_align(bs);
+    bitstream_align(bs); // The MATRIX record must be byte aligned.
     bitstream_putbit(bs, matrix->has_scale);
     if (matrix->has_scale) {
         int scale_bits;
