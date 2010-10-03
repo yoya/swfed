@@ -232,15 +232,9 @@ swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id) 
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag == 8) { // JPEGTables
             tag_jpegtables = tag;
-            break;
-        }
-    }
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        if (tag->tag == 8) {
-            tag_jpegtables = tag;
             continue;
         }
-        // DefineBitsJPEG(1),2,3
+        // ! DefineBitsJPEG(1),2,3
         if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35)) {
             continue;
         }
