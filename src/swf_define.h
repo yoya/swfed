@@ -14,7 +14,7 @@
 
 #define INDENT_UNIT 4
 
-#define print_indent(depth) printf("%*s", INDENT_UNIT*depth, " ")
+#define print_indent(depth) printf("%*s", INDENT_UNIT*(depth), " ")
 
 
 extern int swf_debug;
