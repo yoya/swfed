@@ -67,12 +67,12 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
     print_indent(indent_depth);
     // printf("has_scale=%d\n", matrix->has_scale);
     if (matrix->has_scale) {
-        printf("scale=(%5.3f,%5.3f)  ",
+        printf("scale=(%.3f,%.3f)  ",
                matrix->scale_x / 65536.0, matrix->scale_y / 65536.0);
     }
     // printf("has_rotate=%d\n", matrix->has_scale);
     if (matrix->has_rotate) {
-        printf("rotate=(%.2f,%.2f)  ",
+        printf("rotate=(%.3f,%.3f)  ",
                matrix->rotate_skew0 / 65536.0, matrix->rotate_skew1 / 65536.0);
     }
     printf("translate=(%.2f,%.2f)\n",
