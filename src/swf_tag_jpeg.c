@@ -116,6 +116,11 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     new_buff = malloc(origsize); // enough size?
     old_buff_ref = bitstream_buffer(bs, offset);
     result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
+    if (result == Z_BUF_ERROR) { // XXX
+      origsize *= 2;
+      new_buff = realloc(new_buff, origsize); // enough size?
+      result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
+    }
     if (result == Z_OK) {
         swf_tag_jpeg->alpha_data = realloc(new_buff, origsize);
         swf_tag_jpeg->alpha_data_len = origsize;
