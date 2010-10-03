@@ -114,8 +114,9 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
     }
     if (tag->tag == 46) { // DefineMorphShape
         print_indent(indent_depth);
-        printf("width=%d  width_morph=%d\n",
-               line_style->width, line_style->width_morph);
+        printf("width=%.2f  width_morph=%.2f\n",
+               (float) line_style->width / SWF_TWIPS,
+	       (float) line_style->width_morph / SWF_TWIPS);
         swf_rgba_print(&(line_style->rgba), indent_depth);
         swf_rgba_print(&(line_style->rgba_morph), indent_depth);
     } else if (tag->tag == 83 || tag->tag == 84) {
@@ -151,11 +152,11 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
         }
     } else if (tag->tag == 32) { // DefineShape3
         print_indent(indent_depth);
-        printf("width=%u ", line_style->width);
+        printf("width=%.2f ", (float) line_style->width / SWF_TWIPS);
         swf_rgba_print(&(line_style->rgba), 0);
     } else {
         print_indent(indent_depth);
-        printf("width=%u ", line_style->width);
+        printf("width=%.2f ", (float) line_style->width / SWF_TWIPS);
         swf_rgb_print(&(line_style->rgb), 0);
     }
     return 0;
