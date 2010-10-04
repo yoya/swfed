@@ -166,8 +166,8 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
                                 (png_infopp)&png_info_ptr, NULL);
         return NULL;
     }
-    if (bpp != 8) {
-        fprintf(stderr, "pngconv_png2lossless: bpp=%d not implemented yet. accept only bpp=8\n", bpp);
+    if (bpp > 16) {
+        fprintf(stderr, "pngconv_png2lossless: bpp=%d not implemented yet. accept only bpp <= 16\n", bpp);
         png_destroy_read_struct((png_structpp)&png_ptr,
                                 (png_infopp)&png_info_ptr, NULL);
         return NULL;
@@ -211,10 +211,16 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             *colormap = result_colormap;
         }
         unsigned char *indices_data = malloc(((png_width+ 3) & -4) * png_height);
+	i = 0;
         for (y=0 ; y < png_height ; y++) {
+	    bitstream_t *bs = bitstream_open();
+	    bitstream_input(bs, png_image_data[y], png_width);
             for (x=0 ; x < png_width ; x++) {
-                indices_data[x+y*((png_width + 3) & -4)] = png_image_data[y][x]; // XXX
+                indices_data[i] = bitstream_getbits(bs, bpp);
+		i++;
             }
+	    if (i % 4) { i++; } // 4byte alignment
+	    bitstream_close(bs);
         }
         image_data = indices_data;
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
