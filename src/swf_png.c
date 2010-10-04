@@ -166,8 +166,8 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
                                 (png_infopp)&png_info_ptr, NULL);
         return NULL;
     }
-    if (bpp > 16) {
-        fprintf(stderr, "pngconv_png2lossless: bpp=%d not implemented yet. accept only bpp <= 16\n", bpp);
+    if (bpp > 8) {
+        fprintf(stderr, "pngconv_png2lossless: bpp=%d not implemented yet. accept only bpp <= 8\n", bpp);
         png_destroy_read_struct((png_structpp)&png_ptr,
                                 (png_infopp)&png_info_ptr, NULL);
         return NULL;
