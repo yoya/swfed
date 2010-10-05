@@ -289,6 +289,16 @@ bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
     return 0;
 }
 
+int
+bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
+    if (bits < 0) {
+        register signed long msb = 1 << (bit_width - 1);
+        register signed long bitmask = (2 * msb) - 1;
+        bits = (-bits  - 1) ^ bitmask;
+    }
+    return bitstream_putbits(bs, bits, bit_width);
+}
+
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
     int i;
@@ -306,15 +316,11 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
-    int i;
-    int bit;
-    unsigned long bits = 0;
-    for (i=0 ; i < bit_width ; i++) {
-        bit = bitstream_getbit(bs);
-        if (bit == -1) {
-            return -1;
-        }
-        bits |= bit << (bit_width - 1 - i);
+    signed long bits = bitstream_getbits(bs, bit_width);
+    register signed long msb =  bits & (1 << (bit_width - 1));
+    if (msb) {
+        register signed long bitmask = (2 * msb) - 1;
+        bits = - (bits ^ bitmask) - 1;
     }
     return bits;
 }

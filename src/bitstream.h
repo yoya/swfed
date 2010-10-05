@@ -51,6 +51,7 @@ extern unsigned long bitstream_getbytesBE(bitstream_t *bs, int byte_width);
 extern int bitstream_putbit(bitstream_t *bs, int bit);
 extern int bitstream_getbit(bitstream_t *bs);
 extern int bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width);
+extern int bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width);
 extern unsigned long bitstream_getbits(bitstream_t *bs, int bit_width);
 extern signed long bitstream_getbits_signed(bitstream_t *bs, int bit_width);
 extern void bitstream_align(bitstream_t *bs);
