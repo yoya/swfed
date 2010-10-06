@@ -121,7 +121,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     int palette_num = 0;
     int trans_index = -1;
     SavedImage Image;
-    int i;
+    int i, j;
     unsigned char *indices_data;
     bitstream_t *bs;
 
@@ -147,7 +147,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     gif_height = GifFile->SHeight;
     bpp = ColorMap->BitsPerPixel;
     if (bpp > 8) {
-        fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented yet. accept only bpp <= 8\n", bpp);
+        fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented. accept only bpp <= 8\n", bpp);
         DGifCloseFile(GifFile);
         return ;
     }
@@ -197,24 +197,16 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     indices_data = malloc(((gif_width+ 3) & -4) * gif_height);
     gif_image_data_ref = Image.RasterBits;
 
-    bs = bitstream_open();
-    bitstream_input(bs, gif_image_data_ref, gif_width * gif_height);
-    if (bs == NULL) {
-        free(*colormap);
-        *colormap = NULL;
-        free(indices_data);
-        DGifCloseFile(GifFile);
-        return NULL;
-    }
     i = 0;
+    j = 0;
     for (y=0 ; y < gif_height ; y++) {
         for (x=0 ; x < gif_width ; x++) {
-            indices_data[i] = bitstream_getbits(bs, bpp);
+            indices_data[i] = gif_image_data_ref[j];
             i++;
+	    j++;
         }
         while (i % 4) { i++; } // 4byte alignment
     }
-    bitstream_close(bs);
     image_data = indices_data;
     /*
      * destruct
