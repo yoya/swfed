@@ -135,7 +135,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     }
     if (DGifSlurp(GifFile) == GIF_ERROR) {
         fprintf(stderr, "gifconv_gif2lossless: DGifSlurp failed\n");
-        GifCloseFile(GifFile);
+        DGifCloseFile(GifFile);
         return NULL;
     }
     Image = GifFile->SavedImages[0];
