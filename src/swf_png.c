@@ -34,7 +34,7 @@ static void png_data_read_func(png_structp png_ptr, png_bytep buf, png_size_t si
         memcpy(buf, png_buff->data + png_buff->data_offset, size);
         png_buff->data_offset += size;
     } else {
-        fprintf(stderr, "png_data_read_func: ! png_buff->data_offset(%lu) + size(%d) <= png_buff->data_len(%lu)\n",
+        fprintf(stderr, "png_data_read_func: ! png_buff->data_offset(%lu) + size(%zd) <= png_buff->data_len(%lu)\n",
                 png_buff->data_offset, size, png_buff->data_len);
         png_error(png_ptr,"png_read_read_func failed");
     }
@@ -214,6 +214,12 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
 	i = 0;
         for (y=0 ; y < png_height ; y++) {
 	    bitstream_t *bs = bitstream_open();
+	    if (bs == NULL) {
+	      free(*colormap);
+	      *colormap = NULL;
+	      free(indices_data);
+	      return NULL;
+	    }
 	    bitstream_input(bs, png_image_data[y], png_width);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
