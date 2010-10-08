@@ -60,6 +60,8 @@ PHP_METHOD(swfed, replaceJpegData);
 PHP_METHOD(swfed, getPNGData);
 PHP_METHOD(swfed, replacePNGData);
 PHP_METHOD(swfed, replaceGIFData);
+PHP_METHOD(swfed, setShapeBitmapRect);
+PHP_METHOD(swfed, setShapeBitmapMatrix);
 PHP_METHOD(swfed, getSoundData);
 PHP_METHOD(swfed, replaceMLDData);
 PHP_METHOD(swfed, getEditString);

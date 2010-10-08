@@ -64,6 +64,8 @@ zend_function_entry swfed_functions[] = {
         PHP_ME(swfed,  getPNGData, NULL, 0)
         PHP_ME(swfed,  replacePNGData, NULL, 0)
         PHP_ME(swfed,  replaceGIFData, NULL, 0)
+        PHP_ME(swfed,  setShapeBitmapRect, NULL, 0)
+        PHP_ME(swfed,  setShapeBitmapMatrix, NULL, 0)
         PHP_ME(swfed,  getSoundData, NULL, 0)
         PHP_ME(swfed,  replaceMLDData, NULL, 0)
    	PHP_ME(swfed,  getEditString, NULL, 0)
@@ -692,6 +694,13 @@ PHP_METHOD(swfed, replaceGIFData) {
     }
     RETURN_TRUE;
 #endif /* HAVE_GIF */
+}
+
+PHP_METHOD(swfed, setShapeBitmapRect) {
+    RETURN_TRUE;
+}
+PHP_METHOD(swfed, setShapeBitmapMatrix) {
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, getSoundData) {
