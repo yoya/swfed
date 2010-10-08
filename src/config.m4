@@ -61,7 +61,7 @@ if test "$PHP_SWFED" != "no"; then
   dnl
   PHP_SUBST(SWFED_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(swfed, swfed.c \
+  PHP_NEW_EXTENSION(swfed, php_swfed.c \
 	swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
 	swf_jpeg.c jpeg_segment.c swf_png.c swf_gif.c \
 	swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
