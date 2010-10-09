@@ -29,7 +29,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
 } else {
             swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge));
         }
-        if (10000 <= limit) { // XXX 10000???
+        if (100000 <= limit) { // XXX 100000???
             current_record->next = NULL;
             fprintf(stderr, "swf_shape_record_parse: limit(%d) over\n", limit);
             return 1;
