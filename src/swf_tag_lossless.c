@@ -88,13 +88,13 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         result = uncompress(tmp_buff, &origsize, old_buff_ref, old_size);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
-                fprintf(stderr, "swf_tag_lossless_create_detail: uncompress: Z_MEM_ERROR: can't malloc at line(%d)\n", __LINE__);
+                fprintf(stderr, "swf_tag_lossless_input_detaill: uncompress: Z_MEM_ERROR: can't malloc at line(%d)\n", __LINE__);
             } else if (result == Z_BUF_ERROR) {
-                fprintf(stderr, "swf_tag_lossless_create_detail: uncompress: Z_BUF_ERROR: not enough buff size at line(%d)\n", __LINE__);
+                fprintf(stderr, "swf_tag_lossless_input_detail: uncompress: Z_BUF_ERROR: not enough buff size at line(%d)\n", __LINE__);
             } else if (result == Z_DATA_ERROR) {
-                fprintf(stderr, "swf_tag_lossless_create_detail: uncompress: Z_DATA_ERROR: corrupted or imcomplete data at line(%d)\n", __LINE__);
+                fprintf(stderr, "swf_tag_lossless_input_detail: uncompress: Z_DATA_ERROR: corrupted or imcomplete data at line(%d)\n", __LINE__);
             } else {
-                fprintf(stderr, "swf_tag_lossless_create_detail: uncompress: failed byunknown reason (%d) at line(%d)\n", result, __LINE__);
+                fprintf(stderr, "swf_tag_lossless_input_detail: uncompress: failed byunknown reason (%d) at line(%d)\n", result, __LINE__);
             }
             free(tmp_buff);
             bitstream_close(bs);
