@@ -27,7 +27,8 @@ extern void jpeg_segment_append(jpeg_segment_t *jpeg_seg_head,
                                 unsigned long data_len);
 
 extern jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
-                                           unsigned long data_len);
+                                          unsigned long data_len,
+                                          int rst_scan);
 
 extern int jpeg_segment_contain(jpeg_segment_t *jpeg_seg, int marker);
 extern unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,

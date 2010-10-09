@@ -232,7 +232,7 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
     printf("image_id=%d  jpeg_data_size=%lu\n",
            swf_tag_jpeg->image_id, swf_tag_jpeg->jpeg_data_len);
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
-                                  swf_tag_jpeg->jpeg_data_len);
+                                  swf_tag_jpeg->jpeg_data_len, 1);
     if (jpeg_seg) {
         for (node=jpeg_seg->head ; node ; node=node->next) {
             char *name = jpeg_segment_get_marker_name(node->marker);

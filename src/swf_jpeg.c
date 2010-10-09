@@ -19,7 +19,7 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
     unsigned long d_len;
     int m;
     unsigned char *ret_data;
-    jpeg_data = jpeg_segment_parse(data, data_len);
+    jpeg_data = jpeg_segment_parse(data, data_len, 1);
     if (jpeg_data == NULL) {
         fprintf(stderr, "jpegconv_std2swf: Can't create jpeg segment for data\n");
         return NULL;
@@ -63,7 +63,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
     unsigned long d_len;
     unsigned char *ret_data;
     *length = 0;
-    jpeg_data = jpeg_segment_parse(data, data_len);
+    jpeg_data = jpeg_segment_parse(data, data_len, 1);
     if (jpeg_data == NULL) {
             fprintf(stderr, "jpegconv_swf2std: Can't create jpeg segment for data\n");
             return NULL;
@@ -85,7 +85,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
         }
     } else if (table_data && table_data_len) {
         /* 圧縮テーブルが入っていない場合は JPEGTables を参照 */
-        jpeg_table = jpeg_segment_parse(table_data, table_data_len);
+        jpeg_table = jpeg_segment_parse(table_data, table_data_len, 1);
         if (jpeg_table == NULL) {
             fprintf(stderr, "Can't create jpeg segment for table\n");
             jpeg_segment_destroy(jpeg_data);

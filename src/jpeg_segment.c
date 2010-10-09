@@ -86,8 +86,9 @@ void jpeg_segment_append(jpeg_segment_t *jpeg_seg,
     return ;
 }
 
-jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
-                                         unsigned long data_len) {
+jpeg_segment_t *jpeg_segment_parse(unsigned char *data,	
+                                   unsigned long data_len,
+                                   int rst_scan) {
     bitstream_t *bs;
     jpeg_segment_t *jpeg_seg;
     int marker1;
@@ -98,7 +99,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
     
     while((marker1 = bitstream_getbyte(bs)) >= 0) {
         if (marker1 != 0xFF) {
-            fprintf(stderr, "marker1=0x%02X\n", marker1);
+            fprintf(stderr, "jpeg_segment_parse: marker1=0x%02X\n", marker1);
             jpeg_segment_destroy(jpeg_seg);
             bitstream_close(bs);
             return NULL;
@@ -115,6 +116,20 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
             jpeg_segment_append(jpeg_seg, marker2, NULL, 0);
             break;
           case 0xDA: // SOS
+	    if ((! rst_scan) && (data[data_len - 2] == 0xFF) &&
+		(data[data_len - 1] == 0xD9)) {
+	      int sos_len;
+              sos_offset = bitstream_getbytepos(bs);
+	      sos_len = data_len - sos_offset - 2;
+	      jpeg_segment_append(jpeg_seg, marker2, data + sos_offset,
+				  sos_len);
+	      bitstream_incrpos(bs, sos_len, 0);
+	      marker1 = bitstream_getbyte(bs);
+	      marker2 = bitstream_getbyte(bs);
+	      jpeg_segment_append(jpeg_seg, marker2, NULL, 0); // EOI
+	      break;
+	    }
+	    // no break;
           case 0xD0: case 0xD1: case 0xD2: case 0xD3: // RST
           case 0xD4: case 0xD5: case 0xD6: case 0xD7: // RST
               sos_offset = bitstream_getbytepos(bs);
@@ -303,7 +318,7 @@ int main(int argc, char **argv) {
         return 1;
     }
     fclose(fp);
-    jpeg_seg = jpeg_segment_parse(data, data_len);
+    jpeg_seg = jpeg_segment_parse(data, data_len, 1);
     jpeg_segment_print(jpeg_seg);
     if (argc == 3) {
         fp_out = fopen(argv[2], "wb");
