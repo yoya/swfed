@@ -94,17 +94,24 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
             break;
         }
         tag = swf_tag_create(bs);
-        if (tag == NULL) {
-            fprintf(stderr, "swf_object_input: swf_tag_create failed\n");
-            bitstream_close(bs);
-            return 1;
-        }
+	if (tag == NULL) {
+	    swf_tag_t *next_tag;
+	    for (tag = head_tag ; tag ; tag = next_tag) {
+	        next_tag = tag->next;
+		swf_tag_destroy(tag);
+	    }
+	    bitstream_close(bs);
+	    return 1; // FAILURE
+	}
         if (head_tag == NULL) {
             head_tag = tag;
-        } else {
+        } else if (tag) {
             prev_tag->next = tag;
             tag->next = NULL;
         }
+	if (tag->tag == 0) { // END Tag
+	  break; // SUCCESS
+	}
         prev_tag = tag;
     }
     swf->tag = head_tag;
