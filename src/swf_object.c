@@ -42,8 +42,9 @@ int
 swf_object_input(swf_object_t *swf, unsigned char *data,
                  unsigned long data_len) {
     int result;
-    bitstream_t *bs = bitstream_open();
-    swf_tag_t **tag;
+    bitstream_t *bs;
+    swf_tag_t *tag, *prev_tag, *head_tag;
+    bs = bitstream_open();
     bitstream_input(bs, data, data_len);
     result = swf_header_parse(bs, &swf->header);
     if (result) {
@@ -85,19 +86,28 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         bitstream_close(bs);
         return result;
     }
-    tag = &swf->tag;
+    head_tag = prev_tag = NULL;
     while(1) {
         long pos;
         pos = bitstream_getbytepos(bs);
         if ((pos == -1) || ((long) swf->header.file_length <= pos)) {
             break;
         }
-        *tag = swf_tag_create(bs);
+        tag = swf_tag_create(bs);
         if (tag == NULL) {
             fprintf(stderr, "swf_object_input: swf_tag_create failed\n");
+            bitstream_close(bs);
+            return 1;
         }
-        tag = &((*tag)->next);
+        if (head_tag == NULL) {
+            head_tag = tag;
+        } else {
+            prev_tag->next = tag;
+            tag->next = NULL;
+        }
+        prev_tag = tag;
     }
+    swf->tag = head_tag;
     bitstream_close(bs);
     return 0;
 }
