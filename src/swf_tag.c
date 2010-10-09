@@ -84,6 +84,7 @@ swf_tag_t *swf_tag_create(bitstream_t *bs) {
     }
     tag_and_length = bitstream_getbytesLE(bs, 2);
     if (tag_and_length == (unsigned short) -1) {
+        fprintf(stderr, "swf_tag_create: tag_and_length(short) == -1\n");
         free(tag);
         return NULL;
     }
@@ -93,6 +94,7 @@ swf_tag_t *swf_tag_create(bitstream_t *bs) {
     if (tag->length == 0x3f) {
         tag->length = bitstream_getbytesLE(bs, 4);
         if (tag_and_length == (unsigned short) -1) {
+	    fprintf(stderr, "swf_tag_create: tag_and_length(long) == -1\n");
             free(tag);
             return NULL;
         }
