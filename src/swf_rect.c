@@ -23,9 +23,12 @@ int two_negative_reverse(int num, int size) { // dummy
 
 int
 swf_rect_parse(bitstream_t *bs, swf_rect_t *rect) {
-    unsigned char size;
+    int size;
     bitstream_align(bs);
     size = bitstream_getbits(bs, 5);
+    if (size == -1) {
+        return 1;
+    }
     rect->size = size;
     rect->x_min = bitstream_getbits(bs, size);
     rect->x_max = bitstream_getbits(bs, size);

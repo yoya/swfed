@@ -40,6 +40,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned char *data  = tag->data;
     unsigned long length = tag->length;
     bitstream_t *bs;
+    int ret;
     (void) swf;
     if (swf_tag_shape == NULL) {
         fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape == NULL\n");
@@ -49,19 +50,39 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     bitstream_input(bs, data, length);
     
     swf_tag_shape->shape_id = bitstream_getbytesLE(bs, 2);
-    swf_rect_parse(bs, &(swf_tag_shape->rect));
+    ret = swf_rect_parse(bs, &(swf_tag_shape->rect));
+    if (ret) {
+        fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->rect parse failed\n");
+        bitstream_close(bs);
+        return 1;
+    }
     // DefineMorphShape, DefineMorphShape2
     swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
     // DefineShape4, DefineMorphShape2
     swf_tag_shape->has_strokes = (tag->tag == 83) || (tag->tag == 84);
 
     if (swf_tag_shape->is_morph) {
-        swf_rect_parse(bs, &(swf_tag_shape->rect_morph));
+        ret = swf_rect_parse(bs, &(swf_tag_shape->rect_morph));
+        if (ret) {
+            fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->rect_morph parse failed\n");
+            bitstream_close(bs);
+            return 1;
+        }
     }
     if (swf_tag_shape->has_strokes) {
-        swf_rect_parse(bs, &(swf_tag_shape->stroke_rect));
+        ret = swf_rect_parse(bs, &(swf_tag_shape->stroke_rect));
+        if (ret) {
+            fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect parse failed\n");
+            bitstream_close(bs);
+            return 1;
+        }
         if (swf_tag_shape->is_morph) {
-            swf_rect_parse(bs, &(swf_tag_shape->stroke_rect_morph));
+            ret = swf_rect_parse(bs, &(swf_tag_shape->stroke_rect_morph));
+	    if (ret) {
+	        fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph parse failed\n");
+	        bitstream_close(bs);
+	        return 1;
+	    }
         }
         swf_tag_shape->define_shape_reserved = bitstream_getbits(bs, 6);
         swf_tag_shape->define_shape_non_scaling_strokes = bitstream_getbits(bs, 1);
