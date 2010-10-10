@@ -1,8 +1,7 @@
-
 /*
   ref code) http://diary.awm.jp/~yoya/data/2008/02/03/jpegdump.phps
   
-  gcc -W -Wall -D__COMPONENT_DEBUG__ jpeg_segment.c  bitstream.c
+  gcc -W -Wall -D__JPEG_SEGMENT_DEBUG__ jpeg_segment.c  bitstream.c
 */
 
 #include <stdio.h>
@@ -286,7 +285,7 @@ void jpeg_segment_destroy(jpeg_segment_t *jpeg_seg) {
     free(jpeg_seg);
 }
 
-#ifdef __COMPONENT_DEBUG__  /* for component debug */
+#ifdef __JPEG_SEGMENT_DEBUG__  /* for component debug */
 
 #include <sys/stat.h>
 
@@ -336,4 +335,4 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-#endif
+#endif /* __JPEG_SEGMENT_DEBUG__ */
