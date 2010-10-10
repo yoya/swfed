@@ -63,7 +63,7 @@ if test "$PHP_SWFED" != "no"; then
 
   PHP_NEW_EXTENSION(swfed, php_swfed.c \
 	swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
-	swf_jpeg.c jpeg_segment.c swf_png.c swf_gif.c \
+	swf_jpeg.c jpeg_segment.c jpeg_size.c swf_png.c swf_gif.c \
 	swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
 	swf_rect.c swf_matrix.c swf_action.c \
 	swf_shape_with_style.c swf_styles.c swf_fill_style_array.c \
@@ -76,4 +76,3 @@ if test "$PHP_SWFED" != "no"; then
 	swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c \
 	, $ext_shared)
 fi
-
