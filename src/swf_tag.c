@@ -131,6 +131,7 @@ void swf_tag_destroy(swf_tag_t *tag) {
     free(tag);
 }
 
+
 static int swf_tag_and_length_build(bitstream_t *bs, swf_tag_t *tag) {
     signed short tag_and_length;
     if (bs == NULL) {
@@ -164,7 +165,8 @@ static int swf_tag_and_length_build(bitstream_t *bs, swf_tag_t *tag) {
     }
     return 0;
 }
-extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
+
+int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info;
     unsigned char *data;
     unsigned long data_len = 0;
@@ -612,6 +614,52 @@ swf_tag_replace_edit_string(swf_tag_t *tag,
     result = swf_tag_edit_replace_string(tag->detail,
                                        variable_name, variable_name_len,
                                        initial_text, initial_text_len);
+    if (result == 0) {
+        free(tag->data);
+        tag->data = NULL;
+        tag->length = 0;
+    }
+    return result;
+}
+
+
+int
+swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
+                                  double scale_x, double scale_y,
+                                  double radian,
+                                  signed int trans_x, signed int trans_y,
+                                  struct swf_object_ *swf) {
+    swf_tag_info_t *tag_info;
+    int result;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_apply_shape_matrix_factor: tag == NULL\n");
+        return 1;
+    }
+    if ((tag->tag != 2) && (tag->tag != 22) && (tag->tag !=32 )
+        && (tag->tag != 46)) {
+        // ! DefineShape1,2,3, DefineMorphShape
+        return 1;
+    }
+    tag_info = get_swf_tag_info(tag->tag);
+    if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        if (detail_handler->identity) {
+            if (detail_handler->identity(tag, shape_id)) {
+                return 1;
+            }
+        }
+    }
+    if (! tag->detail) {
+        swf_tag_create_input_detail(tag, swf);
+    }
+    if (! tag->detail) {
+        fprintf(stderr, "swf_tag_apply_shape_matrix_factor: Can't create tag\n");
+        return 1;
+    }
+    result = swf_tag_shape_apply_matrix_factor(tag->detail, shape_id,
+                                                     scale_x, scale_y,
+                                                     radian,
+                                                     trans_x, trans_y);
     if (result == 0) {
         free(tag->data);
         tag->data = NULL;

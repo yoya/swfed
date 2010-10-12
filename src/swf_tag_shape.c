@@ -56,6 +56,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         bitstream_close(bs);
         return 1;
     }
+
     // DefineMorphShape, DefineMorphShape2
     swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
     // DefineShape4, DefineMorphShape2
@@ -126,11 +127,57 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
+    swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
+    int ret;
     (void) swf;
     *length = 0;
+    // parse/build context
+    count->fill_bits_count = 0;
+    count->line_bits_count = 0;
+    //
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
     swf_rect_build(bs, &(swf_tag_shape->rect));
+
+    // DefineMorphShape, DefineMorphShape2
+    swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
+    // DefineShape4, DefineMorphShape2
+    swf_tag_shape->has_strokes = (tag->tag == 83) || (tag->tag == 84);
+
+    if (swf_tag_shape->is_morph) {
+        ret = swf_rect_build(bs, &(swf_tag_shape->rect_morph));
+        if (ret) {
+            fprintf(stderr, "ERROR: swf_tag_shape_output_detail: swf_tag_shape->rect_morph build failed\n");
+            bitstream_close(bs);
+            return NULL;
+        }
+    }
+    if (swf_tag_shape->has_strokes) {
+        ret = swf_rect_build(bs, &(swf_tag_shape->stroke_rect));
+        if (ret) {
+            fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect build failed\n");
+            bitstream_close(bs);
+            return NULL;
+        }
+        if (swf_tag_shape->is_morph) {
+            ret = swf_rect_build(bs, &(swf_tag_shape->stroke_rect_morph));
+	    if (ret) {
+	        fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph build failed\n");
+	        bitstream_close(bs);
+	        return NULL;
+	    }
+        }
+        bitstream_putbits(bs, 6, swf_tag_shape->define_shape_reserved );
+        bitstream_putbits(bs, 1, swf_tag_shape->define_shape_non_scaling_strokes );
+        bitstream_putbits(bs, 1, swf_tag_shape->define_shape_scaling_strokes);
+    }
+    if (swf_tag_shape->is_morph) {
+        bitstream_putbytesLE(bs, 4, swf_tag_shape->offset_morph);
+        swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag);
+    } else {
+        swf_shape_with_style_build(bs, &swf_tag_shape->shape_with_style, tag);
+    }
+    
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
     return data;
@@ -181,3 +228,46 @@ swf_tag_shape_destroy_detail(swf_tag_t *tag) {
     }
     return ;
 }
+
+int
+swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
+                                  double scale_x, double scale_y,
+                                  double radian,
+                                  signed int trans_x,
+                                  signed int trans_y) {
+    int i;
+    swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    if (detail == NULL) {
+        fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
+        return 1;
+    }
+    swf_fill_style_t *fill_style;
+    if (shape_id != swf_tag_shape->shape_id) {
+        return 1;
+    }
+    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
+        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
+        switch (fill_style->type) {
+          case 0x10: // linear gradient fill
+          case 0x12: // radial gradient fill
+          case 0x13: // focal  gradient fill
+              swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
+                                      radian, trans_x, trans_y);
+              break;
+            break;
+          case 0x40: // tilled  bitmap fill with smoothed edges
+          case 0x41: // clipped bitmap fill with smoothed edges
+          case 0x42: // tilled  bitmap fill with hard edges
+          case 0x43: // clipped bitmap fill with hard edges
+              swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix), scale_x, scale_y,
+                                      radian, trans_x, trans_y);
+              break;
+          default:
+            fprintf(stderr, "swf_tag_shape_apply_matrix_factor: unknown fill_style->type=%d\n",
+                    fill_style->type);
+            return 1;
+        }
+    }
+    return 0;
+}
+

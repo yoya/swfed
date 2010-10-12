@@ -80,3 +80,39 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
 	   (float) matrix->translate_y / SWF_TWIPS);
     return 0;
 }
+
+int
+swf_matrix_apply_factor(swf_matrix_t *matrix,
+                        float scale_x, float scale_y,
+                        float radian,
+                        signed int trans_x, signed int trans_y) {
+    if (matrix->has_scale == 0) {
+        matrix->has_scale = 1;
+        matrix->scale_x = 20 * 65536;
+        matrix->scale_y = 20 * 65536;
+    }
+    matrix->scale_x *= scale_x;
+    matrix->scale_y *= scale_y;
+    if ((radian != 0)) {
+        double rot_sin, rot_cos;
+        long sx, sy, s0, s1;
+        if (matrix->has_rotate == 0) {
+            matrix->has_rotate = 1;
+            matrix->rotate_skew0 = 0;
+            matrix->rotate_skew1 = 0;
+        }
+        rot_cos = cos(radian);
+        rot_sin = sin(radian);
+        sx = rot_cos * matrix->scale_x - rot_sin * matrix->rotate_skew0;
+        s0 = rot_sin * matrix->scale_x - rot_sin * matrix->rotate_skew0;
+        s1 = rot_sin * matrix->rotate_skew1 + rot_cos * matrix->scale_y;
+        sy = rot_sin * matrix->rotate_skew1 + rot_cos* matrix->scale_y;
+        matrix->scale_x = sx;
+        matrix->scale_y = sy;
+        matrix->rotate_skew0 = s0;
+        matrix->rotate_skew1 = s1;
+    }
+    matrix->translate_x += 20 * trans_x;
+    matrix->translate_y += 20 * trans_y;
+    return 0;
+}

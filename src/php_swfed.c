@@ -64,10 +64,8 @@ zend_function_entry swfed_functions[] = {
         PHP_ME(swfed,  getPNGData, NULL, 0)
         PHP_ME(swfed,  replacePNGData, NULL, 0)
         PHP_ME(swfed,  replaceGIFData, NULL, 0)
-        PHP_ME(swfed,  applyShapeBitmapMatrixFactor, NULL, 0)
-        PHP_ME(swfed,  applyShapeBitmapRectFactor, NULL, 0)
-        PHP_ME(swfed,  adjustShapeSizeToBitmap, NULL, 0)
-        PHP_ME(swfed,  adjustShapeScaleToBitmap, NULL, 0)
+        PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
+        PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
         PHP_ME(swfed,  getSoundData, NULL, 0)
         PHP_ME(swfed,  replaceMLDData, NULL, 0)
    	PHP_ME(swfed,  getEditString, NULL, 0)
@@ -698,14 +696,33 @@ PHP_METHOD(swfed, replaceGIFData) {
 #endif /* HAVE_GIF */
 }
 
-PHP_METHOD(swfed, applyShapeBitmapMatrixFactor) {
+PHP_METHOD(swfed, applyShapeMatrixFactor) {
+    long shape_id = 0;
+    double scale_x = 1, scale_y = 1, radian = 0;
+    long trans_x = 0, trans_y = 0;
+    swf_object_t *swf = NULL;
+    int result;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "ldddll", &shape_id, &scale_x, &scale_y, &radian,
+                              &trans_x, &trans_y) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_apply_shapematrix_factor(swf, shape_id,
+                                                 scale_x, scale_y, radian,
+                                                 trans_x, trans_y);
+    if (result) {
+        RETURN_FALSE;
+    }
+
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, applyShapeBitmapRectFactor) {
+PHP_METHOD(swfed, applyShapeRectFactor) {
     RETURN_TRUE;
 }
 
+/*
 PHP_METHOD(swfed, adjustShapeSizeToBitmap) {
     RETURN_TRUE;
 }
@@ -713,6 +730,7 @@ PHP_METHOD(swfed, adjustShapeSizeToBitmap) {
 PHP_METHOD(swfed, adjustShapeScaleToBitmap) {
     RETURN_TRUE;
 }
+*/
 
 PHP_METHOD(swfed, getSoundData) {
     unsigned long sound_id = 0;

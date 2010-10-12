@@ -4,7 +4,7 @@
 
 int
 swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
-                       swf_tag_t *tag, swf_styles_count_t *count) {
+                       swf_tag_t *tag) {
     int first_bit, next_5bits;
     swf_shape_record_t *current_record = shape_record;
     int limit;
@@ -42,7 +42,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
 
 int
 swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
-                       swf_tag_t *tag, swf_styles_count_t *count) {
+                       swf_tag_t *tag) {
     int first_bit, next_5bits;
     swf_shape_record_t *current_record = shape_record;
     while (current_record) {
@@ -54,7 +54,7 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
             break;
         } if (first_bit == 0) {
             swf_shape_record_setup_build(bs, &(current_record->shape.shape_setup),
-                                         tag, count);
+                                         tag);
         } else {
             swf_shape_record_edge_build(bs, &(current_record->shape.shape_edge));
         }
@@ -65,7 +65,7 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
 
 int
 swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
-                       swf_tag_t *tag, swf_styles_count_t *count) {
+                       swf_tag_t *tag) {
     int first_bit, next_5bits;
     swf_shape_record_t *current_record = shape_record;
     int i;
@@ -80,7 +80,7 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
             break;
         } if (first_bit == 0) {
             swf_shape_record_setup_print(&(current_record->shape.shape_setup),
-                                         indent_depth + 1, tag, count);
+                                         indent_depth + 1, tag);
         } else {
             swf_shape_record_edge_print(&(current_record->shape.shape_edge),
                                         indent_depth + 1);

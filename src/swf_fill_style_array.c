@@ -33,15 +33,18 @@ swf_fill_style_array_build(bitstream_t *bs,
                            swf_fill_style_array_t *fill_style_array,
                            swf_tag_t *tag) {
     int i;
-    if ((tag->tag != 2) || // ! DefineShape
-        (255 <= fill_style_array->count)) {
+    int ret;
+    if ((tag->tag == 2) && (fill_style_array->count < 255)) { // DefineShape
+        bitstream_putbyte(bs, fill_style_array->count);
+    } else {
         bitstream_putbyte(bs, 255);
         bitstream_putbytesLE(bs, fill_style_array->count, 2);
-    } else {
-        bitstream_putbyte(bs, fill_style_array->count);
     }
     for (i = 0 ; i < fill_style_array->count ; i++) {
-        swf_fill_style_build(bs, &(fill_style_array->fill_style[i]), tag);
+        ret = swf_fill_style_build(bs, &(fill_style_array->fill_style[i]), tag);
+        if (ret != 0) {
+            fprintf(stderr, "swf_fill_style_array_build: swf_fill_style_build failed i=%d\n", i);
+        }
     }
     return 0;
 }

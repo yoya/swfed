@@ -487,3 +487,27 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     *length = swf_tag_action->action_record_len;
     return swf_tag_action->action_record;
 }
+
+int
+swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,
+                                    double scale_x, double scale_y,
+                                    double radian,
+                                    signed int trans_x, signed int trans_y) {
+    int result = 1;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_apply_shapematrix_factor: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        result = swf_tag_apply_shape_matrix_factor(tag, shape_id,
+                                                   scale_x, scale_y,
+                                                   radian,
+                                                   trans_x, trans_y,
+                                                   swf);
+        if (! result) {
+            break;
+        }
+    }
+    return result;
+}

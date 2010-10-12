@@ -84,4 +84,10 @@ extern int swf_tag_replace_edit_string(swf_tag_t *tag,
 
 extern int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 
+extern int swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
+                                             double scale_x, double scale_y,
+                                             double radian,
+                                             signed int trans_x,
+                                             signed int trans_y,
+                                             struct swf_object_ *swf);
 #endif /* __SWF_TAG_H__ */
