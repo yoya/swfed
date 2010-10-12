@@ -12,7 +12,7 @@
 #include "swf_fill_style_gradient.h"
 #include "swf_fill_style_bitmap.h"
 
-typedef struct swf_fill_style_ {
+typedef struct swf_fill_style_ { // FIX ME: union is better.
     unsigned char type;
     swf_fill_style_solid_t    solid;
     swf_fill_style_gradient_t gradient;
