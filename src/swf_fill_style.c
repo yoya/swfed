@@ -30,7 +30,11 @@ swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *fill_style,
 
 int
 swf_fill_style_build(bitstream_t *bs, swf_fill_style_t *fill_style,
-    swf_tag_t *tag) {
+                     swf_tag_t *tag) {
+    if (fill_style == NULL) {
+        fprintf(stderr, "swf_fill_style_build: fill_style == NULL\n");
+        return 1;
+    }
     bitstream_putbyte(bs, fill_style->type);
     switch (fill_style->type) {
       case 0x00: // solid fill
