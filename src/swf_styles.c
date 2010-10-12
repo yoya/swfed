@@ -9,15 +9,18 @@ swf_styles_parse(bitstream_t *bs, swf_styles_t *shape_with_style,
     result = swf_fill_style_array_parse(bs, &(shape_with_style->fill_styles),
                                         tag);
     if (result) {
+        fprintf(stderr, "swf_styles_parse: swf_fill_style_array_parse failed\n");
         return result;
     }
     result = swf_line_style_array_parse(bs, &(shape_with_style->line_styles),
                                         tag);
     if (result) {
+        fprintf(stderr, "swf_styles_parse: swf_line_style_array_parse failed\n");
         return result;
     }
     result = swf_styles_count_parse(bs, &(shape_with_style->styles_count));
     if (result) {
+        fprintf(stderr, "swf_styles_parse: swf_styles_count_parse failed\n");
         return result;
     }
 
