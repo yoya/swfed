@@ -123,7 +123,6 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     SavedImage Image;
     int i, j;
     unsigned char *indices_data;
-    bitstream_t *bs;
 
     gif_buff.data = gif_data;
     gif_buff.data_len = gif_data_len;
@@ -149,7 +148,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     if (bpp > 8) {
         fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented. accept only bpp <= 8\n", bpp);
         DGifCloseFile(GifFile);
-        return ;
+        return NULL;
     }
     palette_num = ColorMap->ColorCount;
 
