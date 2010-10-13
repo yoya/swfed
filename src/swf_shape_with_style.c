@@ -21,8 +21,15 @@ swf_shape_with_style_parse(bitstream_t *bs,
 
 int
 swf_shape_with_style_build(bitstream_t *bs, swf_shape_with_style_t *shape_with_style, swf_tag_t *tag) {
-    swf_styles_build(bs, &(shape_with_style->styles), tag);
-    swf_shape_record_build(bs, &(shape_with_style->shape_records), tag);
+    int ret;
+    ret = swf_styles_build(bs, &(shape_with_style->styles), tag);
+    if (ret) {
+        return ret;
+    }
+    ret = swf_shape_record_build(bs, &(shape_with_style->shape_records), tag);
+    if (ret) {
+        return ret;
+    }
     return 0;
 }
 
