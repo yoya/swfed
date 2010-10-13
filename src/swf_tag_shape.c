@@ -254,13 +254,13 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
               swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
                                       radian, trans_x, trans_y);
               break;
-            break;
           case 0x40: // tilled  bitmap fill with smoothed edges
           case 0x41: // clipped bitmap fill with smoothed edges
           case 0x42: // tilled  bitmap fill with hard edges
           case 0x43: // clipped bitmap fill with hard edges
-              swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix), scale_x, scale_y,
-                                      radian, trans_x, trans_y);
+              swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
+                                      scale_x, scale_y, radian,
+                                      trans_x, trans_y);
               break;
           default:
             fprintf(stderr, "swf_tag_shape_apply_matrix_factor: unknown fill_style->type=%d\n",
@@ -270,4 +270,3 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
     }
     return 0;
 }
-
