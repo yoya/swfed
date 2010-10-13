@@ -31,13 +31,26 @@ swf_styles_parse(bitstream_t *bs, swf_styles_t *shape_with_style,
 int
 swf_styles_build(bitstream_t *bs, swf_styles_t *shape_with_style,
                  swf_tag_t *tag) {
+    int ret;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
-    swf_fill_style_array_build(bs, &(shape_with_style->fill_styles), tag);
-    swf_line_style_array_build(bs, &(shape_with_style->line_styles), tag);
+    ret = swf_fill_style_array_build(bs, &(shape_with_style->fill_styles), tag);
+    if (ret) {
+        fprintf(stderr, "swf_styles_build: swf_fill_style_array_build failed");
+        return ret;
+    }
+    ret = swf_line_style_array_build(bs, &(shape_with_style->line_styles), tag);
+    if (ret) {
+        fprintf(stderr, "swf_styles_build: swf_line_style_array_build failed");
+        return ret;
+    }
     count->fill_bits_count += shape_with_style->fill_styles.count; // XXX
     count->line_bits_count += shape_with_style->line_styles.count; // XXX
-    swf_styles_count_build(bs, &(shape_with_style->styles_count));
+    ret = swf_styles_count_build(bs, &(shape_with_style->styles_count));
+    if (ret) {
+        fprintf(stderr, "swf_styles_build: swf_styles_count_build failed");
+        return ret;
+    }
     return 0;
 }
 
