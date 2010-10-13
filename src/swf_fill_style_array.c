@@ -43,7 +43,8 @@ swf_fill_style_array_build(bitstream_t *bs,
     for (i = 0 ; i < fill_style_array->count ; i++) {
         ret = swf_fill_style_build(bs, &(fill_style_array->fill_style[i]), tag);
         if (ret != 0) {
-            fprintf(stderr, "swf_fill_style_array_build: swf_fill_style_build failed i=%d\n", i);
+            fprintf(stderr, "swf_fill_style_array_build: swf_fill_style_build failed i=%d/count=%d\n", i, fill_style_array->count);
+            return 1;
         }
     }
     return 0;
