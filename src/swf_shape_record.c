@@ -47,8 +47,8 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
     swf_shape_record_t *current_record = shape_record;
     while (current_record) {
 //        bitstream_align(bs); // XXX
-        first_bit = (shape_record->first_6bits >> 5) & 1;
-        next_5bits = shape_record->first_6bits & 0x1f;
+        first_bit = (current_record->first_6bits >> 5) & 1;
+        next_5bits = current_record->first_6bits & 0x1f;
         if ((first_bit == 0) && (next_5bits == 0)) {
             swf_shape_record_end_build(bs, &(current_record->shape.shape_end));
             break;
