@@ -412,20 +412,16 @@ bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
 }
 
 int
-bitstream_need_bits_unsigned(unsigned long n, int bit_width) {
+bitstream_need_bits_unsigned(unsigned long n) {
     int i;
-    int ret;
-    if (n >= 0) {
-        for (i = 0 ; n ; i++) {
-            n >>= 1;
-        }
-        ret = i;
+    for (i = 0 ; n ; i++) {
+        n >>= 1;
     }
-    return ret;
+    return i;
 }
 
 int
-bitstream_need_bits_signed(signed long n, int bit_width) {
+bitstream_need_bits_signed(signed long n) {
     int i;
     int ret;
     if (n < -1) {
