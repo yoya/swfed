@@ -21,8 +21,9 @@ typedef struct swf_matrix_ {
     signed long rotate_skew0; // : rotate_bits; n.16 fixed point
     signed long rotate_skew1; // : rotate_bits; n.16 fixed point
 
-    signed translate_x ; // : f_rotate_bits;
-    signed translate_y ; // : f_rotate_bits;
+    unsigned translate_bits; // : f_rotate_bits;
+    signed translate_x;      // : f_rotate_bits;
+    signed translate_y;      // : f_rotate_bits;
 } swf_matrix_t;
 
 extern int swf_matrix_parse(bitstream_t *bs, swf_matrix_t *matrix);
