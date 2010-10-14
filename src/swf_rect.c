@@ -2,25 +2,6 @@
 #include "bitstream.h"
 #include "swf_rect.h"
 
-
-int two_negative(int num, int size) {
-    int msb = 1 << (size - 1);
-    int mask = msb - 1;
-    if (num & msb) {
-        return - ((num^mask) & mask) - 1;
-    }
-    return num;
-}
-
-int two_negative_reverse(int num, int size) { // dummy 
-    int msb = 1 << (size - 1);
-    int mask = msb - 1;
-    if (num < 0) {
-        return - ((num^mask) & mask) - 1;
-    }
-    return num;
-}
-
 int
 swf_rect_parse(bitstream_t *bs, swf_rect_t *rect) {
     int size;
@@ -30,31 +11,30 @@ swf_rect_parse(bitstream_t *bs, swf_rect_t *rect) {
         return 1;
     }
     rect->size = size;
-    rect->x_min = bitstream_getbits(bs, size);
-    rect->x_max = bitstream_getbits(bs, size);
-    rect->y_min = bitstream_getbits(bs, size);
-    rect->y_max = bitstream_getbits(bs, size);
-    //
-    rect->x_min = two_negative(rect->x_min, size);
-    rect->x_max = two_negative(rect->x_max, size);
-    rect->y_min = two_negative(rect->y_min, size);
-    rect->y_max = two_negative(rect->y_max, size);
+    rect->x_min = bitstream_getbits_signed(bs, size);
+    rect->x_max = bitstream_getbits_signed(bs, size);
+    rect->y_min = bitstream_getbits_signed(bs, size);
+    rect->y_max = bitstream_getbits_signed(bs, size);
     return 0;
 }
 
 int
 swf_rect_build(bitstream_t *bs, swf_rect_t *rect) {
-    unsigned char size = rect->size; // XXX
-    int x_min = two_negative_reverse(rect->x_min, size);
-    int x_max = two_negative_reverse(rect->x_max, size);
-    int y_min = two_negative_reverse(rect->y_min, size);
-    int y_max = two_negative_reverse(rect->y_max, size);
+    register unsigned char size;
+    unsigned char x_min_bits = bitstream_need_bits_signed(rect->x_min);
+    unsigned char x_max_bits = bitstream_need_bits_signed(rect->x_max);
+    unsigned char y_min_bits = bitstream_need_bits_signed(rect->y_min);
+    unsigned char y_max_bits = bitstream_need_bits_signed(rect->y_max);
+    size = (x_min_bits>x_max_bits)?x_min_bits:x_max_bits;
+    size = (size>y_min_bits)?size:y_min_bits;
+    size = (size>y_max_bits)?size:y_max_bits;
+    
     bitstream_align(bs);
     bitstream_putbits(bs, size, 5);
-    bitstream_putbits(bs, x_min, size);
-    bitstream_putbits(bs, x_max, size);
-    bitstream_putbits(bs, y_min, size);
-    bitstream_putbits(bs, y_max, size);
+    bitstream_putbits_signed(bs, rect->x_min, size);
+    bitstream_putbits_signed(bs, rect->x_max, size);
+    bitstream_putbits_signed(bs, rect->y_min, size);
+    bitstream_putbits_signed(bs, rect->y_max, size);
     return 0;
 }
 
