@@ -175,7 +175,12 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
         bitstream_putbytesLE(bs, 4, swf_tag_shape->offset_morph);
         swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag);
     } else {
-        swf_shape_with_style_build(bs, &swf_tag_shape->shape_with_style, tag);
+        ret = swf_shape_with_style_build(bs, &swf_tag_shape->shape_with_style, tag);
+        if (ret) {
+            fprintf(stderr, "swf_tag_shape_output_detail: swf_shape_with_style_build failed\n");
+            bitstream_close(bs);
+            return NULL;
+        }
     }
     
     data = bitstream_steal(bs, length);
