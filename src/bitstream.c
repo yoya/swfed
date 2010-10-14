@@ -389,7 +389,7 @@ bitstream_length(bitstream_t *bs) {
 
 
 
-extern signed long
+signed long
 bitstream_unsigned2signed(unsigned long num, int size) {
     unsigned long sig_bit = 1 << (size - 1);
     if ((sig_bit & num) == 0) {
@@ -400,7 +400,7 @@ bitstream_unsigned2signed(unsigned long num, int size) {
     }
 }
 
-extern unsigned long
+unsigned long
 bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
     if (0 <= num){
         return (unsigned long) num;
@@ -410,6 +410,40 @@ bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
         return - ((num^mask) & mask) - 1;
     }
 }
+
+int
+bitstream_need_bits_unsigned(unsigned long n, int bit_width) {
+    int i;
+    int ret;
+    if (n >= 0) {
+        for (i = 0 ; n ; i++) {
+            n >>= 1;
+        }
+        ret = i;
+    }
+    return ret;
+}
+
+int
+bitstream_need_bits_signed(signed long n, int bit_width) {
+    int i;
+    int ret;
+    if (n < -1) {
+        n = -1 - n;
+    }
+    if (n >= 0) {
+        for (i = 0 ; n ; i++) {
+            n >>= 1;
+        }
+        ret = 1 + i;
+        ;
+    } else { // n == -1
+        ret = 1;
+    }
+    return ret;
+}
+
+
 /*
  * error handling
  */

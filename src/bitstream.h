@@ -74,6 +74,9 @@ extern unsigned long bitstream_length(bitstream_t *bs);
 extern signed long bitstream_unsigned2signed(unsigned long num, int size);
 extern unsigned long bitstream_signed2unsigned(signed long num, int size);
 
+extern int bitstream_need_bits_unsigned(unsigned long n, int bit_width);
+extern int bitstream_need_bits_signed(signed long n, int bit_width);
+
 /* error handling  */
 extern int bitstream_iserror(bitstream_t *bs);
 extern void bitstream_printerror(bitstream_t *bs);
