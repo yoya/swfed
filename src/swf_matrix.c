@@ -104,8 +104,8 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
 
 int
 swf_matrix_apply_factor(swf_matrix_t *matrix,
-                        float scale_x, float scale_y,
-                        float radian,
+                        double scale_x, double scale_y,
+                        double radian,
                         signed int trans_x, signed int trans_y) {
     if (matrix->has_scale == 0) {
         matrix->has_scale = 1;

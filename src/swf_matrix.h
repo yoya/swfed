@@ -30,7 +30,9 @@ extern int swf_matrix_parse(bitstream_t *bs, swf_matrix_t *matrix);
 extern int swf_matrix_build(bitstream_t *bs, swf_matrix_t *matrix);
 extern int swf_matrix_print(swf_matrix_t *matrix, int indent_depth);
 
-extern int swf_matrix_apply_factor(swf_matrix_t *matrix, float scale_x, float scale_y,
-                                   float radian, signed int trans_x, signed int trans_y);
+extern int swf_matrix_apply_factor(swf_matrix_t *matrix,
+                                   double scale_x, double scale_y,
+                                   double radian,
+                                   signed int trans_x, signed int trans_y);
 
 #endif /* __SWF_MATRIX_H__ */
