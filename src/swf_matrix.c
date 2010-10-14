@@ -125,9 +125,9 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
         rot_cos = cos(radian);
         rot_sin = sin(radian);
         sx = rot_cos * matrix->scale_x - rot_sin * matrix->rotate_skew0;
-        s0 = rot_sin * matrix->scale_x - rot_sin * matrix->rotate_skew0;
-        s1 = rot_sin * matrix->rotate_skew1 + rot_cos * matrix->scale_y;
-        sy = rot_sin * matrix->rotate_skew1 + rot_cos* matrix->scale_y;
+        s0 = rot_sin * matrix->scale_x + rot_cos * matrix->rotate_skew0;
+        s1 = rot_cos * matrix->rotate_skew1 - rot_sin * matrix->scale_y;
+        sy = rot_sin * matrix->rotate_skew1 + rot_cos * matrix->scale_y;
         matrix->scale_x = sx;
         matrix->scale_y = sy;
         matrix->rotate_skew0 = s0;
