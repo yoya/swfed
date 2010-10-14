@@ -8,7 +8,6 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
     int first_bit, next_5bits;
     swf_shape_record_t *current_record = shape_record;
     int limit;
-//    bitstream_align(bs); // XXX
     for (limit = 1; current_record ; limit ++) {
         current_record->next = NULL; // stopper
         int result = bitstream_getbits(bs, 6);
@@ -46,7 +45,6 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
     int first_bit, next_5bits;
     swf_shape_record_t *current_record = shape_record;
     while (current_record) {
-//        bitstream_align(bs); // XXX
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
         if ((first_bit == 0) && (next_5bits == 0)) {
