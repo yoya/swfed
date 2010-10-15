@@ -25,7 +25,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
                 fprintf(stderr, "swf_shape_record_parse: swf_shape_record_end_parse at L%d\n", __LINE__);
                 return ret;
             }
-            break;
+            break; // end
         } if (first_bit == 0) {
             ret = swf_shape_record_setup_parse(bs, &(current_record->shape.shape_setup),
                                          tag);
@@ -84,15 +84,18 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
         print_indent(indent_depth);
-        printf("shape_record [%d]\n", i);
+        printf("shape_record [%d]  ", i);
         if ((first_bit == 0) && (next_5bits == 0)) {
+            printf("end\n");
             swf_shape_record_end_print(&(current_record->shape.shape_end),
                                        indent_depth + 1);
             break;
         } if (first_bit == 0) {
+            printf("setup\n");
             swf_shape_record_setup_print(&(current_record->shape.shape_setup),
                                          indent_depth + 1, tag);
         } else {
+            printf("edge\n");
             swf_shape_record_edge_print(&(current_record->shape.shape_edge),
                                         indent_depth + 1);
         }
