@@ -62,7 +62,7 @@ swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *line_style_a
 int
 swf_line_style_array_print(swf_line_style_array_t *line_style_array, int indent_depth, swf_tag_t *tag) {
     int i;
-    print_indent(indent_depth + 1);
+    print_indent(indent_depth);
     printf("line_style_array->count=%u\n", line_style_array->count);
     for (i = 0 ; i < line_style_array->count ; i++) {
         swf_line_style_print(&(line_style_array->line_style[i]),
