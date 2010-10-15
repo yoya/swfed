@@ -105,7 +105,7 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
 int
 swf_matrix_apply_factor(swf_matrix_t *matrix,
                         double scale_x, double scale_y,
-                        double radian,
+                        double rotate_rad,
                         signed int trans_x, signed int trans_y) {
     if (matrix->has_scale == 0) {
         matrix->has_scale = 1;
@@ -114,7 +114,7 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
     }
     matrix->scale_x *= scale_x;
     matrix->scale_y *= scale_y;
-    if ((radian != 0)) {
+    if ((rotate_rad != 0)) {
         double rot_sin, rot_cos;
         long sx, sy, s0, s1;
         if (matrix->has_rotate == 0) {
@@ -122,8 +122,8 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
             matrix->rotate_skew0 = 0;
             matrix->rotate_skew1 = 0;
         }
-        rot_cos = cos(radian);
-        rot_sin = sin(radian);
+        rot_cos = cos(rotate_rad);
+        rot_sin = sin(rotate_rad);
         sx = rot_cos * matrix->scale_x - rot_sin * matrix->rotate_skew0;
         s0 = rot_sin * matrix->scale_x + rot_cos * matrix->rotate_skew0;
         s1 = rot_cos * matrix->rotate_skew1 - rot_sin * matrix->scale_y;

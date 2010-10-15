@@ -626,7 +626,7 @@ swf_tag_replace_edit_string(swf_tag_t *tag,
 int
 swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
                                   double scale_x, double scale_y,
-                                  double radian,
+                                  double rotate_rad,
                                   signed int trans_x, signed int trans_y,
                                   struct swf_object_ *swf) {
     swf_tag_info_t *tag_info;
@@ -658,7 +658,7 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
     }
     result = swf_tag_shape_apply_matrix_factor(tag->detail, shape_id,
                                                      scale_x, scale_y,
-                                                     radian,
+                                                     rotate_rad,
                                                      trans_x, trans_y);
     if (result == 0) {
         free(tag->data);

@@ -698,18 +698,18 @@ PHP_METHOD(swfed, replaceGIFData) {
 
 PHP_METHOD(swfed, applyShapeMatrixFactor) {
     long shape_id = 0;
-    double scale_x = 1, scale_y = 1, radian = 0;
+    double scale_x = 1, scale_y = 1, rotate_rad = 0;
     long trans_x = 0, trans_y = 0;
     swf_object_t *swf = NULL;
     int result;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-                              "ldddll", &shape_id, &scale_x, &scale_y, &radian,
-                              &trans_x, &trans_y) == FAILURE) {
+                              "ldddll", &shape_id, &scale_x, &scale_y,
+                              &rotate_rad, &trans_x, &trans_y) == FAILURE) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_apply_shapematrix_factor(swf, shape_id,
-                                                 scale_x, scale_y, radian,
+                                                 scale_x, scale_y, rotate_rad,
                                                  trans_x, trans_y);
     if (result) {
         RETURN_FALSE;

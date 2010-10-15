@@ -54,7 +54,7 @@ extern void swf_tag_shape_destroy_detail(swf_tag_t *tag);
 
 extern int swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, 
                                              double scale_x, double scale_y,
-                                             double radian,
+                                             double rotate_rad,
                                              signed int trans_x, signed int trans_y);
 
 #endif /* __SWF_TAG_SHAPE__H__ */

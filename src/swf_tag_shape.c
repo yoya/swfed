@@ -237,7 +237,7 @@ swf_tag_shape_destroy_detail(swf_tag_t *tag) {
 int
 swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
                                   double scale_x, double scale_y,
-                                  double radian,
+                                  double rotate_rad,
                                   signed int trans_x,
                                   signed int trans_y) {
     int i;
@@ -257,14 +257,14 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
           case 0x12: // radial gradient fill
           case 0x13: // focal  gradient fill
               swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
-                                      radian, trans_x, trans_y);
+                                      rotate_rad, trans_x, trans_y);
               break;
           case 0x40: // tilled  bitmap fill with smoothed edges
           case 0x41: // clipped bitmap fill with smoothed edges
           case 0x42: // tilled  bitmap fill with hard edges
           case 0x43: // clipped bitmap fill with hard edges
               swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
-                                      scale_x, scale_y, radian,
+                                      scale_x, scale_y, rotate_rad,
                                       trans_x, trans_y);
               break;
           default:

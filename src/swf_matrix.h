@@ -32,7 +32,7 @@ extern int swf_matrix_print(swf_matrix_t *matrix, int indent_depth);
 
 extern int swf_matrix_apply_factor(swf_matrix_t *matrix,
                                    double scale_x, double scale_y,
-                                   double radian,
+                                   double rotate_rad,
                                    signed int trans_x, signed int trans_y);
 
 #endif /* __SWF_MATRIX_H__ */
