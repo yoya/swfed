@@ -22,7 +22,7 @@ swf_fill_style_parse(bitstream_t *bs, swf_fill_style_t *fill_style,
         swf_fill_style_bitmap_parse(bs, &(fill_style->bitmap), tag);
         break;
     default:
-        fprintf(stderr, "swf_fill_style_parse: unknown fill_style->type=%d\n", fill_style->type);
+        fprintf(stderr, "swf_fill_style_parse: unknown fill_style->type=0x%02x\n", fill_style->type);
         return 1;
     }
     return 0;
