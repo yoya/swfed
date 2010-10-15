@@ -10,6 +10,7 @@ swf_shape_record_setup_parse(bitstream_t *bs,
     int shape_move_size;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
+    int ret;
     shape_record_setup->shape_record_type = bitstream_getbit(bs);
     shape_record_setup->shape_has_new_styles = bitstream_getbit(bs);
     shape_record_setup->shape_has_line_style = bitstream_getbit(bs);
@@ -32,7 +33,11 @@ swf_shape_record_setup_parse(bitstream_t *bs,
         shape_record_setup->shape_line_style = bitstream_getbits(bs, count->line_bits_count);
     }
     if (shape_record_setup->shape_has_new_styles) {
-        swf_styles_parse(bs, &(shape_record_setup->styles), tag);
+        ret = swf_styles_parse(bs, &(shape_record_setup->styles), tag);
+        if (ret) {
+            fprintf(stderr, "swf_shape_record_setup_parse: swf_styles_parse failed\n");
+            return ret;
+        }
     }
     return 0;
 }
