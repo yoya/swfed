@@ -10,23 +10,36 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
     int limit;
     for (limit = 1; current_record ; limit ++) {
         current_record->next = NULL; // stopper
-        int result = bitstream_getbits(bs, 6);
-        if (result == -1) {
+        int ret = bitstream_getbits(bs, 6);
+        if (ret == -1) {
             fprintf(stderr, "swf_shape_record_parse: bitstream_getbits failed at L%d\n", __LINE__);
-            return 1;
+            return ret;
         }
-        current_record->first_6bits = result;
+        current_record->first_6bits = ret;
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
         bitstream_incrpos(bs, 0, -6); // 6 bit back
         if ((first_bit == 0) && (next_5bits == 0)) {
-            swf_shape_record_end_parse(bs, &(current_record->shape.shape_end));
+            ret = swf_shape_record_end_parse(bs, &(current_record->shape.shape_end));
+            if (ret) {
+                fprintf(stderr, "swf_shape_record_parse: swf_shape_record_end_parse at L%d\n", __LINE__);
+                return ret;
+            }
             break;
         } if (first_bit == 0) {
-            swf_shape_record_setup_parse(bs, &(current_record->shape.shape_setup),
+            ret = swf_shape_record_setup_parse(bs, &(current_record->shape.shape_setup),
                                          tag);
+            if (ret) {
+                fprintf(stderr, "swf_shape_record_parse: swf_shape_record_setup_parse at L%d\n", __LINE__);
+                return ret;
+            }
 } else {
-            swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge));
+            ret = swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge));
+            if (ret) {
+                fprintf(stderr, "swf_shape_record_parse: swf_shape_record_edge_parse at L%d\n", __LINE__);
+                return ret;
+            }
+
         }
         if (100000 <= limit) { // XXX 100000???
             current_record->next = NULL;
