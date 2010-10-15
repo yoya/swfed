@@ -491,7 +491,7 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
 int
 swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,
                                     double scale_x, double scale_y,
-                                    double radian,
+                                    double rotate_rad,
                                     signed int trans_x, signed int trans_y) {
     int result = 1;
     swf_tag_t *tag;
@@ -502,7 +502,29 @@ swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,
     for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_apply_shape_matrix_factor(tag, shape_id,
                                                    scale_x, scale_y,
-                                                   radian,
+                                                   rotate_rad,
+                                                   trans_x, trans_y,
+                                                   swf);
+        if (! result) {
+            break;
+        }
+    }
+    return result;
+}
+
+int
+swf_object_apply_shaperect_factor(swf_object_t *swf, int shape_id,
+                                 double scale_x, double scale_y,
+                                 signed int trans_x, signed int trans_y) {
+    int result = 1;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_apply_shaperect_factor: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        result = swf_tag_apply_shape_rect_factor(tag, shape_id,
+                                                   scale_x, scale_y,
                                                    trans_x, trans_y,
                                                    swf);
         if (! result) {

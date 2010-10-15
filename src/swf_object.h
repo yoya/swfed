@@ -64,7 +64,11 @@ extern unsigned char *swf_object_get_actiondata(swf_object_t *swf, unsigned long
 
 extern int swf_object_apply_shapematrix_factor(swf_object_t *swf,int shape_id,
                                                double scale_x, double scale_y,
-                                               double radian,
+                                               double rotate_rad,
                                                signed int trans_x,
                                                signed int trans_y);
+extern int swf_object_apply_shaperect_factor(swf_object_t *swf,int shape_id,
+                                             double scale_x, double scale_y,
+                                             signed int trans_x,
+                                             signed int trans_y);
 #endif /* __SWF_OBJECT_H__ */

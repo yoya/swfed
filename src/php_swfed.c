@@ -719,6 +719,23 @@ PHP_METHOD(swfed, applyShapeMatrixFactor) {
 }
 
 PHP_METHOD(swfed, applyShapeRectFactor) {
+    long shape_id = 0;
+    double scale_x = 1, scale_y = 1;
+    long trans_x = 0, trans_y = 0;
+    swf_object_t *swf = NULL;
+    int result;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "lddll", &shape_id, &scale_x, &scale_y,
+                              &trans_x, &trans_y) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_apply_shaperect_factor(swf, shape_id,
+                                                 scale_x, scale_y,
+                                                 trans_x, trans_y);
+    if (result) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 

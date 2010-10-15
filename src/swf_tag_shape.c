@@ -280,3 +280,22 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
     }
     return 0;
 }
+
+swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
+                                double scale_x, double scale_y,
+                                signed int trans_x,
+                                signed int trans_y) {
+    int i;
+    swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    if (detail == NULL) {
+        fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
+        return 1;
+    }
+    swf_fill_style_t *fill_style;
+    if (shape_id != swf_tag_shape->shape_id) {
+        return 1;
+    }
+    swf_rect_apply_factor(&(swf_tag_shape->rect),
+                          scale_x, scale_y, trans_x, trans_y);
+    return 0;
+}

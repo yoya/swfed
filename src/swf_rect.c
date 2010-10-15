@@ -49,3 +49,17 @@ swf_rect_print(swf_rect_t *rect, int indent_depth) {
            rect->size);
     return 0;
 }
+
+int swf_rect_apply_factor(swf_rect_t *rect,
+                          double scale_x, double scale_y,
+                          signed int trans_x, signed int trans_y) {
+    int size_x = rect->x_max - rect->x_min;
+    int size_y = rect->y_max - rect->y_min;
+    rect->x_max = rect->x_min + size_x * scale_x;
+    rect->y_max = rect->y_min + size_y * scale_y;
+    rect->x_min += trans_x * SWF_TWIPS;
+    rect->x_max += trans_x * SWF_TWIPS;
+    rect->y_min += trans_y * SWF_TWIPS;
+    rect->y_max += trans_y * SWF_TWIPS;
+    return 0;
+}
