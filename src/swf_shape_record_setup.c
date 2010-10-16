@@ -20,8 +20,8 @@ swf_shape_record_setup_parse(bitstream_t *bs,
     if (shape_record_setup->shape_has_move_to) {
         shape_move_size = bitstream_getbits(bs, 5); // XXX
         shape_record_setup->shape_move_size = shape_move_size;
-        shape_record_setup->shape_move_x = bitstream_getbits(bs, shape_move_size);
-        shape_record_setup->shape_move_y = bitstream_getbits(bs, shape_move_size);
+        shape_record_setup->shape_move_x = bitstream_getbits_signed(bs, shape_move_size);
+        shape_record_setup->shape_move_y = bitstream_getbits_signed(bs, shape_move_size);
     }
     if (shape_record_setup->shape_has_fill_style0) {
         shape_record_setup->shape_fill_style0 = bitstream_getbits(bs, count->fill_bits_count);
@@ -58,10 +58,10 @@ swf_shape_record_setup_build(bitstream_t *bs,
     if (shape_record_setup->shape_has_move_to) {
         shape_move_size = shape_record_setup->shape_move_size;
         bitstream_putbits(bs, shape_move_size, 5); // XXX
-        bitstream_putbits(bs, shape_record_setup->shape_move_x,
-                          shape_move_size);
-        bitstream_putbits(bs, shape_record_setup->shape_move_y,
-                          shape_move_size);
+        bitstream_putbits_signed(bs, shape_record_setup->shape_move_x,
+                                 shape_move_size);
+        bitstream_putbits_signed(bs, shape_record_setup->shape_move_y,
+                                 shape_move_size);
     }
     if (shape_record_setup->shape_has_fill_style0) {
         bitstream_putbits(bs, shape_record_setup->shape_fill_style0,
