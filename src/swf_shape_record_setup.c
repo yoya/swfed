@@ -38,7 +38,6 @@ swf_shape_record_setup_parse(bitstream_t *bs,
             fprintf(stderr, "swf_shape_record_setup_parse: swf_styles_parse failed\n");
             return ret;
         }
-        swf_tag_shape->_current_styles_count = shape_record_setup->styles.styles_count; // XXX
     }
     return 0;
 }

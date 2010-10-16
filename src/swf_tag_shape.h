@@ -36,7 +36,9 @@ typedef struct swf_tag_shape_detail_ {
   /*
    * parse context
    */ 
-  swf_styles_count_t _current_styles_count;
+    swf_styles_count_t _current_styles_count;
+    int _current_fill_style_num;
+    int _current_line_style_num;
 } swf_tag_shape_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);

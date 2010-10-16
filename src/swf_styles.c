@@ -6,6 +6,8 @@
 int
 swf_styles_parse(bitstream_t *bs, swf_styles_t *shape_with_style,
                  swf_tag_t *tag) {
+    swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+        
     int result;
     result = swf_fill_style_array_parse(bs, &(shape_with_style->fill_styles),
                                         tag);
@@ -19,12 +21,13 @@ swf_styles_parse(bitstream_t *bs, swf_styles_t *shape_with_style,
         fprintf(stderr, "swf_styles_parse: swf_line_style_array_parse failed\n");
         return result;
     }
+    
     result = swf_styles_count_parse(bs, &(shape_with_style->styles_count));
     if (result) {
         fprintf(stderr, "swf_styles_parse: swf_styles_count_parse failed\n");
         return result;
     }
-
+    swf_tag_shape->_current_styles_count = shape_with_style->styles_count;
     return result;
 }
 
@@ -33,7 +36,6 @@ swf_styles_build(bitstream_t *bs, swf_styles_t *shape_with_style,
                  swf_tag_t *tag) {
     int ret;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-    swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
     ret = swf_fill_style_array_build(bs, &(shape_with_style->fill_styles), tag);
     if (ret) {
         fprintf(stderr, "swf_styles_build: swf_fill_style_array_build failed");
@@ -44,8 +46,11 @@ swf_styles_build(bitstream_t *bs, swf_styles_t *shape_with_style,
         fprintf(stderr, "swf_styles_build: swf_line_style_array_build failed");
         return ret;
     }
-    count->fill_bits_count += shape_with_style->fill_styles.count; // XXX
-    count->line_bits_count += shape_with_style->line_styles.count; // XXX
+    swf_tag_shape->_current_fill_style_num += shape_with_style->fill_styles.count;
+    swf_tag_shape->_current_line_style_num += shape_with_style->line_styles.count;
+// XXX うまく動かないので、まだコメントアウト XXX
+//    shape_with_style->styles_count.fill_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_fill_style_num);
+//    shape_with_style->styles_count.line_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_line_style_num);
     ret = swf_styles_count_build(bs, &(shape_with_style->styles_count));
     if (ret) {
         fprintf(stderr, "swf_styles_build: swf_styles_count_build failed");

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "bitstream.h"
 #include "swf_styles_count.h"
-#include "swf_tag_shape.h"
 
 int
 swf_styles_count_parse(bitstream_t *bs, swf_styles_count_t *styles_count) {

@@ -132,13 +132,12 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
-    swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
     int ret;
     (void) swf;
     *length = 0;
-    // parse/build context
-    count->fill_bits_count = 0;
-    count->line_bits_count = 0;
+    // build context
+    swf_tag_shape->_current_fill_style_num = 0;
+    swf_tag_shape->_current_line_style_num = 0;
     //
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
@@ -281,6 +280,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
     return 0;
 }
 
+int
 swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
                                 double scale_x, double scale_y,
                                 signed int trans_x,
@@ -291,7 +291,6 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
         return 1;
     }
-    swf_fill_style_t *fill_style;
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
