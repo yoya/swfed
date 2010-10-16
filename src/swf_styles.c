@@ -48,14 +48,14 @@ swf_styles_build(bitstream_t *bs, swf_styles_t *shape_with_style,
     }
     swf_tag_shape->_current_fill_style_num += shape_with_style->fill_styles.count;
     swf_tag_shape->_current_line_style_num += shape_with_style->line_styles.count;
-// XXX うまく動かないので、まだコメントアウト XXX
-//    shape_with_style->styles_count.fill_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_fill_style_num);
-//    shape_with_style->styles_count.line_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_line_style_num);
+    shape_with_style->styles_count.fill_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_fill_style_num);
+    shape_with_style->styles_count.line_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_line_style_num);
     ret = swf_styles_count_build(bs, &(shape_with_style->styles_count));
     if (ret) {
         fprintf(stderr, "swf_styles_build: swf_styles_count_build failed");
         return ret;
     }
+    swf_tag_shape->_current_styles_count = shape_with_style->styles_count;
     return 0;
 }
 
