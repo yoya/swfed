@@ -88,12 +88,10 @@ swf_shape_record_edge_print(swf_shape_record_edge_t *shape_record_edge,
                shape_record_edge->shape_line_has_x_and_y,
                shape_record_edge->shape_line_has_x_or_y);
         if (shape_record_edge->shape_line_has_x_and_y == 1) {
-            print_indent(indent_depth);
-            printf("shape_delta_(x,y)=(%.2f,%.2f)\n",
+            printf("shape_delta_(x,y)=(%.2f,%.2f)  ",
                    (float) shape_record_edge->shape_delta_x / SWF_TWIPS,
                    (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
         } else {
-            print_indent(indent_depth);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
                 printf("shape_delta_x=%.2f\n",
                        (float) shape_record_edge->shape_delta_x / SWF_TWIPS);
