@@ -29,7 +29,9 @@ swf_shape_record_edge_parse(bitstream_t *bs,
             shape_record_edge->shape_line_has_x_or_y = bitstream_getbit(bs);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
                 shape_record_edge->shape_delta_x = bitstream_getbits_signed(bs, shape_coord_real_size);
+                shape_record_edge->shape_delta_y = 0;
             } else {
+                shape_record_edge->shape_delta_x = 0;
                 shape_record_edge->shape_delta_y = bitstream_getbits_signed(bs, shape_coord_real_size);
             }
         }
@@ -40,7 +42,7 @@ swf_shape_record_edge_parse(bitstream_t *bs,
 int
 swf_shape_record_edge_build(bitstream_t *bs,
                             swf_shape_record_edge_t *shape_record_edge) {
-//    int result;
+//    int ret;
     unsigned int shape_coord_real_size;
     bitstream_putbit(bs, shape_record_edge->shape_record_type);
     bitstream_putbit(bs, shape_record_edge->shape_edge_type);
@@ -52,11 +54,17 @@ swf_shape_record_edge_build(bitstream_t *bs,
         bitstream_putbits_signed(bs, shape_record_edge->shape_anchor_delta_x, shape_coord_real_size);
         bitstream_putbits_signed(bs, shape_record_edge->shape_anchor_delta_y, shape_coord_real_size);
     } else {
+        if (shape_record_edge->shape_delta_x && shape_record_edge->shape_delta_y) {
+            shape_record_edge->shape_line_has_x_and_y = 1;
+        }
         bitstream_putbit(bs, shape_record_edge->shape_line_has_x_and_y);
         if (shape_record_edge->shape_line_has_x_and_y == 1) {
             bitstream_putbits_signed(bs, shape_record_edge->shape_delta_x, shape_coord_real_size);
             bitstream_putbits_signed(bs, shape_record_edge->shape_delta_y, shape_coord_real_size);
         } else {
+            if (shape_record_edge->shape_delta_x) {
+                shape_record_edge->shape_line_has_x_or_y = 0;
+            }
             bitstream_putbit(bs, shape_record_edge->shape_line_has_x_or_y);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
                 bitstream_putbits_signed(bs, shape_record_edge->shape_delta_x, shape_coord_real_size);
@@ -72,7 +80,7 @@ int
 swf_shape_record_edge_print(swf_shape_record_edge_t *shape_record_edge,
                             int indent_depth) {
     print_indent(indent_depth);
-    printf("shape_record_type=%d  shape_edge_type=%d  shape_coord_size=%d+2\n", shape_record_edge->shape_record_type,
+    printf("shape_edge_type=%d  shape_coord_size=%d+2\n",
            shape_record_edge->shape_edge_type ,
            shape_record_edge->shape_coord_size);
     if (shape_record_edge->shape_edge_type == 0) {
@@ -84,22 +92,14 @@ swf_shape_record_edge_print(swf_shape_record_edge_t *shape_record_edge,
                (float) shape_record_edge->shape_anchor_delta_y / SWF_TWIPS);
     } else {
         print_indent(indent_depth);
-        printf("shape_line_has_(x_and_y, x_or_y)=(%d, %d)  ",
+/*
+  printf("shape_line_has_(x_and_y, x_or_y)=(%d, %d)  ",
                shape_record_edge->shape_line_has_x_and_y,
                shape_record_edge->shape_line_has_x_or_y);
-        if (shape_record_edge->shape_line_has_x_and_y == 1) {
-            printf("shape_delta_(x,y)=(%.2f,%.2f)  ",
-                   (float) shape_record_edge->shape_delta_x / SWF_TWIPS,
-                   (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
-        } else {
-            if (shape_record_edge->shape_line_has_x_or_y == 0) {
-                printf("shape_delta_x=%.2f\n",
-                       (float) shape_record_edge->shape_delta_x / SWF_TWIPS);
-            } else {
-                printf("shape_delta_y=%.2f\n",
-                       (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
-            }
-        }
+*/
+        printf("shape_delta_(x,y)=(%.2f,%.2f)\n",
+               (float) shape_record_edge->shape_delta_x / SWF_TWIPS,
+               (float) shape_record_edge->shape_delta_y / SWF_TWIPS);
     }
     return 0;
 }

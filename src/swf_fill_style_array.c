@@ -57,6 +57,8 @@ swf_fill_style_array_print(swf_fill_style_array_t *fill_style_array,
     print_indent(indent_depth);
     printf("fill_style_array->count=%u\n", fill_style_array->count);
     for (i = 0 ; i < fill_style_array->count ; i++) {
+        print_indent(indent_depth);
+        printf("[%d] ", i+1);
         swf_fill_style_print(&(fill_style_array->fill_style[i]),
                              indent_depth + 1, tag);
     }

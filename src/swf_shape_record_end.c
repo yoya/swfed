@@ -19,11 +19,8 @@ swf_shape_record_end_build(bitstream_t *bs,
 }
 
 int
-swf_shape_record_end_print(swf_shape_record_end_t *shape_record_end,
-                           int indent_depth) {
+swf_shape_record_end_print(int indent_depth) {
     print_indent(indent_depth);
-    printf("shape_record_type=%d  end_of_shape=%d\n",
-            shape_record_end->shape_record_type,
-            shape_record_end->end_of_shape);
+    printf("end_of_shape\n");
     return 0;
 }

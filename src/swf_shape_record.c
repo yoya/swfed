@@ -87,8 +87,7 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
         printf("shape_record [%d]  ", i);
         if ((first_bit == 0) && (next_5bits == 0)) {
             printf("end\n");
-            swf_shape_record_end_print(&(current_record->shape.shape_end),
-                                       indent_depth + 1);
+            swf_shape_record_end_print(indent_depth + 1);
             break;
         } if (first_bit == 0) {
             printf("setup\n");

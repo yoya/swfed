@@ -85,11 +85,6 @@ swf_shape_record_setup_build(bitstream_t *bs,
 int
 swf_shape_record_setup_print(swf_shape_record_setup_t *shape_record_setup,
                              int indent_depth, swf_tag_t *tag) {
-    if (tag->tag != 2) { // DefineShape
-        print_indent(indent_depth);
-        printf("shape_record_type=%d\n",
-               shape_record_setup->shape_record_type);
-    }
     print_indent(indent_depth);
     printf("shape_has_{new_styles,line_styles, fill_style1, fill_style0, move_to}={%d,%d,%d,%d,%d}\n",
            shape_record_setup->shape_has_new_styles,
