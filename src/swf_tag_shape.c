@@ -46,6 +46,10 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape == NULL\n");
         return 1;
     }
+    // parse context
+    swf_tag_shape->_current_x = 0;
+    swf_tag_shape->_current_y = 0;
+
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     
@@ -138,6 +142,9 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     // build context
     swf_tag_shape->_current_fill_style_num = 0;
     swf_tag_shape->_current_line_style_num = 0;
+    swf_tag_shape->_current_x = 0;
+    swf_tag_shape->_current_y = 0;
+
     //
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
@@ -285,7 +292,7 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
                                 double scale_x, double scale_y,
                                 signed int trans_x,
                                 signed int trans_y) {
-    int i;
+//    int i;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");

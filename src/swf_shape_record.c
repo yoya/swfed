@@ -34,7 +34,7 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
                 return ret;
             }
 } else {
-            ret = swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge));
+            ret = swf_shape_record_edge_parse(bs, &(current_record->shape.shape_edge), tag);
             if (ret) {
                 fprintf(stderr, "swf_shape_record_parse: swf_shape_record_edge_parse at L%d\n", __LINE__);
                 return ret;
@@ -67,7 +67,7 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
             swf_shape_record_setup_build(bs, &(current_record->shape.shape_setup),
                                          tag);
         } else {
-            swf_shape_record_edge_build(bs, &(current_record->shape.shape_edge));
+            swf_shape_record_edge_build(bs, &(current_record->shape.shape_edge), tag);
         }
         current_record = current_record->next;
     }
