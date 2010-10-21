@@ -32,4 +32,8 @@ extern int swf_shape_record_print(swf_shape_record_t *shape_record,
                                   int indent_depth, swf_tag_t *tag);
 extern int swf_shape_record_delete(swf_shape_record_t *shape_record);
 
+extern int swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
+                                              double scale_x, double scale_y,
+                                              signed trans_x, signed trans_y);
+
 #endif /* __SWF_SHAPE_RECORD_H__ */

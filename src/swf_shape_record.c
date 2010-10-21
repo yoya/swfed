@@ -115,3 +115,45 @@ swf_shape_record_delete(swf_shape_record_t *shape_record) {
     return 0;
 }
 
+int
+swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
+                                   double scale_x, double scale_y,
+                                   signed trans_x, signed trans_y) {
+    int first_bit, next_5bits;
+    swf_shape_record_t *current_record;
+
+    // top-left base adjust
+    signed min_x = 0, min_y = 0;
+    for (current_record = shape_record ; current_record ; current_record = current_record->next) {
+        first_bit = (current_record->first_6bits >> 5) & 1;
+        next_5bits = current_record->first_6bits & 0x1f;
+        if (first_bit) { // edge
+            swf_shape_record_edge_t *edge = &(current_record->shape.shape_edge);
+            min_x = (edge->shape_x<min_x)?edge->shape_x:min_x;
+            min_y = (edge->shape_y<min_y)?edge->shape_y:min_y;
+        } else if (next_5bits) { // setup
+            swf_shape_record_setup_t *setup = &(current_record->shape.shape_setup);
+            min_x = (setup->shape_move_x<min_x)?setup->shape_move_x:min_x;
+            min_y = (setup->shape_move_y<min_y)?setup->shape_move_y:min_y;
+        } else { // end
+            break;
+        }
+    }
+    // scale and trans
+    for (current_record = shape_record ; current_record ; current_record = current_record->next) {
+        first_bit = (current_record->first_6bits >> 5) & 1;
+        next_5bits = current_record->first_6bits & 0x1f;
+        if (first_bit) { // edge
+            swf_shape_record_edge_t *edge = &(current_record->shape.shape_edge);
+            edge->shape_x = (edge->shape_x - min_x) * scale_x + min_x + trans_x;
+            edge->shape_y = (edge->shape_y - min_y) * scale_y + min_y + trans_y;
+        } else if (next_5bits) { // setup
+            swf_shape_record_setup_t *setup = &(current_record->shape.shape_setup);
+            setup->shape_move_x = (setup->shape_move_x - min_x) * scale_x + min_x + trans_x;
+            setup->shape_move_y = (setup->shape_move_y - min_y) * scale_y + min_y + trans_y;
+        } else { // end
+            break;
+        }
+    }
+    return 0;
+}
