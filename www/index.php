@@ -79,8 +79,12 @@ foreach ($swf->getTagList() as $tag_seqno => $tagblock) {
     if ($detail) {
         $detail_info = $swf->getTagDetail($tag_seqno);
         $detail_str = '';
-        foreach ($detail_info as $key => $value) {
-            $detail_str .= "$key($value) ";
+        if (is_array($detail_info)) {
+            foreach ($detail_info as $key => $value) {
+                $detail_str .= "$key($value) ";
+            }
+        } else {
+            $detail_str .= var_export($detail_info, true);
         }
 
         if (@$header_info['version'] < 6) { // for flash lite
