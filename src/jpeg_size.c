@@ -6,21 +6,33 @@
 #include <stdlib.h>
 #include "jpeg_segment.h"
 
-int jpeg_size(unsigned char *data, unsigned long data_len,
-              int *width, int *height) {
-    jpeg_segment_t *jpeg_seg;
+#define isJPEG_DHT(c) ((c) == 0xC4)
+#define isJPEG_JPG(c) ((c) == 0xC8)
+#define isJPEG_DAC(c) ((c) == 0xCC)
+
+#define isJPEG_SOFXX(c) ((0xC0 <= c) && (c <= 0xCF) && (!isJPEG_DHT(c)) && (!isJPEG_JPG(c)) && (!isJPEG_DAC(c)))
+
+int jpeg_size_segment(jpeg_segment_t *jpeg_seg, int *width, int *height) {
     jpeg_segment_node_t *node;
-    jpeg_seg = jpeg_segment_parse(data, data_len, 0);
     for (node = jpeg_seg->head ; node ; node = node->next) {
-        if ((0xC0 <= node->marker) && (node->marker <= 0xCF)) { // SOF
+        register int marker = node->marker;
+        if (isJPEG_SOFXX(marker)) {
             *width  = 0x100 * node->data_ref[3] + node->data_ref[4];
             *height = 0x100 * node->data_ref[1] + node->data_ref[2];
-            jpeg_segment_destroy(jpeg_seg);
-            return 0;
+            return 0; // found
         }
     }
+    return 1; // not found
+}
+
+int jpeg_size(unsigned char *data, unsigned long data_len,
+              int *width, int *height) {
+    int ret = 0;
+    jpeg_segment_t *jpeg_seg = NULL;
+    jpeg_seg = jpeg_segment_parse(data, data_len, 0);
+    ret = jpeg_size_segment(jpeg_seg, width, height);
     jpeg_segment_destroy(jpeg_seg);
-    return 1;
+    return ret;
 }
 
 #ifdef __JPEG_SIZE_DEBUG__  /* for component debug */
@@ -35,34 +47,37 @@ int main(int argc, char **argv) {
     unsigned long data_len;
     int width = 0, height = 0;
     int ret;
-    if (argc != 2) {
-        fprintf(stderr, "Usage: %s <jpeg_infile>\n", argv[0]);
+    int i;
+    if (argc < 2) {
+        fprintf(stderr, "Usage: %s <jpeg_file> [<jpeg_file2> [...]]\n", argv[0]);
         return EXIT_FAILURE;
     }
-    filename = argv[1];
-    if (stat(filename, &sbuf)) {
-        fprintf(stderr, "Can't stat file(%s)\n", filename);
-        return EXIT_FAILURE;
-    }
-    data_len = sbuf.st_size;
-    fp = fopen(filename, "rb");
-    if (fp == NULL) {
-        fprintf(stderr, "Can't open infile(%s)\n", filename);
-        return EXIT_FAILURE;
-    }
-    data = malloc(data_len);
-    if (fread(data, 1, data_len, fp) != data_len) {
+    for (i = 1 ; i < argc ; i++) {
+        filename = argv[i];
+        if (stat(filename, &sbuf)) {
+            fprintf(stderr, "Can't stat file(%s)\n", filename);
+            return EXIT_FAILURE;
+        }
+        data_len = sbuf.st_size;
+        fp = fopen(filename, "rb");
+        if (fp == NULL) {
+            fprintf(stderr, "Can't open infile(%s)\n", filename);
+            return EXIT_FAILURE;
+        }
+        data = malloc(data_len);
+        if (fread(data, 1, data_len, fp) != data_len) {
+            fclose(fp);
+            return 1;
+        }
         fclose(fp);
-        return 1;
+        ret = jpeg_size(data, data_len, &width, &height);
+        free(data);
+        if (ret) {
+            fprintf(stderr, "Can't get jpeg size(%s)\n", filename);
+            return EXIT_FAILURE;
+        }
+        printf("width=%d height=%d\n", width, height);
     }
-    fclose(fp);
-    ret = jpeg_size(data, data_len, &width, &height);
-    free(data);
-    if (ret) {
-        fprintf(stderr, "Can't get jpeg size(%s)\n", filename);
-        return EXIT_FAILURE;
-    }
-    printf("width=%d height=%d\n", width, height);
     return EXIT_SUCCESS;
 }
 
