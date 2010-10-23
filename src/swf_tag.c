@@ -26,7 +26,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 5, "RemoveObject", NULL},
     { 6, "DefineBitsJPEG", swf_tag_jpeg_detail_handler },
     { 7, "DefineButton", NULL},
-    { 8, "JPEGTables", NULL },
+    { 8, "JPEGTables", swf_tag_jpegt_detail_handler },
     { 9, "SetBackgroundColor", NULL },
     { 10, "DefineFont ", NULL},
     { 11, "DefineText", NULL },

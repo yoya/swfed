@@ -19,16 +19,22 @@ typedef struct swf_tag_jpeg_detail_ {
 } swf_tag_jpeg_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void);
+extern swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void);
 extern swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void);
 
 extern void *swf_tag_jpeg_create_detail(void);
 
 extern int swf_tag_jpeg_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
+extern int swf_tag_jpegt_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_jpeg3_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_jpeg_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_jpegt_identity_detail(swf_tag_t *tag, int id);
 extern unsigned char *swf_tag_jpeg_output_detail(swf_tag_t *tag,
                                                  unsigned long *length,
                                                  struct swf_object_ *swf);
+extern unsigned char *swf_tag_jpegt_output_detail(swf_tag_t *tag,
+                                                  unsigned long *length,
+                                                  struct swf_object_ *swf);
 extern unsigned char *swf_tag_jpeg3_output_detail(swf_tag_t *tag,
                                                   unsigned long *length,
                                                   struct swf_object_ *swf);

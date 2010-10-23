@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> /* strndup */
+#include <string.h> /* memcpy */
 #include <zlib.h>
 #include "bitstream.h"
 #include "swf_define.h"
@@ -16,6 +16,8 @@
 #include "jpeg_segment.h"
 
 swf_tag_detail_handler_t jpeg_detail_handler;
+swf_tag_detail_handler_t jpegt_detail_handler;
+swf_tag_detail_handler_t jpeg3_detail_handler;
 
 swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
     jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
@@ -27,14 +29,24 @@ swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
     return &jpeg_detail_handler;
 }
 
+swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void) {
+    jpegt_detail_handler.create   = swf_tag_jpeg_create_detail;
+    jpegt_detail_handler.input    = swf_tag_jpegt_input_detail;
+    jpegt_detail_handler.identity = swf_tag_jpegt_identity_detail;
+    jpegt_detail_handler.output   = swf_tag_jpegt_output_detail;
+    jpegt_detail_handler.print    = swf_tag_jpeg_print_detail;
+    jpegt_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
+    return &jpegt_detail_handler;
+}
+
 swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void) {
-    jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
-    jpeg_detail_handler.input    = swf_tag_jpeg3_input_detail;
-    jpeg_detail_handler.identity = swf_tag_jpeg_identity_detail;
-    jpeg_detail_handler.output   = swf_tag_jpeg3_output_detail;
-    jpeg_detail_handler.print    = swf_tag_jpeg_print_detail;
-    jpeg_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
-    return &jpeg_detail_handler;
+    jpeg3_detail_handler.create   = swf_tag_jpeg_create_detail;
+    jpeg3_detail_handler.input    = swf_tag_jpeg3_input_detail;
+    jpeg3_detail_handler.identity = swf_tag_jpeg_identity_detail;
+    jpeg3_detail_handler.output   = swf_tag_jpeg3_output_detail;
+    jpeg3_detail_handler.print    = swf_tag_jpeg_print_detail;
+    jpeg3_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
+    return &jpeg3_detail_handler;
 }
 
 void *
@@ -74,6 +86,26 @@ swf_tag_jpeg_input_detail(swf_tag_t *tag,
     swf_tag_jpeg->alpha_data = NULL;
     swf_tag_jpeg->alpha_data_len = 0;
     bitstream_close(bs);
+    return 0;
+}
+
+int
+swf_tag_jpegt_input_detail(swf_tag_t *tag,
+                          struct swf_object_ *swf) {
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = tag->detail;
+    unsigned char *data  = tag->data;
+    unsigned long length = tag->length;
+    (void) swf;
+    if (swf_tag_jpeg == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_jpegt_input_detail: swf_tag_jpeg == NULL\n");
+        return 1;
+    }
+    swf_tag_jpeg->image_id = -1; // no id
+    swf_tag_jpeg->jpeg_data = (unsigned char *) malloc(length);
+    memcpy(swf_tag_jpeg->jpeg_data, data, length);
+    swf_tag_jpeg->jpeg_data_len = length;
+    swf_tag_jpeg->alpha_data = NULL;
+    swf_tag_jpeg->alpha_data_len = 0;
     return 0;
 }
 
@@ -162,6 +194,13 @@ swf_tag_jpeg_identity_detail(swf_tag_t *tag, int id) {
     return 1;
 }
 
+int
+swf_tag_jpegt_identity_detail(swf_tag_t *tag, int id) {
+    (void) tag;
+    (void) id;
+    return 1; // always no match
+}
+
 unsigned char *
 swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {
@@ -172,6 +211,21 @@ swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_jpeg->image_id, 2);
+    bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
+    data = bitstream_steal(bs, length);
+    bitstream_close(bs);
+    return data;
+}
+
+unsigned char *
+swf_tag_jpegt_output_detail(swf_tag_t *tag, unsigned long *length,
+                            struct swf_object_ *swf) {
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
+    bitstream_t *bs;
+    unsigned char *data;
+    (void) swf;
+    *length = 0;
+    bs = bitstream_open();
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
@@ -229,8 +283,12 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
         return ;
     }
     print_indent(indent_depth);
-    printf("image_id=%d  jpeg_data_size=%lu\n",
-           swf_tag_jpeg->image_id, swf_tag_jpeg->jpeg_data_len);
+    if (swf_tag_jpeg->image_id == -1) {
+        printf("jpeg_data_size=%lu\n", swf_tag_jpeg->jpeg_data_len);
+    } else {
+        printf("image_id=%d  jpeg_data_size=%lu\n",
+               swf_tag_jpeg->image_id, swf_tag_jpeg->jpeg_data_len);
+    }
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
                                   swf_tag_jpeg->jpeg_data_len, 1);
     if (jpeg_seg) {
@@ -242,8 +300,10 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
         }
         jpeg_segment_destroy(jpeg_seg);
     } else {
+        unsigned char *data = swf_tag_jpeg->jpeg_data;
         print_indent(indent_depth + 1);
-        printf("(invalid jpeg data)\n");
+        printf("(invalid jpeg data: %02x %02x %02x %02x ...)\n",
+               data[0]&0xff, data[1]&0xff, data[2]&0xff, data[3]&0xff);
     }
     if (swf_tag_jpeg->alpha_data) {
         print_indent(indent_depth);
