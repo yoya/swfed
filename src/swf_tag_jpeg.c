@@ -14,6 +14,7 @@
 // #include "swf_tag.h"
 #include "swf_jpeg.h"
 #include "jpeg_segment.h"
+#include "jpeg_size.h"
 
 swf_tag_detail_handler_t jpeg_detail_handler;
 swf_tag_detail_handler_t jpegt_detail_handler;
@@ -292,6 +293,14 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
                                   swf_tag_jpeg->jpeg_data_len, 1);
     if (jpeg_seg) {
+        int ret, width = 0, height = 0;
+        // bitmap size
+        ret = jpeg_size_segment(jpeg_seg, &width, &height);
+        if (ret == 0) {
+            print_indent(indent_depth + 1);
+            printf("(width, height)=(%d, %d)\n", width, height);
+        }
+        // dump chunk
         for (node=jpeg_seg->head ; node ; node=node->next) {
             char *name = jpeg_segment_get_marker_name(node->marker);
             print_indent(indent_depth + 1);
