@@ -16,6 +16,7 @@
 #include "swf_tag_sound.h"
 #include "swf_tag_sprite.h"
 #include "swf_tag_shape.h"
+#include "jpeg_size.h"
 
 swf_tag_info_t swf_tag_info_table[] = {
     { 0, "End", NULL },
@@ -264,6 +265,23 @@ int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     return 1;
 }
 
+int
+swf_tag_identity(swf_tag_t *tag, int cid) {
+    swf_tag_info_t *tag_info;
+    tag_info = get_swf_tag_info(tag->tag);
+    if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        if (detail_handler->identity) {
+            if (detail_handler->identity(tag, cid)) {
+                return 1; // no match
+            } else{
+                return 0; // match
+            }
+        }
+    }
+    return 1; // no match - no identity method
+}
+
 unsigned char *
 swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables) {
     swf_tag_info_t *tag_info;
@@ -347,10 +365,12 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
+    /*
     if (tag->detail) {
         detail_handler->destroy(tag);
         tag->detail = NULL;
     }
+    */
     if (alpha_data && (alpha_data_len > 0)) {
         tag->tag = 35;
     } else {
@@ -358,9 +378,11 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
             tag->tag = 21;
         }
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    detail_handler = tag_info->detail_handler();
-    tag->detail = detail_handler->create();
+
+    if (tag->detail == NULL) {
+        tag->detail = detail_handler->create();
+    }
+    
     result= swf_tag_jpeg_replace_jpeg_data(tag->detail, image_id,
                                            jpeg_data, jpeg_data_len,
                                            alpha_data, alpha_data_len, tag);
@@ -403,7 +425,8 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
 int
 swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
                          unsigned char *png_data,
-                         unsigned long png_data_len) {
+                         unsigned long png_data_len,
+                         unsigned adjust_bitmap_shape_mode) {
     swf_tag_info_t *tag_info;
     swf_tag_detail_handler_t *detail_handler;
     int result;
@@ -455,7 +478,8 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
 int
 swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                          unsigned char *gif_data,
-                         unsigned long gif_data_len) {
+                         unsigned long gif_data_len,
+                         unsigned adjust_bitmap_shape_mode) {
     swf_tag_info_t *tag_info;
     swf_tag_detail_handler_t *detail_handler;
     int result;

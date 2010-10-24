@@ -55,4 +55,8 @@ extern void print_hexbin(unsigned char *data, int data_len);
 #define GetULongLE(data) ((unsigned long) GV4B(data[3], data[2], data[1], data[0]))
 #define GetDoubleIEEE(data) ((double) GV8B(data[4], data[5], data[6], data[7], data[0], data[1], data[2], data[3]))
 
+// tag
+
+#define isBitmapTag(tag) (((tag) == 6) || ((tag) == 21) || ((tag) == 35) || ((tag) == 20) || ((tag) == 36))
+
 #endif /* __SWF_DEFINE__H__ */

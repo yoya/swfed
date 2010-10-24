@@ -40,6 +40,8 @@ typedef struct swf_tag_shape_detail_ {
     int _current_fill_style_num;
     int _current_line_style_num;
     signed /* twips */ _current_x, _current_y;
+    int _parse_condition;
+#define SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP 1
 } swf_tag_shape_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
@@ -47,6 +49,7 @@ extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
 extern void *swf_tag_shape_create_detail(void);
 extern int swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_shape_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id);
 extern unsigned char *swf_tag_shape_output_detail(swf_tag_t *tag,
                                                    unsigned long *length,
                                                    struct swf_object_ *swf);

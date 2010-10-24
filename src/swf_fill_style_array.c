@@ -2,6 +2,7 @@
 #include <stdlib.h> // calloc
 #include "bitstream.h"
 #include "swf_fill_style_array.h"
+#include "swf_tag_shape.h"
 
 int
 swf_fill_style_array_parse(bitstream_t *bs,
@@ -9,8 +10,15 @@ swf_fill_style_array_parse(bitstream_t *bs,
                            swf_tag_t *tag) {
     int i;
     int result;
-
+    swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+    
     fill_style_array->count = bitstream_getbyte(bs);
+
+    if (swf_tag_shape->_parse_condition == SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP) {
+        if (fill_style_array->count == 0) {
+            return 1;
+        }
+    }
     
     if ((tag->tag != 2) && // ! DefineShape
         (fill_style_array->count == 255)) {

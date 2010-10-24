@@ -50,6 +50,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     // parse context
     swf_tag_shape->_current_x = 0;
     swf_tag_shape->_current_y = 0;
+    swf_tag_shape->_parse_condition = 0;
 
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -130,6 +131,46 @@ int swf_tag_shape_identity_detail(swf_tag_t *tag, int id) {
     }        
     return 1;
 }
+
+int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
+    swf_tag_shape_detail_t *swf_tag_shape;
+    int i, ret;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_shape_bitmap_identity: tag == NULL\n");
+        return 1;
+    }
+    if (tag->detail == NULL) {
+        tag->detail = swf_tag_shape_create_detail();
+        swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
+        ret = swf_tag_shape_input_detail(tag, NULL);
+        if (ret) {
+            swf_tag_shape_destroy_detail(tag);
+            return 1; // no shape bitmap
+        }
+    } else {
+        swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+    }
+    //
+    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
+        swf_fill_style_t *fill_style;
+        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
+        switch (fill_style->type) {
+          case 0x40: // tilled  bitmap fill with smoothed edges
+          case 0x41: // clipped bitmap fill with smoothed edges
+          case 0x42: // tilled  bitmap fill with hard edges
+          case 0x43: // clipped bitmap fill with hard edges
+            if (fill_style->bitmap.bitmap_ref == bitmap_id) {
+                return 1; // found
+            }
+            break;
+          default:
+            break;
+        }
+    }
+    return 0; // not found
+}
+
 
 unsigned char *
 swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,

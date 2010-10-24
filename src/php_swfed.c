@@ -142,6 +142,8 @@ PHP_MINIT_FUNCTION(swfed)
 	zend_declare_property_stringl(swfeditor_ce,
 				"swf_object", strlen("swf_object"),
 				"", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
+        REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
+        REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
 	return SUCCESS;
 }
 
@@ -518,6 +520,17 @@ PHP_METHOD(swfed, replaceTagData) {
     RETURN_TRUE;
 }
 
+PHP_METHOD(swfed, adjustShapeBitmap) {
+    swf_object_t *swf = NULL;
+    unsigned long mode = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "l", &mode) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_adjust_shapebitmap(swf, mode);
+    RETURN_TRUE;
+}
 PHP_METHOD(swfed, getJpegData) {
     unsigned long image_id = 0;
     unsigned long len = 0;

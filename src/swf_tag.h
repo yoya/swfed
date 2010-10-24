@@ -45,6 +45,8 @@ extern void swf_tag_destroy(swf_tag_t *tag);
 extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf);
 extern void swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth);
 
+extern int swf_tag_identity(swf_tag_t *tag, int cid);
+
 /* image */
 
 extern unsigned char *swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables);

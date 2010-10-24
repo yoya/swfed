@@ -47,6 +47,7 @@ static zend_class_entry *swfeditor_ce;
 PHP_METHOD(swfed, __construct);
 PHP_METHOD(swfed, input);
 PHP_METHOD(swfed, output);
+//
 PHP_METHOD(swfed, getHeaderInfo);
 PHP_METHOD(swfed, setHeaderInfo);
 PHP_METHOD(swfed, getTagList);
@@ -54,6 +55,9 @@ PHP_METHOD(swfed, getTagDetail);
 PHP_METHOD(swfed, getTagInfo);
 PHP_METHOD(swfed, getTagData);
 PHP_METHOD(swfed, replaceTagData);
+//
+PHP_METHOD(swfed, adjustShapeBitmap);
+//
 PHP_METHOD(swfed, getJpegData);
 PHP_METHOD(swfed, getJpegAlpha);
 PHP_METHOD(swfed, replaceJpegData);
@@ -95,6 +99,10 @@ ZEND_END_MODULE_GLOBALS(swfed)
 #else
 #define SWFED_G(v) (swfed_globals.v)
 #endif
+
+#define REGISTER_SWFED_CLASS_CONST_LONG(const_name, value) \
+    zend_declare_class_constant_long(swfeditor_ce, const_name, sizeof(const_name)-1, (long)value TSRMLS_CC);
+
 
 #endif	/* PHP_SWFED_H */
 

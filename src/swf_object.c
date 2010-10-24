@@ -13,6 +13,7 @@
 #include "swf_tag_action.h"
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
+#include "swf_tag_shape.h"
 #include "swf_action.h"
 #include "swf_object.h"
 
@@ -21,6 +22,8 @@ swf_object_open(void) {
     swf_object_t *swf;
     malloc_debug_start(); /* DEBUG XXX */
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
+    //
+    swf->adjust_shape_bitmap_mode = 0;
     return swf;
 }
 
@@ -229,6 +232,15 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
 }
 
 int
+swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode) {
+    if (swf == NULL) {
+        return 1;
+    }
+    swf->adjust_shape_bitmap_mode = mode;
+    return 0;
+}
+
+int
 swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
                            unsigned char *data, unsigned long *length) {
     fprintf(stderr, "swf_object_replace_tagdata: not impremented yet.\n");
@@ -293,18 +305,74 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             unsigned long alpha_data_len) {
     int result = 1;
     swf_tag_t *tag;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg;
+    double width_scale = 0, height_scale = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
         return 1;
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
-        result = swf_tag_replace_jpeg_data(tag, image_id,
-                                           jpeg_data, jpeg_data_len,
-                                           alpha_data, alpha_data_len);
-        if (! result) {
-            break;
+        register int tag_code = tag->tag;
+        // DefineBitsJPEG or 2 or 3
+        // BitsLossless or 2
+        if (isBitmapTag(tag_code)) {
+            if (swf_tag_identity(tag, image_id)) {
+                break;
+            }
         }
     }
+    if (tag == NULL) {
+        return 1;
+    }
+    swf_tag_create_input_detail(tag, swf);
+    if (swf->adjust_shape_bitmap_mode) {
+        int old_width, old_height, new_width, new_height;
+        swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
+        jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
+                  &old_width, &old_height);
+        jpeg_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
+        width_scale = (double) new_width / old_width;
+        height_scale = (double) new_height / old_height;
+    }
+    result = swf_tag_replace_jpeg_data(tag, image_id,
+                                       jpeg_data, jpeg_data_len,
+                                       alpha_data, alpha_data_len);
+    if (! result) {
+        fprintf(stderr, "swf_object_replace_jpegdata: swf_tag_replace_jpeg_data failed\n");
+        return result;
+    }
+    switch (swf->adjust_shape_bitmap_mode) {
+      case SWFED_SHAPE_BITMAP_MATRIX_RESCALE:
+        for (; tag ; tag=tag->next) {
+            swf_tag_shape_detail_t *swf_tag_shape;
+            if (swf_tag_shape_bitmap_identity(tag, image_id) == 0) {
+                fprintf(stderr, "swf_object_replace_jpegdata: tag->detail == NULL\n");
+                return 1;
+            }
+            swf_tag_shape = tag->detail;
+            swf_object_apply_shapematrix_factor(swf,
+                                                swf_tag_shape->shape_id,
+                                                width_scale, height_scale,
+                                                0, 0, 0);
+        }
+        break;
+      case SWFED_SHAPE_BITMAP_RECT_RESIZE:
+        for (; tag ; tag=tag->next) {
+            if (swf_tag_shape_bitmap_identity(tag, image_id) == 0) {
+                swf_tag_shape_detail_t *swf_tag_shape;                
+                if (tag->detail == NULL) {
+                    fprintf(stderr, "swf_object_replace_jpegdata: tag->detail == NULL\n");
+                    return 1;
+                }
+                swf_tag_shape = tag->detail;
+                swf_object_apply_shaperect_factor(swf, swf_tag_shape->shape_id,
+                                                  width_scale, height_scale,
+                                                  0, 0);
+            }
+        }
+        break;
+    }
+    
     return result;
 }
 
@@ -344,7 +412,8 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_png_data(tag, image_id,
-                                           png_data, png_data_len);
+                                          png_data, png_data_len,
+                                          swf->adjust_shape_bitmap_mode);
         if (! result) {
             break;
         }
@@ -369,7 +438,8 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_gif_data(tag, image_id,
-                                          gif_data, gif_data_len);
+                                          gif_data, gif_data_len,
+                                          swf->adjust_shape_bitmap_mode);
         if (! result) {
             break;
         }
