@@ -137,7 +137,7 @@ swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
     swf_shape_record_t *current_record;
 
     // top-left base adjust
-    signed min_x = 0, min_y = 0;
+    signed min_x = 20*10000, min_y = 20*10000;
     for (current_record = shape_record ; current_record ; current_record = current_record->next) {
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
