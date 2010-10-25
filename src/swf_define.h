@@ -57,6 +57,9 @@ extern void print_hexbin(unsigned char *data, int data_len);
 
 // tag
 
+// DefineBitsJPEG1,2,3, DefineLossless1,2
 #define isBitmapTag(tag) (((tag) == 6) || ((tag) == 21) || ((tag) == 35) || ((tag) == 20) || ((tag) == 36))
+// DefineShape1,2,3, DefineMorphShape1
+#define isShapeTag(tag) (((tag) == 2) || ((tag) == 22) || ((tag) == 32) || ((tag) == 46))
 
 #endif /* __SWF_DEFINE__H__ */
