@@ -41,16 +41,16 @@ swf_shape_with_style_build(bitstream_t *bs, swf_shape_with_style_t *shape_with_s
 }
 
 int
-swf_shape_with_style_delete(swf_shape_with_style_t *shape_with_style) {
-  swf_styles_delete(&(shape_with_style->styles));
-  swf_shape_record_delete(&(shape_with_style->shape_records));
-  return 0;
-}
-
-int
 swf_shape_with_style_print(swf_shape_with_style_t *shape_with_style, int indent_depth, swf_tag_t *tag) {
     swf_styles_print(&(shape_with_style->styles), indent_depth, tag);
     swf_shape_record_print(&(shape_with_style->shape_records), indent_depth,
                            tag);
     return 0;
+}
+
+int
+swf_shape_with_style_delete(swf_shape_with_style_t *shape_with_style) {
+  swf_styles_delete(&(shape_with_style->styles));
+  swf_shape_record_delete(&(shape_with_style->shape_records));
+  return 0;
 }
