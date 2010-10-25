@@ -44,6 +44,7 @@ int
 swf_shape_with_style_delete(swf_shape_with_style_t *shape_with_style) {
   swf_styles_delete(&(shape_with_style->styles));
   swf_shape_record_delete(&(shape_with_style->shape_records));
+  return 0;
 }
 
 int
