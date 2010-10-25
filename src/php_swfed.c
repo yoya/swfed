@@ -58,6 +58,7 @@ zend_function_entry swfed_functions[] = {
    	PHP_ME(swfed,  getTagDetail, NULL, 0)
        	PHP_ME(swfed,  getTagData, NULL, 0)
         PHP_ME(swfed,  replaceTagData, NULL, 0)
+        PHP_ME(swfed,  adjustShapeBitmap, NULL, 0)
    	PHP_ME(swfed,  getJpegData, NULL, 0)
    	PHP_ME(swfed,  getJpegAlpha, NULL, 0)
    	PHP_ME(swfed,  replaceJpegData, NULL, 0)
