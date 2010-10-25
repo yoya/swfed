@@ -306,6 +306,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
     int result = 1;
     swf_tag_t *tag;
     swf_tag_jpeg_detail_t *swf_tag_jpeg;
+    int old_width, old_height, new_width, new_height;
     double width_scale = 0, height_scale = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
@@ -313,36 +314,35 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         register int tag_code = tag->tag;
-        // DefineBitsJPEG or 2 or 3
-        // BitsLossless or 2
+        // DefineBitsJPEG or 2 or 3, BitsLossless or 2
         if (isBitmapTag(tag_code)) {
-            if (swf_tag_identity(tag, image_id)) {
-                break;
+            if (swf_tag_identity(tag, image_id) == 0) {
+                break; // match
             }
         }
     }
     if (tag == NULL) {
+        fprintf(stderr, "swf_object_replace_jpegdata: tag == NULL\n");
         return 1;
     }
     swf_tag_create_input_detail(tag, swf);
     if (swf->adjust_shape_bitmap_mode) {
-        int old_width, old_height, new_width, new_height;
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
                   &old_width, &old_height);
         jpeg_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
-        width_scale = (double) new_width / old_width;
-        height_scale = (double) new_height / old_height;
     }
     result = swf_tag_replace_jpeg_data(tag, image_id,
                                        jpeg_data, jpeg_data_len,
                                        alpha_data, alpha_data_len);
-    if (! result) {
+    if (result) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf_tag_replace_jpeg_data failed\n");
         return result;
     }
     switch (swf->adjust_shape_bitmap_mode) {
       case SWFED_SHAPE_BITMAP_MATRIX_RESCALE:
+        width_scale  = (double) old_width  / new_width;
+        height_scale = (double) old_height / new_height;
         for (; tag ; tag=tag->next) {
             swf_tag_shape_detail_t *swf_tag_shape;
             if (swf_tag_shape_bitmap_identity(tag, image_id) == 0) {
@@ -357,6 +357,8 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         }
         break;
       case SWFED_SHAPE_BITMAP_RECT_RESIZE:
+        width_scale  = (double) new_width  / old_width;
+        height_scale = (double) new_height / old_height;
         for (; tag ; tag=tag->next) {
             if (swf_tag_shape_bitmap_identity(tag, image_id) == 0) {
                 swf_tag_shape_detail_t *swf_tag_shape;                
