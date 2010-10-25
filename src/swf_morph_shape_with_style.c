@@ -45,5 +45,7 @@ swf_morph_shape_with_style_print(swf_morph_shape_with_style_t *morph_shape_with_
 int
 swf_morph_shape_with_style_delete(swf_morph_shape_with_style_t *morph_shape_with_style) {
     swf_styles_delete(&(morph_shape_with_style->styles));
+    swf_shape_record_delete(&(morph_shape_with_style->shape_records));
+    swf_shape_record_delete(&(morph_shape_with_style->shape_records_morph));
     return 0;
 }
