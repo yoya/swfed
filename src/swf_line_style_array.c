@@ -73,6 +73,10 @@ swf_line_style_array_print(swf_line_style_array_t *line_style_array, int indent_
 
 int
 swf_line_style_array_delete(swf_line_style_array_t *line_style_array) {
+    int i;
+    for (i = 0 ; i < line_style_array->count ; i++) {
+        swf_line_style_delete(&(line_style_array->line_style[i]));
+    }
     free(line_style_array->line_style);
     return 0;
 }
