@@ -106,8 +106,23 @@ swf_shape_record_print(swf_shape_record_t *shape_record, int indent_depth,
 int
 swf_shape_record_delete(swf_shape_record_t *shape_record) {
     swf_shape_record_t *current, *next;
+    int first_bit, next_5bits;
+    
+    first_bit = (shape_record->first_6bits >> 5) & 1;
+    next_5bits = shape_record->first_6bits & 0x1f;
+
+
+    if ((first_bit == 0) && (next_5bits != 0)) {
+        swf_shape_record_setup_delete(&(shape_record->shape.shape_setup));
+    }
+
     current = shape_record->next;
     while (current) {
+        first_bit = (current->first_6bits >> 5) & 1;
+        next_5bits = current->first_6bits & 0x1f;
+        if ((first_bit == 0) && (next_5bits != 0)) {
+            swf_shape_record_setup_delete(&(current->shape.shape_setup));
+        }
         next = current->next;
         free(current);
         current = next;

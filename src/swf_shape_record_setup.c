@@ -124,3 +124,11 @@ swf_shape_record_setup_print(swf_shape_record_setup_t *shape_record_setup,
 
     return 0;
 }
+
+int
+swf_shape_record_setup_delete(swf_shape_record_setup_t *setup) {
+    if (setup->shape_has_new_styles) {
+        swf_styles_delete(&(setup->styles));
+    }
+    return 0;
+}

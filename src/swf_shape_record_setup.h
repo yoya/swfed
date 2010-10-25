@@ -34,5 +34,6 @@ extern int swf_shape_record_setup_build(bitstream_t *bs,
                                         swf_tag_t *tag);
 extern int swf_shape_record_setup_print(swf_shape_record_setup_t *setup,
                                         int indent_depth, swf_tag_t *tag);
+extern int swf_shape_record_setup_delete(swf_shape_record_setup_t *setup);
 
 #endif /* __SWF_SHAPE_RECORD_SETUP_H__ */
