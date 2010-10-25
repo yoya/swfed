@@ -161,14 +161,14 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
           case 0x42: // tilled  bitmap fill with hard edges
           case 0x43: // clipped bitmap fill with hard edges
             if (fill_style->bitmap.bitmap_ref == bitmap_id) {
-                return 1; // found
+                return 0; // found
             }
             break;
           default:
             break;
         }
     }
-    return 0; // not found
+    return 1; // not found
 }
 
 
