@@ -412,8 +412,7 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_png_data(tag, image_id,
-                                          png_data, png_data_len,
-                                          swf->adjust_shape_bitmap_mode);
+                                          png_data, png_data_len);
         if (! result) {
             break;
         }
@@ -438,8 +437,7 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         result = swf_tag_replace_gif_data(tag, image_id,
-                                          gif_data, gif_data_len,
-                                          swf->adjust_shape_bitmap_mode);
+                                          gif_data, gif_data_len);
         if (! result) {
             break;
         }

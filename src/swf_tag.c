@@ -425,8 +425,7 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
 int
 swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
                          unsigned char *png_data,
-                         unsigned long png_data_len,
-                         unsigned adjust_bitmap_shape_mode) {
+                         unsigned long png_data_len) {
     swf_tag_info_t *tag_info;
     swf_tag_detail_handler_t *detail_handler;
     int result;
@@ -478,8 +477,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
 int
 swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                          unsigned char *gif_data,
-                         unsigned long gif_data_len,
-                         unsigned adjust_bitmap_shape_mode) {
+                         unsigned long gif_data_len) {
     swf_tag_info_t *tag_info;
     swf_tag_detail_handler_t *detail_handler;
     int result;
