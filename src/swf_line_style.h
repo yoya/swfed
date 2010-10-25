@@ -38,5 +38,6 @@ extern int swf_line_style_build(bitstream_t *bs,
                                 swf_line_style_t *line_style, swf_tag_t *tag);
 extern int swf_line_style_print(swf_line_style_t *line_style,
                                 int indent_depth, swf_tag_t *tag);
+extern int swf_line_style_delete(swf_line_style_t *line_style);
 
 #endif /* __SWF_LINE_STYLE_H__ */

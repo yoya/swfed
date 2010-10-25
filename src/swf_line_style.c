@@ -161,3 +161,11 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
     }
     return 0;
 }
+
+int
+swf_line_style_delete(swf_line_style_t *line_style) {
+    if (line_style->has_fill) {
+        swf_fill_style_delete(&(line_style->fill_style));
+    }
+    return 0;
+}
