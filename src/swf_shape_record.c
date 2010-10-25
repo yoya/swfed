@@ -111,7 +111,6 @@ swf_shape_record_delete(swf_shape_record_t *shape_record) {
     first_bit = (shape_record->first_6bits >> 5) & 1;
     next_5bits = shape_record->first_6bits & 0x1f;
 
-
     if ((first_bit == 0) && (next_5bits != 0)) {
         swf_shape_record_setup_delete(&(shape_record->shape.shape_setup));
     }
