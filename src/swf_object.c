@@ -16,6 +16,7 @@
 #include "swf_tag_shape.h"
 #include "swf_action.h"
 #include "swf_object.h"
+#include "jpeg_size.h"
 
 swf_object_t *
 swf_object_open(void) {
@@ -305,7 +306,6 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             unsigned long alpha_data_len) {
     int result = 1;
     swf_tag_t *tag;
-    swf_tag_jpeg_detail_t *swf_tag_jpeg;
     int old_width, old_height, new_width, new_height;
     double width_scale = 0, height_scale = 0;
     if (swf == NULL) {
