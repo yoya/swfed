@@ -14,8 +14,8 @@ swf_matrix_parse(bitstream_t *bs, swf_matrix_t *matrix) {
         matrix->scale_x = bitstream_getbits_signed(bs, scale_bits);
         matrix->scale_y = bitstream_getbits_signed(bs, scale_bits);
     } else {
-        matrix->scale_x = 1; // XXX
-        matrix->scale_y = 1; // XXX
+        matrix->scale_x = SWF_TWIPS; // XXX
+        matrix->scale_y = SWF_TWIPS; // XXX
     }
     matrix->has_rotate = bitstream_getbit(bs);
     if (matrix->has_rotate) {
