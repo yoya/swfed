@@ -64,7 +64,7 @@ swf_shape_record_edge_build(bitstream_t *bs,
                             swf_shape_record_edge_t *shape_record_edge,
                             swf_tag_t *tag) {
 //    int ret;
-    unsigned int size, shape_coord_real_size = 0;
+    unsigned int size, shape_coord_real_size = 2;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     
     bitstream_putbit(bs, shape_record_edge->shape_record_type);
@@ -84,13 +84,7 @@ swf_shape_record_edge_build(bitstream_t *bs,
     shape_coord_real_size =  (shape_coord_real_size>size)?shape_coord_real_size:size;
     size = bitstream_need_bits_signed(shape_record_edge->shape_y - swf_tag_shape->_current_y);
     shape_coord_real_size =  (shape_coord_real_size>size)?shape_coord_real_size:size;
-
-    if (shape_coord_real_size > 2) {
-        // fprintf(stderr, "shape_coord_real_size=%d delta_x=%d\n", shape_coord_real_size, shape_record_edge->shape_x - swf_tag_shape->_current_x);
-        shape_record_edge->shape_coord_size = shape_coord_real_size - 2;
-    } else {
-        shape_record_edge->shape_coord_size = 0;
-    }
+    shape_record_edge->shape_coord_size = shape_coord_real_size - 2;
     bitstream_putbits(bs, shape_record_edge->shape_coord_size, 4);
 
     if (shape_record_edge->shape_edge_type == 0) {
@@ -124,7 +118,6 @@ swf_shape_record_edge_build(bitstream_t *bs,
             }
             bitstream_putbit(bs, shape_record_edge->shape_line_has_x_or_y);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
-                
                 bitstream_putbits_signed(bs, delta_x, shape_coord_real_size);
                 swf_tag_shape->_current_x += delta_x;
             
