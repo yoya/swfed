@@ -5,7 +5,8 @@
 
 int swf_debug = 0;
 
-#define MALLOC_DEBUG_TABLE_NUM 0x20000
+// #define MALLOC_DEBUG_TABLE_NUM 0x20000
+#define MALLOC_DEBUG_TABLE_NUM 0x40000
 
 static struct malloc_debug_ {
     void *ptr;
