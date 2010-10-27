@@ -7,7 +7,6 @@ int
 swf_shape_record_setup_parse(bitstream_t *bs,
                              swf_shape_record_setup_t *shape_record_setup,
                              swf_tag_t *tag) {
-    int shape_move_size;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
     int ret;
@@ -18,7 +17,8 @@ swf_shape_record_setup_parse(bitstream_t *bs,
     shape_record_setup->shape_has_fill_style0 = bitstream_getbit(bs);
     shape_record_setup->shape_has_move_to = bitstream_getbit(bs);
     if (shape_record_setup->shape_has_move_to) {
-        shape_move_size = bitstream_getbits(bs, 5); // XXX
+        int shape_move_size;
+        shape_move_size = bitstream_getbits(bs, 5);
         shape_record_setup->shape_move_size = shape_move_size;
         shape_record_setup->shape_move_x = bitstream_getbits_signed(bs, shape_move_size);
         shape_record_setup->shape_move_y = bitstream_getbits_signed(bs, shape_move_size);
@@ -48,7 +48,6 @@ int
 swf_shape_record_setup_build(bitstream_t *bs,
                              swf_shape_record_setup_t *shape_record_setup,
                              swf_tag_t *tag) {
-    int shape_move_size;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     swf_styles_count_t *count = &(swf_tag_shape->_current_styles_count);
     bitstream_putbit(bs, shape_record_setup->shape_record_type);
@@ -58,8 +57,13 @@ swf_shape_record_setup_build(bitstream_t *bs,
     bitstream_putbit(bs, shape_record_setup->shape_has_fill_style0);
     bitstream_putbit(bs, shape_record_setup->shape_has_move_to);
     if (shape_record_setup->shape_has_move_to) {
-        shape_move_size = shape_record_setup->shape_move_size;
-        bitstream_putbits(bs, shape_move_size, 5); // XXX
+        unsigned int size, shape_move_size = 0;
+        size = bitstream_need_bits_signed(shape_record_setup->shape_move_x);
+        shape_move_size =  (shape_move_size>size)?shape_move_size:size;
+        size = bitstream_need_bits_signed(shape_record_setup->shape_move_y);
+        shape_move_size =  (shape_move_size>size)?shape_move_size:size;
+        shape_record_setup->shape_move_size = shape_move_size;
+        bitstream_putbits(bs, shape_move_size, 5);
         bitstream_putbits_signed(bs, shape_record_setup->shape_move_x,
                                  shape_move_size);
         bitstream_putbits_signed(bs, shape_record_setup->shape_move_y,
