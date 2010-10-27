@@ -732,3 +732,43 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
     }
     return result;
 }
+
+int
+swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
+                                struct swf_object_ *swf) {
+    swf_tag_info_t *tag_info;
+    int result;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_apply_shape_type_tylled: tag == NULL\n");
+        return 1;
+    }
+    if ((tag->tag != 2) && (tag->tag != 22) && (tag->tag !=32 )
+        && (tag->tag != 46)) {
+        // ! DefineShape1,2,3, DefineMorphShape
+        return 1;
+    }
+    tag_info = get_swf_tag_info(tag->tag);
+    if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        if (detail_handler->identity) {
+            if (detail_handler->identity(tag, shape_id)) {
+                return 1;
+            }
+        }
+    }
+    if (! tag->detail) {
+        swf_tag_create_input_detail(tag, swf);
+    }
+    if (! tag->detail) {
+        fprintf(stderr, "swf_tag_apply_shape_rect_factor: Can't create tag\n");
+        return 1;
+    }
+    result = swf_tag_shape_apply_type_tilled(tag->detail, shape_id);
+    if (result == 0) {
+        free(tag->data);
+        tag->data = NULL;
+        tag->length = 0;
+    }
+    return result;
+    
+}

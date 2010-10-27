@@ -339,36 +339,42 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_jpegdata: swf_tag_replace_jpeg_data failed\n");
         return result;
     }
-    switch (swf->adjust_shape_bitmap_mode) {
-      case SWFED_SHAPE_BITMAP_MATRIX_RESCALE:
+    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
         for (; tag ; tag=tag->next) {
-            if (isShapeTag(tag->tag) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
-                swf_tag_shape_detail_t *swf_tag_shape;
-                swf_tag_shape = tag->detail;
+            register int tag_code = tag->tag;
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
+                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
                 swf_object_apply_shapematrix_factor(swf,
                                                     swf_tag_shape->shape_id,
                                                     width_scale, height_scale,
                                                     0, 0, 0);
             }
         }
-        break;
-      case SWFED_SHAPE_BITMAP_RECT_RESIZE:
+    }
+    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
         for (; tag ; tag=tag->next) {
-            if (isShapeTag(tag->tag) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
-                swf_tag_shape_detail_t *swf_tag_shape;                
-                swf_tag_shape = tag->detail;
+            register int tag_code = tag->tag;
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
+                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
                 swf_object_apply_shaperect_factor(swf, swf_tag_shape->shape_id,
                                                   width_scale, height_scale,
                                                   0, 0);
             }
         }
-        break;
     }
-    
+    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
+        for (; tag ; tag=tag->next) {
+            register int tag_code = tag->tag;
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
+                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                result = swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
+            }
+        }
+    }
     return result;
 }
 
@@ -591,6 +597,23 @@ swf_object_apply_shaperect_factor(swf_object_t *swf, int shape_id,
                                                    scale_x, scale_y,
                                                    trans_x, trans_y,
                                                    swf);
+        if (! result) {
+            break;
+        }
+    }
+    return result;
+}
+
+int
+swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id) {
+    int result = 1;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_apply_shaperect_factor: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        result = swf_tag_apply_shape_type_tilled(tag, shape_id, swf);
         if (! result) {
             break;
         }

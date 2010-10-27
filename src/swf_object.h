@@ -20,6 +20,7 @@ typedef struct swf_object_ {
 
 #define SWFED_SHAPE_BITMAP_MATRIX_RESCALE 1
 #define SWFED_SHAPE_BITMAP_RECT_RESIZE    2
+#define SWFED_SHAPE_BITMAP_TYPE_TILLED    4
 
 extern swf_object_t *swf_object_open(void);
 extern void swf_object_close(swf_object_t *swf);
@@ -78,4 +79,6 @@ extern int swf_object_apply_shaperect_factor(swf_object_t *swf,int shape_id,
                                              double scale_x, double scale_y,
                                              signed int trans_x,
                                              signed int trans_y);
+extern int swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id);
+
 #endif /* __SWF_OBJECT_H__ */

@@ -65,6 +65,7 @@ extern int swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
 extern int swf_tag_shape_apply_rect_factor(void *detail, int shape_id, 
                                            double scale_x, double scale_y,
                                            signed int trans_x, signed int trans_y);
+extern int swf_tag_shape_apply_type_tilled(void *detail, int shape_id);
 
 #endif /* __SWF_TAG_SHAPE__H__ */
 

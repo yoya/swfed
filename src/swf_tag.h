@@ -97,4 +97,7 @@ extern int swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
                                              signed int trans_x,
                                              signed int trans_y,
                                              struct swf_object_ *swf);
+extern int swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
+                                           struct swf_object_ *swf);
+
 #endif /* __SWF_TAG_H__ */
