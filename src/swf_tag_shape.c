@@ -139,6 +139,10 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
         fprintf(stderr, "swf_tag_shape_bitmap_identity: tag == NULL\n");
         return 1;
     }
+    if (! isShapeTag(tag->tag)) {
+        fprintf(stderr, "swf_tag_shape_bitmap_identity: ! isShapeTag(tag->tag)\n");
+        return 1;
+    }
     if (tag->detail == NULL) {
         tag->detail = swf_tag_shape_create_detail();
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
@@ -155,6 +159,10 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
     for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
         swf_fill_style_t *fill_style;
         fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
+        if (fill_style == NULL) {
+            fprintf(stderr, "swf_tag_shape_bitmap_identity: fill_style == NULL i=%d\n", i);
+            return 1; // Illegal!!!
+        }
         switch (fill_style->type) {
           case 0x40: // tilled  bitmap fill with smoothed edges
           case 0x41: // clipped bitmap fill with smoothed edges
