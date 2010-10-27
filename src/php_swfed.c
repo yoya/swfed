@@ -92,7 +92,7 @@ zend_module_entry swfed_module_entry = {
 	PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
 	PHP_MINFO(swfed),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.21", /* Replace with version number for your extension */
+	"0.22", /* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -144,6 +144,7 @@ PHP_MINIT_FUNCTION(swfed)
 				"swf_object", strlen("swf_object"),
 				"", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
         // class const
+        REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_TYPE_TILLED", SWFED_SHAPE_BITMAP_TYPE_TILLED);

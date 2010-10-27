@@ -18,6 +18,7 @@ typedef struct swf_object_ {
     unsigned adjust_shape_bitmap_mode;
 } swf_object_t;
 
+#define SWFED_SHAPE_BITMAP_NONE           0
 #define SWFED_SHAPE_BITMAP_MATRIX_RESCALE 1
 #define SWFED_SHAPE_BITMAP_RECT_RESIZE    2
 #define SWFED_SHAPE_BITMAP_TYPE_TILLED    4
