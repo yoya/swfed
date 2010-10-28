@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "jpeg_segment.h"
+#include "bitmap_util.h"
 
 #define isJPEG_DHT(c) ((c) == 0xC4)
 #define isJPEG_JPG(c) ((c) == 0xC8)

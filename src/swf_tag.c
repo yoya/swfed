@@ -16,7 +16,7 @@
 #include "swf_tag_sound.h"
 #include "swf_tag_sprite.h"
 #include "swf_tag_shape.h"
-#include "jpeg_size.h"
+#include "bitmap_util.h"
 
 swf_tag_info_t swf_tag_info_table[] = {
     { 0, "End", NULL },

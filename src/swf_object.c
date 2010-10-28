@@ -16,7 +16,7 @@
 #include "swf_tag_shape.h"
 #include "swf_action.h"
 #include "swf_object.h"
-#include "jpeg_size.h"
+#include "bitmap_util.h"
 
 swf_object_t *
 swf_object_open(void) {

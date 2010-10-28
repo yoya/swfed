@@ -14,7 +14,7 @@
 // #include "swf_tag.h"
 #include "swf_jpeg.h"
 #include "jpeg_segment.h"
-#include "jpeg_size.h"
+#include "bitmap_util.h"
 
 swf_tag_detail_handler_t jpeg_detail_handler;
 swf_tag_detail_handler_t jpegt_detail_handler;
