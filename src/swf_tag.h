@@ -49,6 +49,9 @@ extern int swf_tag_identity(swf_tag_t *tag, int cid);
 
 /* image */
 
+extern int swf_tag_get_bitmap_size(swf_tag_t *tag,
+                                   int *width, int *height);
+
 extern unsigned char *swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables);
 extern unsigned char *swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id);
 extern int swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,

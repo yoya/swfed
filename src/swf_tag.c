@@ -282,6 +282,35 @@ swf_tag_identity(swf_tag_t *tag, int cid) {
     return 1; // no match - no identity method
 }
 
+/* bitmap */
+
+int
+swf_tag_get_bitmap_size(swf_tag_t *tag,
+                        int *width, int *height) {
+    int ret = 0;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_get_bitmap_size: tag == NULL\n");
+        return 1;
+    }
+    if (! tag->detail) {
+        fprintf(stderr, "swf_tag_get_bitmap_size: tag->detail == NULL\n");
+        return 1;
+    }
+
+    if (isBitsJPEGTag(tag->tag)) {
+        swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
+        ret = jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
+                  width, height);
+    } else if (isBitsLosslessTag(tag->tag)) {
+        swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+        *width  = swf_tag_lossless->width;
+        *height = swf_tag_lossless->height;
+    }
+    return ret;
+
+}
+
+
 unsigned char *
 swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables) {
     swf_tag_info_t *tag_info;
