@@ -41,17 +41,25 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
 int
 png_size(unsigned char *data, unsigned long data_len,
          int *width, int *height) {
+    if (data_len < 24) {
+        fprintf(stderr, "png_size: data_len(%lu) < 16\n", data_len);
+        return 1;
+    }
+    *width = (((data[16]*0x100) + data[17])*0x100 + data[18])*0x100 + data[19];
+    *height =(((data[20]*0x100) + data[21])*0x100 + data[22])*0x100 + data[23];
+    return 0;
 }
 
 int
+
 gif_size(unsigned char *data, unsigned long data_len,
                     int *width, int *height) {
     if (data_len < 10) {
+        fprintf(stderr, "gif_size: data_len(%lu) < 10\n", data_len);
         return 1;
     }
     *width  = 0x100 * data[7] + data[6];
     *height = 0x100 * data[9] + data[8];
-    return 0;
     return 0;
 }
 
