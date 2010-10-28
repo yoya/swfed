@@ -92,7 +92,7 @@ zend_module_entry swfed_module_entry = {
 	PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
 	PHP_MINFO(swfed),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.22", /* Replace with version number for your extension */
+	"0.23", /* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
