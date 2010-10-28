@@ -9,6 +9,11 @@ $swf_filename = $argv[1];
 
 $swfdata = file_get_contents($swf_filename);
 $obj = new SWFEditor();
+
+$obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
+// $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE);
+// $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_TYPE_TILLED);
+
 if ($obj->input($swfdata) == false) {
     fprintf(STDERR, "input failed\n");
     exit(1);

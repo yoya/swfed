@@ -22,6 +22,7 @@ if (! empty($alpha_filename)) {
 }
 
 $obj = new SWFEditor();
+
 $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
 // $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE);
 // $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_TYPE_TILLED);
