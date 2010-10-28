@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h> // strncmp
 #include "jpeg_segment.h"
 #include "bitmap_util.h"
 
@@ -36,6 +37,25 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
     return ret;
 }
 
+
+int
+png_size(unsigned char *data, unsigned long data_len,
+         int *width, int *height) {
+}
+
+int
+gif_size(unsigned char *data, unsigned long data_len,
+                    int *width, int *height) {
+    if (data_len < 10) {
+        return 1;
+    }
+    *width  = 0x100 * data[7] + data[6];
+    *height = 0x100 * data[9] + data[8];
+    return 0;
+    return 0;
+}
+
+
 #ifdef __BITMAP_UTIL_DEBUG__  /* for component debug */
 
 #include <sys/stat.h>
@@ -50,7 +70,7 @@ int main(int argc, char **argv) {
     int ret;
     int i;
     if (argc < 2) {
-        fprintf(stderr, "Usage: %s <jpeg_file> [<jpeg_file2> [...]]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <bitmap_file> [<bitmap_file2> [...]]\n", argv[0]);
         return EXIT_FAILURE;
     }
     for (i = 1 ; i < argc ; i++) {
@@ -71,28 +91,24 @@ int main(int argc, char **argv) {
             return 1;
         }
         fclose(fp);
-        ret = jpeg_size(data, data_len, &width, &height);
+        if (strncmp((const char*)data, "GIF", 3) == 0) {
+            printf("GIF\n");
+            ret = gif_size(data, data_len, &width, &height);
+        } else if (strncmp((const char*)data + 1, "PNG", 3) == 0) {
+            printf("PNG\n");
+            ret = png_size(data, data_len, &width, &height);
+        } else {
+            printf("JPEG\n");
+            ret = jpeg_size(data, data_len, &width, &height);
+        }
         free(data);
         if (ret) {
-            fprintf(stderr, "Can't get jpeg size(%s)\n", filename);
+            fprintf(stderr, "Can't get bitmap size(%s)\n", filename);
             return EXIT_FAILURE;
         }
         printf("width=%d height=%d\n", width, height);
     }
     return EXIT_SUCCESS;
 }
-
-int
-png_size(unsigned char *data, unsigned long data_len,
-         int *width, int *height) {
-    return 0;
-}
-
-int
-gif_size(unsigned char *data, unsigned long data_len,
-                    int *width, int *height) {
-    return 0;
-}
-
 
 #endif /* __BITMAP_UTIL_DEBUG__ */
