@@ -39,7 +39,14 @@ extern int swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
 
 /* --- */
 
+extern swf_tag_t *swf_object_search_bitmap_tag(swf_object_t *swf,
+                                               int bitmap_id);
+
+/* --- */
+
 extern int swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode);
+extern int swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode);
+
 
 /* --- */
 

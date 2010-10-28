@@ -232,6 +232,28 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
     return NULL;
 }
 
+/* --- */
+
+swf_tag_t *
+swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_search_bitmap_tag: swf == NULL\n");
+        return NULL;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        register int tag_code = tag->tag;
+        if (isBitmapTag(tag_code)) {
+            if (swf_tag_identity(tag, bitmap_id) == 0) {
+                return tag; // match
+            }
+        }
+    }
+    return NULL;
+}
+
+/* --- */
+
 int
 swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode) {
     if (swf == NULL) {
@@ -312,15 +334,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
         return 1;
     }
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        register int tag_code = tag->tag;
-        // DefineBitsJPEG or 2 or 3, BitsLossless or 2
-        if (isBitmapTag(tag_code)) {
-            if (swf_tag_identity(tag, image_id) == 0) {
-                break; // match
-            }
-        }
-    }
+    tag = swf_object_search_bitmap_tag(swf, image_id);
     if (tag == NULL) {
         fprintf(stderr, "swf_object_replace_jpegdata: tag == NULL\n");
         return 1;
@@ -353,6 +367,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
             }
         }
     }
+    
     if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
@@ -412,13 +427,14 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_pngdata: swf == NULL\n");
         return 1;
     }
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        result = swf_tag_replace_png_data(tag, image_id,
-                                          png_data, png_data_len);
-        if (! result) {
-            break;
-        }
+    tag = swf_object_search_bitmap_tag(swf, image_id);
+    if (tag == NULL) {
+        fprintf(stderr, "swf_object_replace_pngdata: tag == NULL\n");
+        return 1;
     }
+    
+    result = swf_tag_replace_png_data(tag, image_id,
+                                      png_data, png_data_len);
     return result;
 }
 
@@ -437,13 +453,14 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_gifdata: swf == NULL\n");
         return 1;
     }
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        result = swf_tag_replace_gif_data(tag, image_id,
-                                          gif_data, gif_data_len);
-        if (! result) {
-            break;
-        }
+    tag = swf_object_search_bitmap_tag(swf, image_id);
+    if (tag == NULL) {
+        fprintf(stderr, "swf_object_replace_gifdata: tag == NULL\n");
+        return 1;
     }
+
+    result = swf_tag_replace_gif_data(tag, image_id,
+                                      gif_data, gif_data_len);
     return result;
 }
 
