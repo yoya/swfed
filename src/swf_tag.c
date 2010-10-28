@@ -383,10 +383,7 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
         fprintf(stderr, "swf_tag_replace_jpeg_data: tag == NULL\n");
         return 1;
     }
-    // DefineBitsJPEG or 2 or 3
-    // BitsLossless or 2
-    if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35) &&
-        (tag->tag != 20) && (tag->tag != 36)) {
+    if (! isBitmapTag(tag->tag)) {
         return 1;
     }
     tag_info = get_swf_tag_info(tag->tag);
@@ -462,10 +459,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
         fprintf(stderr, "swf_tag_replace_png_data: tag == NULL\n");
         return 1;
     }
-    // DefineBitsJPEG or 2 or 3
-    // BitsLossless or 2
-    if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35) &&
-        (tag->tag != 20) && (tag->tag != 36)) {
+    if (! isBitmapTag(tag->tag)) {
         return 1;
     }
     tag_info = get_swf_tag_info(tag->tag);
@@ -514,10 +508,7 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
         fprintf(stderr, "swf_tag_replace_gif_data: tag == NULL\n");
         return 1;
     }
-    // DefineBitsJPEG or 2 or 3
-    // BitsLossless or 2
-    if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35) &&
-        (tag->tag != 20) && (tag->tag != 36)) {
+    if (! isBitmapTag(tag->tag)) {
         return 1;
     }
     tag_info = get_swf_tag_info(tag->tag);
