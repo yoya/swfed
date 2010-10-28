@@ -1,5 +1,5 @@
 /*
-  gcc -W -Wall -D__JPEG_SIZE_DEBUG__ jpeg_size.c jpeg_segment.c  bitstream.c
+  gcc -W -Wall -D__BITMAP_UTIL_DEBUG__ bitmap_util.c jpeg_segment.c bitstream.c
 */
 
 #include <stdio.h>
@@ -36,7 +36,7 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
     return ret;
 }
 
-#ifdef __JPEG_SIZE_DEBUG__  /* for component debug */
+#ifdef __BITMAP_UTIL_DEBUG__  /* for component debug */
 
 #include <sys/stat.h>
 
@@ -82,4 +82,17 @@ int main(int argc, char **argv) {
     return EXIT_SUCCESS;
 }
 
-#endif /* __JPEG_SIZE_DEBUG__ */
+int
+png_size(unsigned char *data, unsigned long data_len,
+         int *width, int *height) {
+    return 0;
+}
+
+int
+gif_size(unsigned char *data, unsigned long data_len,
+                    int *width, int *height) {
+    return 0;
+}
+
+
+#endif /* __BITMAP_UTIL_DEBUG__ */
