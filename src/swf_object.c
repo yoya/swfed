@@ -346,10 +346,10 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
             register int tag_code = tag->tag;
             if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
                 swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-                swf_object_apply_shapematrix_factor(swf,
-                                                    swf_tag_shape->shape_id,
-                                                    width_scale, height_scale,
-                                                    0, 0, 0);
+
+                swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
+                                                  width_scale, height_scale,
+                                                  0, 0, 0, swf);
             }
         }
     }
@@ -360,9 +360,9 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
             register int tag_code = tag->tag;
             if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {
                 swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-                swf_object_apply_shaperect_factor(swf, swf_tag_shape->shape_id,
-                                                  width_scale, height_scale,
-                                                  0, 0);
+                swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
+                                                width_scale, height_scale,
+                                                0, 0, swf);
             }
         }
     }
