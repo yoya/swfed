@@ -97,7 +97,7 @@ $image_filename = "$tmp_prefix$id_image$ext";
 $imagedata = file_get_contents($image_filename);
 
 $swf = new SWFEditor();
-$swf->adjustShapeBitmap(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
+$swf->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
 
 if ($swf->input($swfdata) == false) {
     echo "input failed\n";

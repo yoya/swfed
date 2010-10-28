@@ -58,7 +58,7 @@ zend_function_entry swfed_functions[] = {
    	PHP_ME(swfed,  getTagDetail, NULL, 0)
        	PHP_ME(swfed,  getTagData, NULL, 0)
         PHP_ME(swfed,  replaceTagData, NULL, 0)
-        PHP_ME(swfed,  adjustShapeBitmap, NULL, 0)
+        PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
    	PHP_ME(swfed,  getJpegData, NULL, 0)
    	PHP_ME(swfed,  getJpegAlpha, NULL, 0)
    	PHP_ME(swfed,  replaceJpegData, NULL, 0)
@@ -524,7 +524,7 @@ PHP_METHOD(swfed, replaceTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, adjustShapeBitmap) {
+PHP_METHOD(swfed, setShapeAdjustMode) {
     swf_object_t *swf = NULL;
     unsigned long mode = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
@@ -532,7 +532,7 @@ PHP_METHOD(swfed, adjustShapeBitmap) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    swf_object_adjust_shapebitmap(swf, mode);
+    swf_object_set_shape_adjust_mode(swf, mode);
     RETURN_TRUE;
 }
 PHP_METHOD(swfed, getJpegData) {

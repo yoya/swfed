@@ -15,7 +15,7 @@ typedef struct swf_object_ {
     swf_header_t header;
     swf_header_movie_t header_movie;
     swf_tag_t *tag;
-    unsigned adjust_shape_bitmap_mode;
+    unsigned shape_adjust_mode;
 } swf_object_t;
 
 #define SWFED_SHAPE_BITMAP_NONE           0
@@ -44,9 +44,10 @@ extern swf_tag_t *swf_object_search_bitmap_tag(swf_object_t *swf,
 
 /* --- */
 
-extern int swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode);
-extern int swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode);
-
+extern int swf_object_set_shape_adjust_mode(swf_object_t *swf, unsigned mode);
+extern int swf_object_adjust_shapebitmap(swf_object_t *swf,
+                                         int old_width, int old_height,
+                                         int new_width, int new_height);
 
 /* --- */
 

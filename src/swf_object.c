@@ -24,7 +24,7 @@ swf_object_open(void) {
     malloc_debug_start(); /* DEBUG XXX */
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
     //
-    swf->adjust_shape_bitmap_mode = 0;
+    swf->shape_adjust_mode = 0;
     return swf;
 }
 
@@ -255,11 +255,11 @@ swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
 /* --- */
 
 int
-swf_object_adjust_shapebitmap(swf_object_t *swf, unsigned mode) {
+swf_object_set_shape_adjust_mode(swf_object_t *swf, unsigned mode) {
     if (swf == NULL) {
         return 1;
     }
-    swf->adjust_shape_bitmap_mode = mode;
+    swf->shape_adjust_mode = mode;
     return 0;
 }
 
@@ -340,7 +340,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         return 1;
     }
     swf_tag_create_input_detail(tag, swf);
-    if (swf->adjust_shape_bitmap_mode) {
+    if (swf->shape_adjust_mode) {
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
                   &old_width, &old_height);
@@ -353,7 +353,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         fprintf(stderr, "swf_object_replace_jpegdata: swf_tag_replace_jpeg_data failed\n");
         return result;
     }
-    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
+    if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
         for (; tag ; tag=tag->next) {
@@ -368,7 +368,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         }
     }
     
-    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
+    if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
         for (; tag ; tag=tag->next) {
@@ -381,7 +381,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
             }
         }
     }
-    if (swf->adjust_shape_bitmap_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
+    if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
         for (; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
             if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, image_id) == 0)) {

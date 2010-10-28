@@ -22,9 +22,9 @@ if (! empty($alpha_filename)) {
 }
 
 $obj = new SWFEditor();
-$obj->adjustShapeBitmap(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
-// $obj->adjustShapeBitmap(SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE);
-// $obj->adjustShapeBitmap(SWFEditor::SHAPE_BITMAP_TYPE_TILLED);
+$obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_RECT_RESIZE);
+// $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE);
+// $obj->setShapeAdjustMode(SWFEditor::SHAPE_BITMAP_TYPE_TILLED);
 
 if ($obj->input($swfdata) == false) {
     fprintf(STDERR, "input failed\n");
