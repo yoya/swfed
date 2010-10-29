@@ -81,6 +81,8 @@ zend_function_entry swfed_functions[] = {
 };
 /* }}} */
 
+#define SWFED_VERSION "0.23"
+
 /* {{{ swfed_module_entry
  */
 zend_module_entry swfed_module_entry = {
@@ -95,7 +97,7 @@ zend_module_entry swfed_module_entry = {
 	PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
 	PHP_MINFO(swfed),
 #if ZEND_MODULE_API_NO >= 20010901
-	"0.23", /* Replace with version number for your extension */
+	SWFED_VERSION, /* Replace with version number for your extension */
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
@@ -193,6 +195,7 @@ PHP_MINFO_FUNCTION(swfed)
 	int png_support = 0;
 	php_info_print_table_start();
 	php_info_print_table_header(2, "SWF Editor support", "enabled");
+        php_info_print_table_row(2, "SWF Editor version", SWFED_VERSION);
 #ifdef HAVE_PNG
 	png_support = 1;
 #endif
