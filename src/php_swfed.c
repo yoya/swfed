@@ -34,6 +34,7 @@
 #include "swf_tag_sound.h"
 #include "swf_tag_action.h"
 #include "swf_tag_sprite.h"
+#include "swf_tag_shape.h"
 #include "swf_tag.h"
 #include "swf_object.h"
 
@@ -59,6 +60,8 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getTagData, NULL, 0)
     PHP_ME(swfed,  replaceTagData, NULL, 0)
     PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
+    PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
+    PHP_ME(swfed,  getBitmapSize, NULL, 0)
     PHP_ME(swfed,  getJpegData, NULL, 0)
     PHP_ME(swfed,  getJpegAlpha, NULL, 0)
     PHP_ME(swfed,  replaceJpegData, NULL, 0)
@@ -535,6 +538,48 @@ PHP_METHOD(swfed, setShapeAdjustMode) {
     swf_object_set_shape_adjust_mode(swf, mode);
     RETURN_TRUE;
 }
+
+PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
+    long bitmap_id;
+    swf_object_t *swf = NULL;
+    swf_tag_t *tag = NULL;
+    int i;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "l", &bitmap_id) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    array_init(return_value);
+    i = 0;
+    for (tag = swf->tag ; tag ; tag=tag->next) {
+        register int tag_code = tag->tag;
+        if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, bitmap_id) == 0)) {
+            swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+            add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
+            i++;
+        }
+    }
+}
+
+PHP_METHOD(swfed, getBitmapSize) {
+    long bitmap_id;
+    swf_object_t *swf = NULL;
+    int width, height;
+    int ret;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "l", &bitmap_id) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    ret = swf_object_get_bitmap_size(swf, bitmap_id, &width, &height);
+    if (ret) {
+        RETURN_FALSE;
+    }
+    array_init(return_value);
+    add_assoc_long(return_value, "width", (long) width);
+    add_assoc_long(return_value, "height", (long) height);
+}
+
 PHP_METHOD(swfed, getJpegData) {
     unsigned long image_id = 0;
     unsigned long len = 0;

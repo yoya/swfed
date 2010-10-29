@@ -57,6 +57,8 @@ PHP_METHOD(swfed, getTagData);
 PHP_METHOD(swfed, replaceTagData);
 //
 PHP_METHOD(swfed, setShapeAdjustMode);
+PHP_METHOD(swfed, getShapeIdListByBitmapRef);
+PHP_METHOD(swfed, getBitmapSize);
 //
 PHP_METHOD(swfed, getJpegData);
 PHP_METHOD(swfed, getJpegAlpha);

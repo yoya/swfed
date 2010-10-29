@@ -49,6 +49,9 @@ extern int swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
                                          int old_width, int old_height,
                                          int new_width, int new_height);
 
+extern int swf_object_get_bitmap_size(swf_object_t *swf, int bitmap_id,
+                                      int *width, int *height);
+
 /* --- */
 
 extern unsigned char *swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id);

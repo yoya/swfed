@@ -201,7 +201,7 @@ swf_object_print(swf_object_t *swf) {
     }
 }
 
-extern unsigned char *
+unsigned char *
 swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
                        unsigned long *length) {
     int i;
@@ -306,11 +306,26 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
             }
         }
     }
+    return 0;
 }
 
+int
+swf_object_get_bitmap_size(swf_object_t *swf, int bitmap_id,
+                           int *width, int *height) {
+    swf_tag_t *tag;
+    int ret;
+    tag = swf_object_search_bitmap_tag(swf, bitmap_id);
+    if (tag == NULL) {
+        return 1;
+    }
+    if (tag->detail == NULL) {
+        swf_tag_create_input_detail(tag, swf);
+    }
+    ret = swf_tag_get_bitmap_size(tag, width, height);
+    return ret;
+}
 
 /* --- */
-
 
 int
 swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
