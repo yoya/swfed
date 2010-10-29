@@ -29,12 +29,32 @@ int jpeg_size_segment(jpeg_segment_t *jpeg_seg, int *width, int *height) {
 
 int jpeg_size(unsigned char *data, unsigned long data_len,
               int *width, int *height) {
-    int ret = 0;
-    jpeg_segment_t *jpeg_seg = NULL;
-    jpeg_seg = jpeg_segment_parse(data, data_len, 0);
-    ret = jpeg_size_segment(jpeg_seg, width, height);
-    jpeg_segment_destroy(jpeg_seg);
-    return ret;
+    unsigned int idx, chunk_length = 0;
+    int marker1, marker2;
+    for (idx = 0 ; ((idx + 8) < data_len) && ((marker1 = data[idx]) == 0xFF);
+         idx += chunk_length) {
+        marker2 = data[idx + 1];
+        switch (marker2) {
+          case 0xD8: // SOI (Start of Image)
+          case 0xD9: // EOI (End of Image)
+              chunk_length = 2;
+              break;
+          case 0xDA: // SOS
+              return 1; // not found
+        default:
+            if (isJPEG_SOFXX(marker2)) {
+                *width  = 0x100 * data[idx + 7] + data[idx + 8];
+                *height = 0x100 * data[idx + 5] + data[idx + 6];
+                return 0; // success
+            }
+            chunk_length = 0x100 * data[idx + 2] + data[idx + 3] + 2;
+            break;
+        }
+        if (chunk_length == 0) { // fail safe;
+            break;
+        }
+    }
+    return 1; // ng
 }
 
 
