@@ -35,7 +35,7 @@ swf_shape_record_edge_parse(bitstream_t *bs,
         shape_record_edge->shape_line_has_x_and_y = bitstream_getbit(bs);
         if (shape_record_edge->shape_line_has_x_and_y == 1) {
             signed delta_x, delta_y;
-            delta_x =  bitstream_getbits_signed(bs, shape_coord_real_size);
+            delta_x = bitstream_getbits_signed(bs, shape_coord_real_size);
             delta_y = bitstream_getbits_signed(bs, shape_coord_real_size);
             swf_tag_shape->_current_x += delta_x;
             swf_tag_shape->_current_y += delta_y;
