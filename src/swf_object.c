@@ -401,7 +401,9 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        swf_tag_create_input_detail(tag, swf);
+        if (tag->detail == NULL) {
+            swf_tag_create_input_detail(tag, swf);
+        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         jpeg_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
     }
@@ -461,7 +463,9 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        swf_tag_create_input_detail(tag, swf);
+        if (tag->detail == NULL) {
+            swf_tag_create_input_detail(tag, swf);
+        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         png_size(png_data, png_data_len, &new_width, &new_height);
     }
@@ -501,7 +505,9 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        swf_tag_create_input_detail(tag, swf);
+        if (tag->detail == NULL) {
+            swf_tag_create_input_detail(tag, swf);
+        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         gif_size(gif_data, gif_data_len, &new_width, &new_height);
     }
@@ -624,7 +630,9 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     if ((tag->tag != 12) &&  (tag->tag != 59)) { //  DoAction, DoInitAction
         return NULL;
     }
-    swf_tag_create_input_detail(tag, swf);
+    if (tag->detail == NULL) {
+        swf_tag_create_input_detail(tag, swf);
+    }
     swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     *length = swf_tag_action->action_record_len;
     return swf_tag_action->action_record;
