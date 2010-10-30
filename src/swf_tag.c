@@ -386,25 +386,24 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     if (! isBitmapTag(tag->tag)) {
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
     if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
-    /*
-    if (tag->detail) {
+
+    if (tag->detail && (! isBitsJPEGTag(tag->tag))) {
         detail_handler->destroy(tag);
         tag->detail = NULL;
     }
-    */
     if (alpha_data && (alpha_data_len > 0)) {
-        tag->tag = 35;
+        tag->tag = 35; // DefineBitsJPEG3
     } else {
-        if (tag->tag != 6) {
-            tag->tag = 21;
-        }
+        tag->tag = 21; // DefineBitsJPEG2
     }
-
+    
+    tag_info = get_swf_tag_info(tag->tag); // JPEG Tag
+    detail_handler = tag_info->detail_handler();
     if (tag->detail == NULL) {
         tag->detail = detail_handler->create();
     }
@@ -462,24 +461,28 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     if (! isBitmapTag(tag->tag)) {
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
     if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
-    if (tag->detail) {
+    
+    if (tag->detail && (! isBitsLosslessTag(tag->tag))) {
         detail_handler->destroy(tag);
         tag->detail = NULL;
     }
     if (tag->tag == 20) {
-        tag->tag = 20;
+        tag->tag = 20; // DefineBitsLossless
     } else {
-        tag->tag = 36;
+        tag->tag = 36; // DefineBitsLossless2
     }
     
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->tag); // Lossless Tag
     detail_handler = tag_info->detail_handler();
-    tag->detail = detail_handler->create();
+    if (tag->detail == NULL) {
+        tag->detail = detail_handler->create();
+    }
+    
     result= swf_tag_lossless_replace_png_data(tag->detail, image_id,
                                               png_data, png_data_len, tag);
     if (result == 0) {
@@ -511,24 +514,28 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
     if (! isBitmapTag(tag->tag)) {
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
     if (detail_handler->identity(tag, image_id)) {
         return 1;
     }
-    if (tag->detail) {
+    
+    if (tag->detail && (! isBitsLosslessTag(tag->tag))) {
         detail_handler->destroy(tag);
         tag->detail = NULL;
     }
     if (tag->tag == 20) {
-        tag->tag = 20;
+        tag->tag = 20; // DefineBitsLossless
     } else {
-        tag->tag = 36;
+        tag->tag = 36; // DefineBitsLossless2
     }
     
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->tag); // Lossless Tag
     detail_handler = tag_info->detail_handler();
-    tag->detail = detail_handler->create();
+    if (tag->detail == NULL) {
+        tag->detail = detail_handler->create();
+    }
+    
     result= swf_tag_lossless_replace_gif_data(tag->detail, image_id,
                                               gif_data, gif_data_len, tag);
     if (result == 0) {
