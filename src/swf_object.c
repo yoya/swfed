@@ -639,6 +639,14 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
 }
 
 int
+swf_object_insert_action_setvariables(swf_object_t *swf,
+                                      char **keys, char **values, int size) {
+    //
+    return 0;
+}
+
+
+int
 swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,
                                     double scale_x, double scale_y,
                                     double rotate_rad,

@@ -76,6 +76,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  replaceEditString, NULL, 0)
     PHP_ME(swfed,  getActionData, NULL, 0)
     PHP_ME(swfed,  disasmActionData, NULL, 0)
+//    PHP_ME(swfed,  insertActionSetVariables, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
@@ -960,6 +961,10 @@ PHP_METHOD(swfed, disasmActionData) {
         }
     }
     swf_action_list_destroy(action_list);
+}
+
+PHP_METHOD(swfed, insertActionSetVariables) {
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, swfInfo) {

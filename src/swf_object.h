@@ -81,6 +81,10 @@ extern int swf_object_replace_editstring(swf_object_t *swf,
                                          char *initial_text,
                                          int initial_text_len);
 extern unsigned char *swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqno);
+extern int swf_object_insert_action_setvariables(swf_object_t *swf,
+                                                 char **keys, char **values,
+                                                 int size);
+
 
 extern int swf_object_apply_shapematrix_factor(swf_object_t *swf,int shape_id,
                                                double scale_x, double scale_y,

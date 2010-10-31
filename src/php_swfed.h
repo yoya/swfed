@@ -74,6 +74,7 @@ PHP_METHOD(swfed, getEditString);
 PHP_METHOD(swfed, replaceEditString);
 PHP_METHOD(swfed, getActionData);
 PHP_METHOD(swfed, disasmActionData);
+PHP_METHOD(swfed, insertActionSetVariables);
 PHP_METHOD(swfed, swfInfo);
 
 /* 
