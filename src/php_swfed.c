@@ -961,6 +961,7 @@ PHP_METHOD(swfed, disasmActionData) {
         }
     }
     swf_action_list_destroy(action_list);
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, insertActionSetVariables) {
