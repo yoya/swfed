@@ -406,6 +406,10 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
             free(swf_tag_jpeg->jpeg_data);
             swf_tag_jpeg->jpeg_data = jpegconv_std2swf(jpeg_data, jpeg_data_len,
                                                        &length);
+            if (swf_tag_jpeg->jpeg_data == NULL) {
+                fprintf(stderr, "swf_tag_jpeg_replace_jpeg_data: failed to jpegconv_std2swf\n");
+                return 1;
+            }
             swf_tag_jpeg->jpeg_data_len = length;
         }
         if (alpha_data && alpha_data_len) {
