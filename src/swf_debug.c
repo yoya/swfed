@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // #include "swf_define.h" no include
 
@@ -50,6 +51,7 @@ calloc_debug(size_t nmemb, size_t size, char *filename, int linenum) {
     }
     return ptr;
 }
+
 void *
 malloc_debug(size_t size, char *filename, int linenum) {
     int i;
@@ -66,6 +68,25 @@ malloc_debug(size_t size, char *filename, int linenum) {
         }
     }
     fprintf(stderr, "malloc: table full... ;_;\n");
+    return ptr;
+}
+
+void *
+strdup_debug(const char *s, char *filename, int linenum) {
+    int i;
+    void *ptr;
+    ptr = strdup(s);
+//    fprintf(stderr, "strdup_debug: ptr=%p (%s,%d)\n", ptr, filename, linenum);
+    for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
+        if (malloc_debug_table[i].ptr == NULL) {
+            malloc_debug_table[i].ptr = ptr;
+            malloc_debug_table[i].filename = filename;
+            malloc_debug_table[i].linenum = linenum;
+//            fprintf(stderr, "(%d)\n", i);
+            return ptr;
+        }
+    }
+    fprintf(stderr, "strdup: table full... ;_;\n");
     return ptr;
 }
 
