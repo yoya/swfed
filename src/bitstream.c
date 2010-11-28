@@ -52,7 +52,7 @@ bitstream_realloc(bitstream_t *bs) {
     }
     data = (unsigned char *) realloc(bs->data, bs->data_alloc_len);
     if (! data) {
-        fprintf(stderr, "bitstream_realloc: Can't realloc memory (%p, %ld)\n",
+        fprintf(stderr, "bitstream_realloc: Can't realloc memory (%p, %lu)\n",
                 data, bs->data_alloc_len);
         return 1;
     }
