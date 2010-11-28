@@ -261,6 +261,7 @@ swf_tag_edit_destroy_detail(swf_tag_t *tag) {
         swf_tag_edit->edit_variable_name = NULL;
         swf_tag_edit->edit_initial_text = NULL;
         free(swf_tag_edit);
+        tag->detail = NULL;
     }
     return ;
 }

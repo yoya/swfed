@@ -349,6 +349,7 @@ swf_tag_lossless_destroy_detail(swf_tag_t *tag) {
         swf_tag_lossless->bitmap = NULL;
         swf_tag_lossless->bitmap2 = NULL;
         free(swf_tag_lossless);
+        tag->detail = NULL;
     }
     return ;
 }

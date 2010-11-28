@@ -292,6 +292,7 @@ swf_tag_shape_destroy_detail(swf_tag_t *tag) {
         swf_morph_shape_with_style_delete(&(swf_tag_shape->morph_shape_with_style));
         swf_shape_with_style_delete(&(swf_tag_shape->shape_with_style));
         free(swf_tag_shape);
+        tag->detail = NULL;
     }
     return ;
 }

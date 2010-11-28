@@ -123,6 +123,7 @@ swf_tag_action_destroy_detail(swf_tag_t *tag) {
         free(swf_tag_action->action_record);
         swf_tag_action->action_record = NULL;
         free(swf_tag_action);
+        tag->detail = NULL;
     }
     return ;
 }

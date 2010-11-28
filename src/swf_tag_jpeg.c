@@ -330,6 +330,7 @@ swf_tag_jpeg_destroy_detail(swf_tag_t *tag) {
         swf_tag_jpeg->jpeg_data = NULL;
         swf_tag_jpeg->alpha_data = NULL;
         free(swf_tag_jpeg);
+        tag->detail = NULL;
     }
     return ;
 }

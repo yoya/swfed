@@ -162,6 +162,7 @@ swf_tag_sound_destroy_detail(swf_tag_t *tag) {
         free(swf_tag_sound->sound_data);
         swf_tag_sound->sound_data = NULL;
         free(swf_tag_sound);
+        tag->detail = NULL;
     }
     return ;
 }

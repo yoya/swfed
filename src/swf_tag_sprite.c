@@ -142,6 +142,7 @@ swf_tag_sprite_destroy_detail(swf_tag_t *tag) {
             swf_tag_destroy(tag);
         }
         free(swf_tag_sprite);
+        tag->detail = NULL;
     }
     return ;
 }
