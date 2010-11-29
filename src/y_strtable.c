@@ -1,14 +1,20 @@
+/*
+    gcc -W -Wall -D__STRTABLE_DEBUG__ -DMALLOC_DEBUG y_strtable.c swf_debug.c
+ */
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
 #include "swf_define.h"
 #include "y_strtable.h"
 
-#define Y_STRTABLE_INITSIZE 10
+//#define Y_STRTABLE_INITSIZE 10
+#define Y_STRTABLE_INITSIZE 1
 
+/*
+ * open/close
+ */
 y_strtable_t *
 y_strtable_open() {
-    int i;
     y_strtable_t *st = calloc(sizeof(*st), 1);
     if (st == NULL) {
         fprintf(stderr, "y_strtable_open: calloc failed\n");
@@ -16,9 +22,27 @@ y_strtable_open() {
     }
     st->use_len = 0;
     st->alloc_len = Y_STRTABLE_INITSIZE;
-    st->table = malloc(sizeof(st->table) * Y_STRTABLE_INITSIZE);
+    st->table = malloc(sizeof(*st->table) * Y_STRTABLE_INITSIZE);
     return st;
 }
+
+void
+y_strtable_close(y_strtable_t *st) {
+    int i;
+    for (i = 0 ; i < st->use_len ; i++) {
+        if (st->table[i].use) {
+            free(st->table[i].key);
+            free(st->table[i].value);
+        }
+    }
+    free(st->table);
+    free(st);
+}
+
+
+/*
+ * set/get/delete
+ */
 
 int
 y_strtable_set(y_strtable_t *st, char *key, int key_len, char *value, int value_len) {
@@ -34,7 +58,7 @@ y_strtable_set(y_strtable_t *st, char *key, int key_len, char *value, int value_
             }
         }
         if (offset == -1) {
-            tmp = realloc(st->table, 2 * st->alloc_len);
+            tmp = realloc(st->table, 2 * st->alloc_len * sizeof(*(st->table)));
             if (tmp == NULL) {
                 fprintf(stderr, "y_strtable_set: realloc failed\n");
                 return 1;
@@ -55,10 +79,13 @@ y_strtable_set(y_strtable_t *st, char *key, int key_len, char *value, int value_
     }
     memcpy(st->table[offset].key, key, key_len);
     memcpy(st->table[offset].value, value, value_len);
+    st->table[offset].key_len = key_len;
+    st->table[offset].value_len = value_len;
     st->table[offset].use = 1;
     if (offset == st->use_len) {
         st->use_len = offset + 1;
     }
+    return 0;
 }
 
 char *
@@ -93,15 +120,67 @@ y_strtable_delete(y_strtable_t *st, char *key, int key_len) {
     return 1;
 }
 
+/*
+ * itelator
+ */
 void
-y_strtable_close(y_strtable_t *st) {
-    int i;
-    for (i = 0 ; i < st->use_len ; i++) {
-        if (st->table[i].use) {
-            free(st->table[i].key);
-            free(st->table[i].value);
-        }
-    }
-    free(st->table);
-    free(st);
+y_strtable_rewind(y_strtable_t *st) {
+    st->get_offset = -1;
 }
+int
+y_strtable_hasnext(y_strtable_t *st) {
+    do {
+        st->get_offset++;
+        if (st->table[st->get_offset].use) {
+            return 1; // found
+        }
+    } while (st->get_offset < st->use_len);
+
+    return 0;// false
+    
+}
+char *
+y_strtable_get_currentkey(y_strtable_t *st, int *key_len) {
+    if (st->get_offset >= st->use_len) {
+        return NULL;
+    }
+    *key_len = st->table[st->get_offset].key_len;
+    return st->table[st->get_offset].key;
+}
+char *
+y_strtable_get_currentvalue(y_strtable_t *st, int *value_len) {
+    if (st->get_offset >= st->use_len) {
+        return NULL;
+    }
+    *value_len = st->table[st->get_offset].value_len;
+    return st->table[st->get_offset].value;
+}
+
+#ifdef __STRTABLE_DEBUG__
+
+int main(void) {
+    char *key, *value;
+    int key_len, value_len;
+    malloc_debug_start();
+    y_strtable_t *st = y_strtable_open();
+    y_strtable_set(st, "foo", 4, "baa", 4);
+    y_strtable_set(st, "baz", 4, "buz", 4);
+    y_strtable_rewind(st);
+    while(y_strtable_hasnext(st)) {
+        key = y_strtable_get_currentkey(st, &key_len);
+        value = y_strtable_get_currentvalue(st, &value_len);
+        printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
+    }
+    y_strtable_delete(st, "foo", 4);
+    y_strtable_rewind(st);
+    while(y_strtable_hasnext(st)) {
+        key = y_strtable_get_currentkey(st, &key_len);
+        value = y_strtable_get_currentvalue(st, &value_len);
+        printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
+    }
+    y_strtable_close(st);
+    malloc_debug_end();
+    return 0;
+}
+
+#endif /* __STRTABLE_DEBUG__ */
