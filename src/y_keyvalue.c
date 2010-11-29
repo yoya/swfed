@@ -128,13 +128,12 @@ y_keyvalue_rewind(y_keyvalue_t *st) {
     st->get_offset = -1;
 }
 int
-y_keyvalue_hasnext(y_keyvalue_t *st) {
-    do {
-        st->get_offset++;
+y_keyvalue_next(y_keyvalue_t *st) {
+    for (st->get_offset++; st->get_offset < st->use_len; st->get_offset++) {
         if (st->table[st->get_offset].use) {
             return 1; // found
         }
-    } while (st->get_offset < st->use_len);
+    } 
 
     return 0;// false
     
@@ -166,14 +165,14 @@ int main(void) {
     y_keyvalue_set(st, "foo", 4, "baa", 4);
     y_keyvalue_set(st, "baz", 4, "buz", 4);
     y_keyvalue_rewind(st);
-    while(y_keyvalue_hasnext(st)) {
+    while(y_keyvalue_next(st)) {
         key = y_keyvalue_get_currentkey(st, &key_len);
         value = y_keyvalue_get_currentvalue(st, &value_len);
         printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
     }
     y_keyvalue_delete(st, "foo", 4);
     y_keyvalue_rewind(st);
-    while(y_keyvalue_hasnext(st)) {
+    while(y_keyvalue_next(st)) {
         key = y_keyvalue_get_currentkey(st, &key_len);
         value = y_keyvalue_get_currentvalue(st, &value_len);
         printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
