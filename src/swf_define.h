@@ -32,7 +32,6 @@ extern void *realloc_debug(void *ptr, size_t size, char *filename, int linenum);
 #define malloc(s)    malloc_debug(s,__FILE__,__LINE__)
 #define free(p)      free_debug(p,__FILE__,__LINE__)
 #define realloc(p,s) realloc_debug(p,s,__FILE__,__LINE__)
-#define strdup(s)    strdup_debug(s,__FILE__,__LINE__)
 
 extern void print_hexbin(unsigned char *data, int data_len);
 
