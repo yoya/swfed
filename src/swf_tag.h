@@ -8,6 +8,8 @@
 #define __SWF_TAG_H__
 
 #include "bitstream.h"
+#include "y_keyvalue.h"
+
 struct swf_object_; // swf_object.h
 
 typedef struct swf_tag_ {
@@ -102,5 +104,7 @@ extern int swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
                                              struct swf_object_ *swf);
 extern int swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
                                            struct swf_object_ *swf);
+
+extern swf_tag_t *swf_tag_create_action_setvariables(y_keyvalue_t *kv);
 
 #endif /* __SWF_TAG_H__ */

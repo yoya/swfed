@@ -640,9 +640,36 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
 
 int
 swf_object_insert_action_setvariables(swf_object_t *swf,
-                                      char **keys, char **values, int size) {
-    //
-    return 0;
+                                      y_keyvalue_t *kv) {
+    swf_tag_t *tag, *prev_tag = NULL, *next_tag = NULL;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_insert_action_setvariables: swf == NULL\n");
+        return 1; // NG
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        if ((tag->tag != 69) && (tag->tag != 9)) { // FileAttributs or SetBackgroundColor
+            next_tag = tag;
+            break;
+        }
+        prev_tag = tag;
+    }
+    if (next_tag == NULL) {
+        fprintf(stderr, "swf_object_insert_action_setvariables: next_tag == NULL\n");
+        return 1;
+    }
+    tag = swf_tag_create_action_setvariables(kv);
+    if (tag == NULL) {
+        fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_create_action_setvariables failed\n");
+        return 1;// NG
+    }
+    if (prev_tag == NULL) {
+        swf->tag = tag;
+        tag->next = next_tag;
+    } else {
+        prev_tag->next = tag;
+        tag->next = next_tag;
+    }
+    return 0; // SUCCESS
 }
 
 

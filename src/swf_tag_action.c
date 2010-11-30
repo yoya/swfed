@@ -127,3 +127,36 @@ swf_tag_action_destroy_detail(swf_tag_t *tag) {
     }
     return ;
 }
+
+int
+swf_tag_action_create_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
+    bitstream_t *bs;
+    char *key, *value;
+    int key_len, value_len;
+    unsigned long data_len;
+    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
+    swf_tag_action->action_sprite = 0;
+    bs = bitstream_open();
+
+    y_keyvalue_rewind(kv);
+    while (y_keyvalue_next(kv)) {
+        key   = y_keyvalue_get_currentkey(kv, &key_len);
+        value = y_keyvalue_get_currentvalue(kv, &value_len);
+        bitstream_putbyte(bs, 0x96); // Push Data
+        bitstream_putbytesLE(bs, key_len + 2 , 2);
+        bitstream_putbyte(bs, 0);
+        bitstream_putstring(bs, key, key_len);
+        bitstream_putbyte(bs, 0);
+        bitstream_putbyte(bs, 0x96); // Push Data
+        bitstream_putbytesLE(bs, value_len + 2 , 2);
+        bitstream_putbyte(bs, 0);
+        bitstream_putstring(bs, value, value_len);
+        bitstream_putbyte(bs, 0);
+        bitstream_putbyte(bs, 0x1d); // Set Variable
+    }
+    bitstream_putbyte(bs, 0); // End
+    swf_tag_action->action_record = bitstream_steal(bs, &data_len);
+    swf_tag_action->action_record_len = data_len;
+    bitstream_close(bs);
+    return 0;
+}

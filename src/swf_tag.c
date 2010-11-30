@@ -799,3 +799,19 @@ swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
     return result;
     
 }
+
+swf_tag_t *
+swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
+    int ret;
+    swf_tag_t *tag = calloc(sizeof(*tag), 1);
+    tag->tag = 12; // DoAction
+    swf_tag_info_t *tag_info = get_swf_tag_info(tag->tag);
+    swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
+    tag->detail = detail_handler->create();
+    ret = swf_tag_action_create_setvaribles(tag, kv);
+    if (ret) {
+        swf_tag_destroy(tag);
+        return 0;
+    }
+    return tag;
+}

@@ -28,6 +28,8 @@
 #include "php_swfed.h"
 
 #include "swf_define.h"
+#include "y_keyvalue.h"
+
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
 #include "swf_tag_edit.h"
@@ -76,7 +78,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  replaceEditString, NULL, 0)
     PHP_ME(swfed,  getActionData, NULL, 0)
     PHP_ME(swfed,  disasmActionData, NULL, 0)
-//    PHP_ME(swfed,  insertActionSetVariables, NULL, 0)
+    PHP_ME(swfed,  setActionVariables, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
@@ -407,6 +409,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_sound_detail_t    *tag_sound;
         swf_tag_action_detail_t   *tag_action;
         swf_tag_sprite_detail_t   *tag_sprite;
+        swf_tag_shape_detail_t    *tag_shape;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
@@ -473,6 +476,17 @@ PHP_METHOD(swfed, getTagDetail) {
         array_init(return_value);
         add_assoc_long(return_value, "sprite_id", tag_sprite->sprite_id);
         add_assoc_long(return_value, "frame_count", tag_sprite->frame_count);
+        break;
+      case 2: // DefineShape;
+      case 22: // DefineShape2;
+      case 32: // DefineShape3;
+      case 46: // DefineMorphShape;
+        tag_shape = tag->detail;
+        array_init(return_value);
+        add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
+        add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
+        add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
+//        tag_shape->shape_with_style.shape_records
         break;
       default:
         RETURN_FALSE;
@@ -883,13 +897,13 @@ PHP_METHOD(swfed, getEditString) {
         RETURN_FALSE;
     }
     str_len = strlen(data);
-    new_buff = emalloc(str_len + 1);
+    new_buff = emalloc(str_len);
     if (new_buff == NULL) {
         fprintf(stderr, "getEditString: Can't emalloc new_buff\n");
         free(data);
         RETURN_FALSE;
     }
-    memcpy(new_buff, data, str_len + 1);
+    memcpy(new_buff, data, str_len);
     free(data);
     RETURN_STRINGL(new_buff, str_len, 0);
 }
@@ -964,7 +978,46 @@ PHP_METHOD(swfed, disasmActionData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, insertActionSetVariables) {
+PHP_METHOD(swfed, setActionVariables) {
+    zval *zid, *arr, **entry;
+    HashTable *arr_hash;
+    HashPosition    pos;
+    char            *str_key, *str_value;
+    uint            str_key_len, str_value_len;
+    ulong tmp;
+    char tmp_str[17];
+    int ret;
+    y_keyvalue_t *kv;
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &arr) == FAILURE) {
+        RETURN_FALSE;
+    }
+    kv = y_keyvalue_open();
+
+    arr_hash = Z_ARRVAL_P(arr);
+    zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(arr), &pos);
+    while (zend_hash_get_current_data_ex(Z_ARRVAL_P(arr), (void **)&entry, &
+                                         pos) == SUCCESS) {
+        str_value = Z_STRVAL_PP(entry);
+        str_value_len = Z_STRLEN_PP(entry);
+        ret = zend_hash_get_current_key_ex(Z_ARRVAL_P(arr), &str_key, &
+                                           str_key_len, &tmp, 0, &pos);
+        switch (ret) {
+        case HASH_KEY_IS_STRING:
+            y_keyvalue_set(kv, str_key, str_key_len - 1, str_value, str_value_len);
+            break;
+        case HASH_KEY_IS_LONG:
+            snprintf(tmp_str, 17, "%ld\0", tmp);
+            y_keyvalue_set(kv, tmp_str, strlen(tmp_str), str_value, str_value_len);
+            break;
+        default:
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Array keys invalid type(%d).", ret);
+        }
+        zend_hash_move_forward_ex(Z_ARRVAL_P(arr), &pos);
+    }
+    swf_object_insert_action_setvariables(swf, kv);
+    y_keyvalue_close(kv);
     RETURN_TRUE;
 }
 
