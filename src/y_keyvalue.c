@@ -2,7 +2,7 @@
     gcc -W -Wall -D__KEYVALUE_DEBUG__ -DMALLOC_DEBUG y_keyvalue.c swf_debug.c
  */
 #include <stdio.h>
-#include <malloc.h>
+#include <stdlib.h>
 #include <string.h>
 #include "swf_define.h"
 #include "y_keyvalue.h"
