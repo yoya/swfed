@@ -195,7 +195,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         } else {
               swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);   // Lossless2
             for (i=0 ; i < palette_num ; i++) {
-                if (i <= num_trans) {
+                if (i < num_trans) {
                     int alpha_value = trans[i];
                     result_colormap[i].red   = palette[i].red   * alpha_value / 0xff;
                     result_colormap[i].green = palette[i].green * alpha_value / 0xff;
