@@ -136,10 +136,10 @@ void
 swf_tag_sprite_destroy_detail(swf_tag_t *tag) {
     swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
     if (swf_tag_sprite) {
-        swf_tag_t *tag, *next_tag;
-        for (tag=swf_tag_sprite->tag ; tag ; tag=next_tag) {
-            next_tag = tag->next;
-            swf_tag_destroy(tag);
+        swf_tag_t *t, *next_tag;
+        for (t = swf_tag_sprite->tag ; t ; t = next_tag) {
+            next_tag = t->next;
+            swf_tag_destroy(t);
         }
         free(swf_tag_sprite);
         tag->detail = NULL;
