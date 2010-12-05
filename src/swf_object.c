@@ -647,8 +647,16 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
         return 1; // NG
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
-        if ((tag->tag != 69) && (tag->tag != 9)) { // FileAttributs or SetBackgroundColor
+        switch (tag->tag) {
+        case 69: // FileAttributs
+        case  9:  // SetBackgroundColor
+        case 24: // Protect
+            break;
+        default:
             next_tag = tag;
+            break;
+        }
+        if (next_tag) { // found
             break;
         }
         prev_tag = tag;
