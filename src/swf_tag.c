@@ -114,6 +114,7 @@ void swf_tag_destroy(swf_tag_t *tag) {
     }
     if (tag->data) {
         free(tag->data);
+        tag->data = NULL;
     }
     if (tag->detail) {
         swf_tag_info_t *tag_info = get_swf_tag_info(tag->tag);
