@@ -196,7 +196,7 @@ jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
         if (node->marker == marker) {
             node->marker = -1; // remove mark;
             if (node->data_ref) {
-                free(node->data_ref);
+//                free(node->data_ref);
                 node->data_ref = NULL;
             }
             node->data_len = 0;
