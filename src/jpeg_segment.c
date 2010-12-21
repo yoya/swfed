@@ -6,9 +6,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "swf_define.h"
 #include "bitstream.h"
 #include "jpeg_segment.h"
-#include "swf_define.h"
 
 typedef struct jpeg_marker_name_ {
     int marker;
@@ -195,9 +195,7 @@ jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
     for (node=jpeg_seg->head ; node ; node=node->next) {
         if (node->marker == marker) {
             node->marker = -1; // remove mark;
-            if (node->data_ref) {
-                node->data_ref = NULL;
-            }
+            node->data_ref = NULL;
             node->data_len = 0;
             count ++;
         }
