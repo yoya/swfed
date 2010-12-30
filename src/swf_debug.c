@@ -21,18 +21,21 @@ void malloc_debug_start(void) {
     for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         malloc_debug_table[i].ptr = NULL;
     }
+    fprintf(stderr, "malloc_debug_start: 0/n=0/%d\n", MALLOC_DEBUG_TABLE_NUM);
 }
 
 void malloc_debug_end(void) {
-    int i;
+    int i, j = 0;
     for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr) {
             fprintf(stderr, "XXX (%d) ptr=%p (%s, %d)\n",
                     i, malloc_debug_table[i].ptr,
                     malloc_debug_table[i].filename,
                     malloc_debug_table[i].linenum);
+            j = i + 1;
         }
     }
+    fprintf(stderr, "malloc_debug_end: j/n=%d/%d\n", j, MALLOC_DEBUG_TABLE_NUM);
 }
 
 void *
@@ -85,8 +88,8 @@ free_debug(void *ptr, char *filename, int linenum) {
         fprintf(stderr, "free non-allocated memory: ptr=%p (%s,%d)\n", ptr,
                 filename, linenum);
         malloc_debug_end();
-        char *ptr = 0;
-        *ptr = 0;
+        char *p = ptr;
+        *p = 0;
     }
     free(ptr);
 }
