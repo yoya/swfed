@@ -30,15 +30,14 @@ swf_object_open(void) {
 
 void
 swf_object_close(swf_object_t *swf) {
-    swf_tag_t *tag, *next_tag;
-    if (! swf) {
-        return ;
+    if (swf) {
+        swf_tag_t *tag, *next_tag;
+        for (tag=swf->tag ; tag ; tag=next_tag) {
+            next_tag = tag->next;
+            swf_tag_destroy(tag);
+        }
+        free(swf);
     }
-    for (tag=swf->tag ; tag ; tag=next_tag) {
-        next_tag = tag->next;
-        swf_tag_destroy(tag);
-    }
-    free(swf);
     malloc_debug_end(); /* DEBUG XXX */
     return ;
 }
