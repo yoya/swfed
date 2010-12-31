@@ -19,10 +19,11 @@
 
 extern int swf_debug;
 
+#ifdef MALLOC_DEBUG /*  malloc debug */
+
 extern void malloc_debug_start(void);
 extern void malloc_debug_end(void);
 
-#ifdef MALLOC_DEBUG /*  malloc debug */
 extern void *calloc_debug(size_t nmemb, size_t size, char *filename, int linenum);
 extern void *malloc_debug(size_t size, char *filename, int linenum);
 extern void free_debug(void *ptr, char *filename, int linenum);
@@ -34,6 +35,12 @@ extern void *realloc_debug(void *ptr, size_t size, char *filename, int linenum);
 #define realloc(p,s) realloc_debug(p,s,__FILE__,__LINE__)
 
 extern void print_hexbin(unsigned char *data, int data_len);
+
+#else
+
+// MALLOC_DEBUG 指定しない時は無効化
+#define malloc_debug_start() 
+#define malloc_debug_end()
 
 #endif
 
