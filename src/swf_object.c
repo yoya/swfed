@@ -231,6 +231,13 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
     return NULL;
 }
 
+int
+swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
+                           unsigned char *data, unsigned long *length) {
+    fprintf(stderr, "swf_object_replace_tagdata: not impremented yet.\n");
+    return 1;
+}
+
 /* --- */
 
 swf_tag_t *
@@ -325,13 +332,6 @@ swf_object_get_bitmap_size(swf_object_t *swf, int bitmap_id,
 }
 
 /* --- */
-
-int
-swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
-                           unsigned char *data, unsigned long *length) {
-    fprintf(stderr, "swf_object_replace_tagdata: not impremented yet.\n");
-    return 1;
-}
 
 unsigned char *
 swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id) {
