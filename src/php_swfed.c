@@ -61,6 +61,11 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getTagDetail, NULL, 0)
     PHP_ME(swfed,  getTagData, NULL, 0)
     PHP_ME(swfed,  replaceTagData, NULL, 0)
+    PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
+    PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
+    PHP_MALIAS(swfed, getShapeData, getTagContentsByCID, NULL, 0)
+    PHP_MALIAS(swfed, replaceShapeData, replaceTagContentsByCID, NULL, 0)
+    
     PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
     PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
     PHP_ME(swfed,  getBitmapSize, NULL, 0)
@@ -522,7 +527,7 @@ PHP_METHOD(swfed, getTagData) {
 PHP_METHOD(swfed, replaceTagData) {
     char *data = NULL;
     unsigned long data_len = 0;
-    int tag_seqno = 0;
+    long tag_seqno = 0;
     swf_object_t *swf = NULL;
     int result = 0;
     switch (ZEND_NUM_ARGS()) {
@@ -539,6 +544,57 @@ PHP_METHOD(swfed, replaceTagData) {
     result = swf_object_replace_tagdata(swf, tag_seqno,
                                         (unsigned char *)data,
                                         & data_len);
+    if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, getTagContentsByCID) {
+    long cid = 0;
+    swf_object_t *swf = NULL;
+    unsigned char *data_ref = NULL;
+    char *new_buff = NULL;
+    unsigned long data_len = 0;
+    
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    data_ref = swf_object_get_tagcontents_bycid(swf, cid, &data_len);
+    if (data_ref == NULL) {
+        fprintf(stderr, "getTagContentsByCID: Can't get_tagdata\n");
+        RETURN_FALSE;
+    }
+    new_buff = emalloc(data_len);
+    if (new_buff == NULL) {
+        fprintf(stderr, "getTagContentsByCID: Can't emalloc new_buff\n");
+        RETURN_FALSE;
+    }
+    memcpy(new_buff, data_ref, data_len);
+    RETURN_STRINGL(new_buff, data_len, 0);
+}
+
+PHP_METHOD(swfed, replaceTagContentsByCID) {
+    char *data = NULL;
+    unsigned long data_len = 0;
+    long cid = 0;
+    swf_object_t *swf = NULL;
+    int result = 0;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &cid, &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_replace_tagcontents_bycid(swf, cid,
+                                                  (unsigned char *)data,
+                                                  & data_len);
     if (result) {
         RETURN_FALSE;
     }

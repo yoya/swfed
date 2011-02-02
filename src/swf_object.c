@@ -214,7 +214,7 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
             *length = tag->length;
             return tag->data;
         }
-        if (tag->detail == NULL) {
+        if (tag->detail) {
             bitstream_t *bs;
             unsigned char *data;
             bs = bitstream_open();
@@ -223,18 +223,88 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
             bitstream_close(bs);
             return data;
         }
-        if (tag->detail) {
-            *length = tag->length;
-            return tag->data;
-        }
     }
     return NULL;
 }
 
 int
 swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
-                           unsigned char *data, unsigned long *length) {
-    fprintf(stderr, "swf_object_replace_tagdata: not impremented yet.\n");
+                           unsigned char *data, unsigned long length) {
+    int i;
+    swf_tag_t *tag;
+    tag = swf->tag;
+    for (i=0 ; (i < tag_seqno) &&  tag ; i++) {
+        tag = tag->next;
+    }
+    if (tag) {
+        if (tag->data) {
+            free(tag->data);
+        }
+        if (tag->detail) { // FIXME
+            swf_tag_destroy(tag);
+        }
+        tag->length = length;
+        tag->data = malloc(length);
+        memcpy(tag->data, data, length);
+        return 0;
+    }
+    return 1;
+}
+
+unsigned char *
+swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
+                                  unsigned long *length) {
+    swf_tag_t *tag;
+    tag = swf->tag;
+    while (tag) {
+        if (swf_tag_identity(tag, cid)) {
+            break;
+        }
+    }
+    if (tag) {
+        if (tag->data) {
+            *length = tag->length - 2;
+            return tag->data + 2;
+        }
+        if (tag->detail) {
+            bitstream_t *bs;
+            unsigned char *data;
+            bs = bitstream_open();
+            swf_tag_build(bs, tag, swf);
+            data = bitstream_steal(bs, length);
+            bitstream_close(bs);
+            *length -= 2;
+            return data + 2;
+        }
+    }
+    return NULL;
+}
+
+int
+swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
+                                     unsigned char *data,
+                                     unsigned long length) {
+    swf_tag_t *tag;
+    tag = swf->tag;
+    while (tag) {
+        if (swf_tag_identity(tag, cid)) {
+            break;
+        }
+    }
+    if (tag) {
+        if (tag->data) {
+            free(tag->data);
+        }
+        if (tag->detail) { // FIXME
+            swf_tag_destroy(tag);
+        }
+        tag->length = length + 2;
+        tag->data = malloc(length + 2);
+        tag->data[0] = cid & 0xff;
+        tag->data[1] = cid >> 8;
+        memcpy(tag->data, data + 2, length);
+        return 0;
+    }
     return 1;
 }
 

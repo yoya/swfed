@@ -55,6 +55,8 @@ PHP_METHOD(swfed, getTagDetail);
 PHP_METHOD(swfed, getTagInfo);
 PHP_METHOD(swfed, getTagData);
 PHP_METHOD(swfed, replaceTagData);
+PHP_METHOD(swfed, getTagContentsByCID);
+PHP_METHOD(swfed, replaceTagContentsByCID);
 //
 PHP_METHOD(swfed, setShapeAdjustMode);
 PHP_METHOD(swfed, getShapeIdListByBitmapRef);
