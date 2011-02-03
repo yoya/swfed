@@ -15,7 +15,7 @@ if ($obj->input($swfdata) == false) {
     exit(1);
 }
 
-//echo $obj->getShapeData($shape_id);
-echo $obj->getTagContentsByCID($shape_id);
+echo $obj->getShapeData($shape_id);
+
 
 
