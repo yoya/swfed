@@ -51,6 +51,12 @@ extern swf_tag_t *swf_object_search_bitmap_tag(swf_object_t *swf,
 
 /* --- */
 
+extern unsigned char *swf_object_get_shapedata(swf_object_t *swf,
+                                               int shape_id,
+                                               unsigned long *length);
+extern int swf_object_replace_shapedata(swf_object_t *swf, int shape_id,
+                                        unsigned char *data,
+                                        unsigned long length);
 extern int swf_object_set_shape_adjust_mode(swf_object_t *swf, unsigned mode);
 extern int swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
                                          int old_width, int old_height,
