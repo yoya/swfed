@@ -24,10 +24,11 @@
 
 * demo
 
- - http://awm.jp/~yoya/php/flash/swfdump/ 
- - http://diary.awm.jp/~yoya/?20080331#200803311 
- - http://diary.awm.jp/~yoya/?20080514#200805141 
-
+ - http://awm.jp/~yoya/php/swfed/
+ - http://diary.awm.jp/~yoya/?20080331#200803311 replace jpeg
+ - http://diary.awm.jp/~yoya/?20080514#200805141 replace alpha
+ - http://diary.awm.jp/~yoya/?20101027#201010270 adjust bitmap
+ - http://diary.awm.jp/~yoya/?20101130#201011300 action bytecode
 
 * download
 
