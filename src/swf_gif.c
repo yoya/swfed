@@ -83,7 +83,7 @@ int gif_data_write_func(GifFileType* GifFile, const GifByteType* buf, int count)
  */
 int getTransparentIndex(SavedImage Image) {
     int i;
-    unsigned char transparent_index = -1;
+    int transparent_index = -1;
     if ((Image.ExtensionBlockCount == 0) || (Image.ExtensionBlocks == NULL)) {
         return -1;
     }
@@ -92,7 +92,7 @@ int getTransparentIndex(SavedImage Image) {
         if (Block.Function == GRAPHICS_EXT_FUNC_CODE){
             int gcntl_flag = Block.Bytes[0];
             if (gcntl_flag & 0x01) {
-                transparent_index = Block.Bytes[3];
+                transparent_index = Block.Bytes[3] & 0xff;
                 return transparent_index;
             }
         }
