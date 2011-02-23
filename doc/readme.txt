@@ -3,7 +3,7 @@
 
 * introduce
 
-  this is php extension for edit SWF file. 
+  This is a PHP extension for edit SWF file. 
 
 * require
 
@@ -14,10 +14,10 @@
 * example
 
  - replace image id = 1 jpeg data
- $swf = new SWFEditor(); 
- $swf->input($swfdata); 
- $swf->replaceJpegData(1, $jpegdata); 
- echo $swf->output(); 
+ $swf = new SWFEditor();
+ $swf->input($swfdata);
+ $swf->replaceJpegData(1, $jpegdata);
+ echo $swf->output();
  
  - other sample code
    http://svn.sourceforge.jp/svnroot/swfed/trunk/sample/
@@ -29,6 +29,7 @@
  - http://diary.awm.jp/~yoya/?20080514#200805141 replace alpha
  - http://diary.awm.jp/~yoya/?20101027#201010270 adjust bitmap
  - http://diary.awm.jp/~yoya/?20101130#201011300 action bytecode
+ - http://diary.awm.jp/~yoya/?20110203#201102030 replace shape
 
 * download
 
