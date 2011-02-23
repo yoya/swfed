@@ -265,6 +265,11 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
         tag = tag->next;
     }
     if (tag) {
+        if (tag->data) {
+            unsigned char *data;
+            *length = tag->length - 2;
+            return tag->data + 2;
+        }
         if (tag->detail) {
             bitstream_t *bs;
             if (tag->data) {
@@ -275,11 +280,6 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
             swf_tag_build(bs, tag, swf);
             tag->data = bitstream_steal(bs, &(tag->length));
             bitstream_close(bs);
-        }
-        if (tag->data) {
-            unsigned char *data;
-            *length = tag->length - 2;
-            return tag->data + 2;
         }
     }
     *length = 0;
