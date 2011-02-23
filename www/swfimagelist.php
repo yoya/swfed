@@ -48,7 +48,6 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
     }
     $image_filename = "$tmp_prefix$id-$cid$ext";
 
-
     if ($ext == '.jpg') {
         $image_data = $swf->getJpegData(intval($cid));
     } elseif($ext == '.png') {
