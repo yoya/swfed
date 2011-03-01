@@ -74,5 +74,6 @@ if test "$PHP_SWFED" != "no"; then
 	swf_shape_record_edge.c swf_gradient.c  swf_gradient_record.c \
 	swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
 	swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
+	swf_tag_place.c swf_cxform.c \
 	, $ext_shared)
 fi

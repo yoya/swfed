@@ -16,6 +16,7 @@
 #include "swf_tag_sound.h"
 #include "swf_tag_sprite.h"
 #include "swf_tag_shape.h"
+#include "swf_tag_place.h"
 #include "bitmap_util.h"
 
 swf_tag_info_t swf_tag_info_table[] = {
@@ -23,7 +24,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 1, "ShowFrame", NULL },
     { 2, "DefineShape", swf_tag_shape_detail_handler },
     { 3, "FreeCharacter", NULL},
-    { 4, "PlaceObject", NULL},
+    { 4, "PlaceObject", swf_tag_place_detail_handler },
     { 5, "RemoveObject", NULL},
     { 6, "DefineBitsJPEG", swf_tag_jpeg_detail_handler },
     { 7, "DefineButton", NULL},
@@ -42,7 +43,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 20, "DefineBitsLossless", swf_tag_lossless_detail_handler },
     { 21, "DefineBitsJPEG2", swf_tag_jpeg_detail_handler },
     { 22, "DefineShape2", swf_tag_shape_detail_handler },
-    { 26, "PlaceObject2", NULL },
+    { 26, "PlaceObject2", swf_tag_place_detail_handler },
     { 28, "RemoveObject2", NULL },
     { 32, "DefineShape3", swf_tag_shape_detail_handler },
     { 33, "DefineText2", NULL },
