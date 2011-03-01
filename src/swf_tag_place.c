@@ -106,6 +106,7 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         // TODO: clip action data for SWF 5
         
     } else {
+        bitstream_close(bs);
         return 1; // unknown tag;
     }
     bitstream_close(bs);
@@ -122,56 +123,66 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
     (void) swf;
     *length = 0;
 
-    //
     bs = bitstream_open();
-    bitstream_putbytesLE(bs, swf_tag_place->character_id, 2);
-/*
-    swf_rect_build(bs, &(swf_tag_place->rect));
 
-    // DefineMorphPlace, DefineMorphPlace2
-    swf_tag_place->is_morph = (tag->tag == 46) || (tag->tag == 84);
-    // DefinePlace4, DefineMorphPlace2
-    swf_tag_place->has_strokes = (tag->tag == 83) || (tag->tag == 84);
-
-    if (swf_tag_place->is_morph) {
-        ret = swf_rect_build(bs, &(swf_tag_place->rect_morph));
+    if (tag->tag == 4) { // PlaceObject
+        bitstream_putbytesLE(bs, swf_tag_place->character_id, 2);
+        bitstream_putbytesLE(bs, swf_tag_place->depth, 2);
+        ret = swf_matrix_build(bs, &(swf_tag_place->matrix));
         if (ret) {
-            fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->rect_morph build failed\n");
+            fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->matrix build failed. character_id=%d\n", swf_tag_place->character_id);
             bitstream_close(bs);
             return NULL;
         }
-    }
-    if (swf_tag_place->has_strokes) {
-        ret = swf_rect_build(bs, &(swf_tag_place->stroke_rect));
+        ret = swf_cxform_build(bs, &(swf_tag_place->color_transform));
         if (ret) {
-            fprintf(stderr, "ERROR: swf_tag_place_input_detail: swf_tag_place->stroke_rect build failed\n");
+            fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->color_transform build failed. character_id=%d\n", swf_tag_place->character_id);
             bitstream_close(bs);
             return NULL;
         }
-        if (swf_tag_place->is_morph) {
-            ret = swf_rect_build(bs, &(swf_tag_place->stroke_rect_morph));
-	    if (ret) {
-	        fprintf(stderr, "ERROR: swf_tag_place_input_detail: swf_tag_place->stroke_rect_morph build failed\n");
-	        bitstream_close(bs);
-	        return NULL;
-	    }
+    } else if (tag->tag == 26) { // PlaceObject2
+        bitstream_putbit(bs, swf_tag_place->flag_has_clip_action);
+        bitstream_putbit(bs, swf_tag_place->flag_has_clip_depth);
+        bitstream_putbit(bs, swf_tag_place->flag_has_name);
+        bitstream_putbit(bs, swf_tag_place->flag_has_ratio);
+        bitstream_putbit(bs, swf_tag_place->flag_has_color_transform);
+        bitstream_putbit(bs, swf_tag_place->flag_has_matrix);
+        bitstream_putbit(bs, swf_tag_place->flag_has_character);
+        bitstream_putbit(bs, swf_tag_place->flag_has_movie);
+        bitstream_putbytesLE(bs, swf_tag_place->depth, 2);
+        if (swf_tag_place->flag_has_character) {
+            bitstream_putbytesLE(bs, swf_tag_place->character_id, 2);
         }
-        bitstream_putbits(bs, 6, swf_tag_place->define_place_reserved );
-        bitstream_putbits(bs, 1, swf_tag_place->define_place_non_scaling_strokes );
-        bitstream_putbits(bs, 1, swf_tag_place->define_place_scaling_strokes);
-    }
-    if (swf_tag_place->is_morph) {
-        bitstream_putbytesLE(bs, 4, swf_tag_place->offset_morph);
-        swf_morph_place_with_style_build(bs, &swf_tag_place->morph_place_with_style, tag);
+        if (swf_tag_place->flag_has_matrix) {
+            ret = swf_matrix_build(bs, &(swf_tag_place->matrix));
+            if (ret) {
+                fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->matrix build failed. character_id=%d\n", swf_tag_place->character_id);
+                bitstream_close(bs);
+                return NULL;
+            }
+        }
+        if (swf_tag_place->flag_has_color_transform) {
+            ret = swf_cxform_build(bs, &(swf_tag_place->color_transform));
+            if (ret) {
+                fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->color_transform build failed. character_id=%d\n", swf_tag_place->character_id);
+                bitstream_close(bs);
+                return NULL;
+            }
+        }
+        if (swf_tag_place->flag_has_ratio) {
+            bitstream_putbytesLE(bs, swf_tag_place->ratio, 2);
+        }
+        if (swf_tag_place->flag_has_name) {
+            bitstream_putstring(bs, swf_tag_place->name, strlen(swf_tag_place->name) + 1);
+        }
+        if (swf_tag_place->flag_has_clip_depth) {
+            bitstream_putbytesLE(bs, swf_tag_place->clip_depth, 2);
+        }
+        // TODO: clip action data for SWF 5
     } else {
-        ret = swf_place_with_style_build(bs, &swf_tag_place->place_with_style, tag);
-        if (ret) {
-            fprintf(stderr, "swf_tag_place_output_detail: swf_place_with_style_build failed\n");
-            bitstream_close(bs);
-            return NULL;
-        }
+        bitstream_close(bs);
+        return NULL; // unknown tag;
     }
-*/
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
     return data;
@@ -223,34 +234,6 @@ swf_tag_place_print_detail(swf_tag_t *tag,
     } else {
         fprintf(stderr, "Illegal tag no(%d)\n", tag->tag);
     }
-
-    /*
-    
-    print_indent(indent_depth);
-
-    if (swf_tag_place->is_morph) {
-        swf_rect_print(&(swf_tag_place->rect_morph), indent_depth);
-    }
-    if (swf_tag_place->has_strokes) {
-        swf_rect_print(&(swf_tag_place->stroke_rect), indent_depth);
-        if (swf_tag_place->is_morph) {
-            swf_rect_print(&(swf_tag_place->stroke_rect_morph), indent_depth);
-        }
-        print_indent(indent_depth);
-        printf("define_place_non_scaling_strokes=%d define_place_scaling_strokes=%d\n",
-               swf_tag_place->define_place_non_scaling_strokes,
-               swf_tag_place->define_place_scaling_strokes);
-    }
-    if (swf_tag_place->is_morph) {
-        print_indent(indent_depth);
-        printf("offset_morph=%lu\n", swf_tag_place->offset_morph);
-        swf_morph_place_with_style_print(&swf_tag_place->morph_place_with_style,
-                                         indent_depth, tag);
-    } else {
-        swf_place_with_style_print(&swf_tag_place->place_with_style,
-                                   indent_depth, tag);
-    }
-    */
     return ;
 }
 
