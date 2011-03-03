@@ -84,12 +84,13 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getActionData, NULL, 0)
     PHP_ME(swfed,  disasmActionData, NULL, 0)
     PHP_ME(swfed,  setActionVariables, NULL, 0)
+    PHP_ME(swfed,  replaceMovieClip, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
 /* }}} */
 
-#define SWFED_VERSION "0.31"
+#define SWFED_VERSION "0.32a"
 
 /* {{{ swfed_module_entry
  */
@@ -1104,6 +1105,26 @@ PHP_METHOD(swfed, setActionVariables) {
     }
     swf_object_insert_action_setvariables(swf, kv);
     y_keyvalue_close(kv);
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, replaceMovieClip) {
+    char *instance_name = NULL, *swf_data = NULL;
+    int  instance_name_len = 0, swf_data_len = 0;
+    swf_object_t *swf = NULL;
+    int result = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+                              &instance_name, &instance_name_len,
+                              &swf_data, &swf_data_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);    
+    result = swf_object_replace_movieclip(swf, instance_name,
+                                          instance_name_len,
+                                          swf_data, swf_data_len);
+    if (result) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 

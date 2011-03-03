@@ -735,6 +735,7 @@ swf_object_get_editstring(swf_object_t *swf,
     }
     return data;
 }
+
 int
 swf_object_replace_editstring(swf_object_t *swf,
                               char *variable_name,
@@ -796,7 +797,7 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     for (tag=swf->tag ; tag ; tag=tag->next) {
         switch (tag->tag) {
         case 69: // FileAttributs
-        case  9:  // SetBackgroundColor
+        case  9: // SetBackgroundColor
         case 24: // Protect
             break;
         default:
@@ -827,6 +828,32 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+int
+swf_object_replace_movieclip(swf_object_t *swf,
+                             char *instance_name, int instancee_name_len,
+                             char *swf_data, int swf_data_len) {
+    int result = 1;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        ; // searchPlaceTagByInstanceName;
+    }
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        ; // searchSpriteTagByCID
+    }
+
+/*
+    result = swf_tag_replace_movieclip(tag,
+                                       instance_name, instance_name_len,
+                                       swf_data, swf_data__len,
+                                       swf);
+*/
+
+    return result;
+}
 
 int
 swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,

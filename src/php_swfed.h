@@ -79,6 +79,7 @@ PHP_METHOD(swfed, replaceEditString);
 PHP_METHOD(swfed, getActionData);
 PHP_METHOD(swfed, disasmActionData);
 PHP_METHOD(swfed, setActionVariables);
+PHP_METHOD(swfed, replaceMovieClip);
 PHP_METHOD(swfed, swfInfo);
 
 /* 
