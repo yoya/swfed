@@ -10,6 +10,7 @@
 #include <zlib.h>
 #include "bitstream.h"
 #include "swf_define.h"
+#include "swf_tag.h"
 #include "swf_tag_action.h"
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
@@ -266,7 +267,6 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
     }
     if (tag) {
         if (tag->data) {
-            unsigned char *data;
             *length = tag->length - 2;
             return tag->data + 2;
         }
@@ -329,7 +329,7 @@ swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
     }
     if (tag) {
         if (! isShapeTag(tag->tag)) {
-            fprintf(stderr, "");
+            fprintf(stderr, "swf_object_get_shapedata: not isShapeTag(%d)\n", tag->tag);
             return NULL;
         }
         if (tag->detail) {
@@ -344,7 +344,6 @@ swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
             bitstream_close(bs);
         }
         if (tag->data) {
-            unsigned char *data;
             *length = tag->length - 2;
             return tag->data + 2;
         }
@@ -789,41 +788,67 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
 int
 swf_object_insert_action_setvariables(swf_object_t *swf,
                                       y_keyvalue_t *kv) {
-    swf_tag_t *tag, *prev_tag = NULL, *next_tag = NULL;
+    swf_tag_t *tag, *prev = NULL;
+    swf_tag_t *action_tag = NULL, *prev_tag = NULL, *next_tag = NULL;
+    int ret, done = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_insert_action_setvariables: swf == NULL\n");
         return 1; // NG
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         switch (tag->tag) {
+        case 1: // ShowFrame
+            if (next_tag == NULL) {
+                prev_tag = prev;
+                next_tag = tag;
+            }
+            done = 1;
+            break;
+        case 12: // DoAction
+            action_tag = tag;
+            done = 1;
+            break;
         case 69: // FileAttributs
         case  9: // SetBackgroundColor
         case 24: // Protect
             break;
         default:
-            next_tag = tag;
+            if (next_tag == NULL) {
+                prev_tag = prev;
+                next_tag = tag;
+            }
             break;
         }
-        if (next_tag) { // found
+        if (done) {
             break;
         }
-        prev_tag = tag;
+        prev = tag;
     }
-    if (next_tag == NULL) {
-        fprintf(stderr, "swf_object_insert_action_setvariables: next_tag == NULL\n");
-        return 1;
+    if ((action_tag == NULL) && (next_tag == NULL)) {
+        fprintf(stderr, "swf_object_insert_action_setvariables: action_tag == NULL && next_tag == NULL\n");
+        return 1; // NG
     }
-    tag = swf_tag_create_action_setvariables(kv);
-    if (tag == NULL) {
-        fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_create_action_setvariables failed\n");
-        return 1;// NG
-    }
-    if (prev_tag == NULL) {
-        swf->tag = tag;
-        tag->next = next_tag;
-    } else {
-        prev_tag->next = tag;
-        tag->next = next_tag;
+    if (action_tag) { // DoAction の頭に変数代入イメージを挿入
+        ret = swf_tag_put_action_setvariables(action_tag,
+                                              kv,
+                                              swf);
+        if (ret) {
+            fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_put_action_setvariables failed\n");
+            return 1; // NG
+        }
+    } else { // 新規に DoAction を挿入
+        tag = swf_tag_create_action_setvariables(kv);
+        if (tag == NULL) {
+            fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_create_action_setvariables failed\n");
+            return 1; // NG
+        }
+        if (prev_tag == NULL) {
+            swf->tag = tag;
+            tag->next = next_tag;
+        } else {
+            prev_tag->next = tag;
+            tag->next = next_tag;
+        }
     }
     return 0; // SUCCESS
 }

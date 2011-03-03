@@ -31,5 +31,6 @@ extern void swf_tag_action_print_detail(swf_tag_t *tag,
 extern void swf_tag_action_destroy_detail(swf_tag_t *tag);
 
 extern int swf_tag_action_create_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv);
+extern int swf_tag_action_put_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv);
 
 #endif /* __SWF_TAG_ACTION__H__ */

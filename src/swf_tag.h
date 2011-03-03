@@ -106,5 +106,8 @@ extern int swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
                                            struct swf_object_ *swf);
 
 extern swf_tag_t *swf_tag_create_action_setvariables(y_keyvalue_t *kv);
+extern int swf_tag_put_action_setvariables(swf_tag_t *tag,
+                                           y_keyvalue_t *kv,
+                                           struct swf_object_ *swf);
 
 #endif /* __SWF_TAG_H__ */

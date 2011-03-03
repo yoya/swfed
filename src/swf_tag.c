@@ -813,7 +813,27 @@ swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     ret = swf_tag_action_create_setvaribles(tag, kv);
     if (ret) {
         swf_tag_destroy(tag);
-        return 0;
+        return NULL;
     }
     return tag;
 }
+
+int
+swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
+                                struct swf_object_ *swf) {
+    int ret;
+    if (! tag->detail) {
+        swf_tag_create_input_detail(tag, swf);
+    }
+    ret = swf_tag_action_put_setvaribles(tag, kv);
+    if (ret) {
+        swf_tag_destroy(tag);
+        return 1; // NG
+    }
+    if (tag->data) {
+        free(tag->data);
+        tag->data = NULL;
+    }
+    return 0;
+}
+
