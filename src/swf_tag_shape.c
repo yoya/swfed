@@ -140,7 +140,8 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
         return 1;
     }
     if (! isShapeTag(tag->tag)) {
-        fprintf(stderr, "swf_tag_shape_bitmap_identity: ! isShapeTag(tag->tag)\n");
+        fprintf(stderr, "swf_tag_shape_bitmap_identity: ! isShapeTag(%d)\n",
+                tag->tag);
         return 1;
     }
     if (tag->detail == NULL) {

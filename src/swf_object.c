@@ -15,6 +15,7 @@
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
 #include "swf_tag_shape.h"
+#include "swf_tag_place.h"
 #include "swf_action.h"
 #include "swf_object.h"
 #include "bitmap_util.h"
@@ -855,29 +856,55 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
 
 int
 swf_object_replace_movieclip(swf_object_t *swf,
-                             char *instance_name, int instancee_name_len,
-                             char *swf_data, int swf_data_len) {
-    int result = 1;
-    swf_tag_t *tag;
+                             unsigned char *instance_name, int instance_name_len,
+                             unsigned char *swf_data, int swf_data_len) {
+    int cid;
+    swf_tag_t *tag, *sprite_tag = NULL;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
-        ; // searchPlaceTagByInstanceName;
+        if (tag->tag == 26) { // PlaceObject2
+            cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len);
+            if (cid > 0) {
+                break; // found
+            }
+        }
+    }
+    if (cid <= 0) {
+        fprintf(stderr, "swf_object_replace_movieclip: place cid <= 0\n");
+        return 1; // not found instance name;
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
-        ; // searchSpriteTagByCID
+        if (isSpriteTag(tag->tag)) {
+            if (swf_tag_identity(tag, cid) == 0) {
+                sprite_tag = tag;
+                break;
+            }
+        }
     }
+    if (sprite_tag == NULL) {
+        fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
+        return 1; // not found instance name;
+    }
+    swf_object_t *swf4sprite = swf_object_open();
+    swf_object_input(swf4sprite, swf_data, swf_data_len);
 
-/*
-    result = swf_tag_replace_movieclip(tag,
-                                       instance_name, instance_name_len,
-                                       swf_data, swf_data__len,
-                                       swf);
-*/
-
-    return result;
+    // Sprite 中のタグを削除
+    for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
+        switch(tag->tag) {
+            // Character Tag
+            // Sprite の前に CID が被らないように展開
+            // TODO depth が被らないように。
+            break;
+            // Control Tag
+            // Sprite の中に挿入。
+            break;
+        }
+    }
+    swf_object_close(swf4sprite);
+    return 0;
 }
 
 int

@@ -98,9 +98,10 @@ extern int swf_object_insert_action_setvariables(swf_object_t *swf,
                                                  y_keyvalue_t *kv);
 
 extern int swf_object_replace_movieclip(swf_object_t *swf,
-                                        char *instance_name,
+                                        unsigned char *instance_name,
                                         int instancee_name_len,
-                                        char *swf_data, int swf_data_len);
+                                        unsigned char *swf_data,
+                                        int swf_data_len);
 
 
 extern int swf_object_apply_shapematrix_factor(swf_object_t *swf,int shape_id,

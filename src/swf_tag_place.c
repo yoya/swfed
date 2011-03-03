@@ -98,7 +98,7 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
             swf_tag_place->ratio = bitstream_getbytesLE(bs, 2);
         }
         if (swf_tag_place->flag_has_name) {
-            swf_tag_place->name = bitstream_outputstring(bs);
+            swf_tag_place->name = (char *) bitstream_outputstring(bs);
         }
         if (swf_tag_place->flag_has_clip_depth) {
             swf_tag_place->clip_depth = bitstream_getbytesLE(bs, 2);   
@@ -173,7 +173,7 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
             bitstream_putbytesLE(bs, swf_tag_place->ratio, 2);
         }
         if (swf_tag_place->flag_has_name) {
-            bitstream_putstring(bs, swf_tag_place->name, strlen(swf_tag_place->name) + 1);
+            bitstream_putstring(bs, (unsigned char *) swf_tag_place->name, strlen(swf_tag_place->name) + 1);
         }
         if (swf_tag_place->flag_has_clip_depth) {
             bitstream_putbytesLE(bs, swf_tag_place->clip_depth, 2);
@@ -248,4 +248,25 @@ swf_tag_place_destroy_detail(swf_tag_t *tag) {
         tag->detail = NULL;
     }
     return ;
+}
+
+int
+swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len) {
+    swf_tag_place_detail_t *swf_tag_place;
+    if (isPlaceTag(tag->tag)) {
+        fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: ! isPlaceTag(%d)\n", tag->tag);
+        return 1; // wrong tag
+    }
+    if (tag->detail) {
+        tag->detail = swf_tag_place_create_detail();
+    }
+    swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
+    if (swf_tag_place->flag_has_name == 0) {
+        return 1; // no name
+    }
+    if ((strlen(swf_tag_place->name) != (size_t) instance_name_len) ||
+        (strncmp(swf_tag_place->name, (char *) instance_name, (int) instance_name_len) != 0)) {
+        return 1; // name no match
+    }
+    return 0; // found
 }
