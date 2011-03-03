@@ -166,10 +166,10 @@ swf_tag_action_create_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
 
 int
 swf_tag_action_put_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
-    bitstream_t *bs, *bs2;
+    bitstream_t *bs;
     char *key, *value;
     int key_len, value_len;
-    unsigned long data_len, append_data_len;
+    unsigned long data_len;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     swf_tag_action->action_sprite = 0;
     bs = bitstream_open();
@@ -180,12 +180,12 @@ swf_tag_action_put_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
         bitstream_putbyte(bs, 0x96); // Push Data
         bitstream_putbytesLE(bs, key_len + 2 , 2);
         bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, key, key_len);
+        bitstream_putstring(bs, (unsigned char *)key, key_len);
         bitstream_putbyte(bs, 0);
         bitstream_putbyte(bs, 0x96); // Push Data
         bitstream_putbytesLE(bs, value_len + 2 , 2);
         bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, value, value_len);
+        bitstream_putstring(bs, (unsigned char *)value, value_len);
         bitstream_putbyte(bs, 0);
         bitstream_putbyte(bs, 0x1d); // Set Variable
     }
