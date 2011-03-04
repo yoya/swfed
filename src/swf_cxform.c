@@ -13,12 +13,20 @@ swf_cxform_parse(bitstream_t *bs, swf_cxform_t *cx) {
     if (cx->has_mult_terms) {
         cx->red_mult_term   = bitstream_getbits(bs, nbits);
         cx->green_mult_term = bitstream_getbits(bs, nbits);
-        cx->blue_mult_term  = bitstream_getbits(bs, nbits);
+        ret = bitstream_getbits(bs, nbits);
+        if (ret == -1) {
+            return 1;
+        }
+        cx->blue_mult_term  = ret;
     }
     if (cx->has_add_terms) {
         cx->red_add_term   = bitstream_getbits(bs, nbits);
         cx->green_add_term = bitstream_getbits(bs, nbits);
-        cx->blue_add_term  = bitstream_getbits(bs, nbits);
+        ret = bitstream_getbits(bs, nbits);
+        if (ret == -1) {
+            return 1;
+        }
+        cx->blue_add_term  = ret;
     }
     return 0;
 }
@@ -29,17 +37,17 @@ swf_cxform_build(bitstream_t *bs, swf_cxform_t *cx) {
     bitstream_align(bs);
     bitstream_putbit(bs, cx->has_add_terms);
     bitstream_putbit(bs, cx->has_mult_terms);
-    nbits = cx->has_mult_terms;
-    cx->nbits = nbits;
+    nbits = cx->nbits;
+    bitstream_putbits(bs, nbits, 4);
     if (cx->has_mult_terms) {
-        cx->red_mult_term   = bitstream_getbits(bs, nbits);
-        cx->green_mult_term = bitstream_getbits(bs, nbits);
-        cx->blue_mult_term  = bitstream_getbits(bs, nbits);
+        bitstream_putbits(bs, cx->red_mult_term,   nbits);
+        bitstream_putbits(bs, cx->green_mult_term, nbits);
+        bitstream_putbits(bs, cx->blue_mult_term,  nbits);
     }
     if (cx->has_add_terms) {
-        cx->red_add_term   = bitstream_getbits(bs, nbits);
-        cx->green_add_term = bitstream_getbits(bs, nbits);
-        cx->blue_add_term  = bitstream_getbits(bs, nbits);
+        bitstream_putbits(bs, cx->red_add_term,   nbits);
+        bitstream_putbits(bs, cx->green_add_term, nbits);
+        bitstream_putbits(bs, cx->blue_add_term,  nbits);
     }
     return 0;
 }
