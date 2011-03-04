@@ -547,7 +547,6 @@ PHP_METHOD(swfed, getTagContentsByCID) {
     long cid = 0;
     swf_object_t *swf = NULL;
     unsigned char *data_ref = NULL;
-    char *new_buff = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
         RETURN_FALSE;
@@ -592,7 +591,6 @@ PHP_METHOD(swfed, getShapeData) {
     long cid = 0;
     swf_object_t *swf = NULL;
     unsigned char *data_ref = NULL;
-    char *new_buff = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
         RETURN_FALSE;

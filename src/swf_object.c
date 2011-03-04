@@ -858,7 +858,7 @@ int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
-    int cid;
+    int cid = 0;
     swf_tag_t *tag, *sprite_tag = NULL;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
