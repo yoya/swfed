@@ -858,7 +858,7 @@ int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
-    int cid = 0;
+    int cid = 0, ret;
     swf_tag_t *tag, *sprite_tag = NULL, *prev_sprite_tag, *next_sprite_tag;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
@@ -891,7 +891,11 @@ swf_object_replace_movieclip(swf_object_t *swf,
         return 1; // not found instance name;
     }
     swf_object_t *swf4sprite = swf_object_open();
-    swf_object_input(swf4sprite, swf_data, swf_data_len);
+    ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
+    if (ret) {
+        fprintf(stderr, "swf_object_replace_movieclip: swf_object_input failed");
+        return ret;
+    }
 
     // Sprite 中のタグを削除
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
