@@ -16,6 +16,7 @@
 #include "swf_tag_lossless.h"
 #include "swf_tag_shape.h"
 #include "swf_tag_place.h"
+#include "swf_tag_sprite.h"
 #include "swf_action.h"
 #include "swf_object.h"
 #include "bitmap_util.h"
@@ -859,7 +860,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
     int cid = 0, ret;
-    swf_tag_t *tag, *sprite_tag = NULL, *prev_sprite_tag, *next_sprite_tag;
+    swf_tag_t *tag;
+    swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
+    swf_tag_t *sprite_tag_tail; // sprite の中の最後の tag
+    swf_tag_sprite_detail_t *swf_tag_sprite;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -880,7 +884,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
         if (isSpriteTag(tag->tag)) {
             if (swf_tag_identity(tag, cid) == 0) {
                 sprite_tag = tag;
-                next_sprite_tag = tag->next;
                 break;
             }
             prev_sprite_tag = tag;
@@ -893,10 +896,25 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_object_t *swf4sprite = swf_object_open();
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
-        fprintf(stderr, "swf_object_replace_movieclip: swf_object_input failed");
+        fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
-
+    swf_tag_sprite = tag->detail;
+    // Sprite タグの中を綺麗にする
+    if (sprite_tag->tag) {
+        swf_tag_t *next_tag;
+        for (tag=swf_tag_sprite->tag ; tag ; tag=next_tag) {
+            next_tag = tag->next;
+            swf_tag_destroy(tag);
+        }
+        free(swf);
+        swf_tag_sprite->tag = NULL;
+    }
+    swf_tag_sprite->frame_count = 0;
+    free(sprite_tag->data);
+    sprite_tag->data = NULL;
+    sprite_tag->length = 0;
+    
     // Sprite 中のタグを削除
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
         int tag_no = tag->tag;
@@ -943,7 +961,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 88: // DefineFontName
             // Sprite の前に CID が被らないように展開
             // TODO depth が被らないように。
-              ;
+              prev_sprite_tag->next = swf_tag_move(tag);
+              prev_sprite_tag = prev_sprite_tag->next;
+              prev_sprite_tag->next = sprite_tag;
             break;
             // Control Tag
           case 1: // ShowFrame
@@ -959,6 +979,15 @@ swf_object_replace_movieclip(swf_object_t *swf,
             // TODO: Character ID の変更に追随
             // TODO: 変数スコープ
               ;
+              if (sprite_tag_tail == NULL) {
+                  sprite_tag_tail = swf_tag_sprite->tag = swf_tag_move(tag);
+              } else {
+                  sprite_tag_tail->next = swf_tag_move(tag);
+                  sprite_tag_tail = sprite_tag_tail->next;
+              }
+              if (tag_no == 1) { // ShowFrame
+                  swf_tag_sprite->frame_count  += 1;
+              }
             break;
         }
     }
