@@ -110,4 +110,6 @@ extern int swf_tag_put_action_setvariables(swf_tag_t *tag,
                                            y_keyvalue_t *kv,
                                            struct swf_object_ *swf);
 
+extern swf_tag_t * swf_tag_move(swf_tag_t *tag);
+
 #endif /* __SWF_TAG_H__ */
