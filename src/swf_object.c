@@ -859,11 +859,11 @@ int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
-    int cid = 0, ret;
-    swf_tag_t *tag;
+    int cid = 0, ret = 0;
+    swf_tag_t *tag = NULL;
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
-    swf_tag_t *sprite_tag_tail; // sprite の中の最後の tag
-    swf_tag_sprite_detail_t *swf_tag_sprite;
+    swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
+    swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -877,7 +877,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
         }
     }
     if (cid <= 0) {
-        fprintf(stderr, "swf_object_replace_movieclip: place cid <= 0\n");
+        fprintf(stderr,
+                "swf_object_replace_movieclip: place cid(%d) <= 0\n", cid);
         return 1; // not found instance name;
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
