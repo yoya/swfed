@@ -859,7 +859,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
     int cid = 0;
-    swf_tag_t *tag, *sprite_tag = NULL;
+    swf_tag_t *tag, *sprite_tag = NULL, *prev_sprite_tag, *next_sprite_tag;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -880,8 +880,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
         if (isSpriteTag(tag->tag)) {
             if (swf_tag_identity(tag, cid) == 0) {
                 sprite_tag = tag;
+                next_sprite_tag = tag->next;
                 break;
             }
+            prev_sprite_tag = tag;
         }
     }
     if (sprite_tag == NULL) {
@@ -893,13 +895,66 @@ swf_object_replace_movieclip(swf_object_t *swf,
 
     // Sprite 中のタグを削除
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
-        switch(tag->tag) {
+        int tag_no = tag->tag;
+        switch (tag_no) {
+            // tag skip
+          default: // misc
+          case 0: // End
+          case 3: // FreeCharacter
+          case 9: // SetBackgroundColor
+            // 16 missing
+          case 56: // Export
+          case 69: // FileAttributes
+          case 74: // CSMTextSettings
+              ;
+            break;
             // Character Tag
+          case 2: // DefineShape
+          case 6: // DefineBitsJPEG
+          case 7: // DefineButton
+          case 8: // JPEGTables
+          case 10: // DefineFont
+          case 11: // DefineText
+          case 13: // DefineFontInfo
+          case 14: // DefineSound
+          case 17: // DefineButtonSound
+          case 18: // SoundStreamHead"
+          case 19: // SoundStreamBlock
+          case 20: // DefineBitsLossless
+          case 21: // DefineBitsJPEG2
+          case 22: // DefineShape2
+          case 32: // DefineShape3
+          case 33: // DefineText2
+          case 34: // DefineButton2
+          case 35: // DefineBitsJPEG3
+          case 36: // DefineBitsLossless2
+          case 37: // DefineEditText
+          case 39: // DefineSprite
+          case 46: // DefineMorphShape
+          case 48: // DefineFont2
+          case 73: // DefineFontAlignZones
+          case 75: // DefineFont3
+          case 83: // DefineShape4
+          case 84: // DefineMorphShape2
+          case 88: // DefineFontName
             // Sprite の前に CID が被らないように展開
             // TODO depth が被らないように。
+              ;
             break;
             // Control Tag
-            // Sprite の中に挿入。
+          case 1: // ShowFrame
+          case 4: // PlaceObject
+          case 5: // RemoveObject
+          case 12: // DoAction
+          case 15: // StartSound
+          case 26: // PlaceObject2
+          case 28: // RemoveObject2
+          case 43: // FrameLabel
+          case 59: // DoInitAction
+            // Sprite の中に挿入
+            // TODO: Character ID の変更に追随
+            // TODO: 変数スコープ
+              ;
             break;
         }
     }
