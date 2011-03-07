@@ -864,6 +864,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
+    swf_object_t *swf4sprite;
+    swf_tag_info_t *tag_info;
+    swf_tag_detail_handler_t *detail_handler;
+    
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -894,24 +898,27 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
         return 1; // not found instance name;
     }
-    swf_object_t *swf4sprite = swf_object_open();
+
+    swf4sprite = swf_object_open();
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
     // Sprite タグの中を綺麗にする
-    swf_tag_info_t *tag_info = get_swf_tag_info(sprite_tag->tag);
-    swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+    tag_info = get_swf_tag_info(sprite_tag->tag);
+    detail_handler = tag_info->detail_handler();
     free(sprite_tag->data);
     sprite_tag->data = NULL;
     sprite_tag->length = 0;
     if (sprite_tag->detail) {
+        fprintf(stderr, "if (sprite_tag->detail)\n");
         detail_handler->destroy(sprite_tag);
     }
-    tag->detail = detail_handler->create();
-    swf_tag_sprite = tag->detail;
-    // Sprite 中のタグを削除
+    sprite_tag->detail = detail_handler->create();
+    swf_tag_sprite = sprite_tag->detail;
+
+    // SWF 中のタグを種類に応じて展開する
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
         int tag_no = tag->tag;
         switch (tag_no) {
@@ -982,6 +989,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   sprite_tag_tail->next = swf_tag_move(tag);
                   sprite_tag_tail = sprite_tag_tail->next;
               }
+              sprite_tag_tail->next = NULL;
               if (tag_no == 1) { // ShowFrame
                   swf_tag_sprite->frame_count  += 1;
               }
