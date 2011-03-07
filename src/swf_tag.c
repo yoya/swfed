@@ -840,10 +840,10 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
 extern swf_tag_t * swf_tag_move(swf_tag_t *from_tag) {
     swf_tag_t *to_tag = calloc(sizeof(*to_tag), 1);
     to_tag->tag = from_tag->tag;
-    to_tag->data = from_tag->data;
-    from_tag->data = NULL;
     to_tag->length = from_tag->length;
     to_tag->length_longformat = from_tag->length_longformat;
+    to_tag->data = from_tag->data;
+    from_tag->data = NULL;
     to_tag->detail = from_tag->detail;
     from_tag->detail = NULL;
     return to_tag;
