@@ -41,7 +41,7 @@ extern void swf_tag_place_print_detail(swf_tag_t *tag,
                                        int indent_depth);
 extern void swf_tag_place_destroy_detail(swf_tag_t *tag);
 
-extern int swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len);
+extern int swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len, struct swf_object_ *swf);
 
 #endif /* __SWF_TAG_PLACE__H__ */
 

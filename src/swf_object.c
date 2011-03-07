@@ -870,7 +870,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag == 26) { // PlaceObject2
-            cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len);
+            cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
             if (cid > 0) {
                 break; // found
             }
@@ -887,8 +887,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 sprite_tag = tag;
                 break;
             }
-            prev_sprite_tag = tag;
         }
+        prev_sprite_tag = tag;
     }
     if (sprite_tag == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
@@ -900,22 +900,17 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
-    swf_tag_sprite = tag->detail;
     // Sprite タグの中を綺麗にする
-    if (sprite_tag->tag) {
-        swf_tag_t *next_tag;
-        for (tag=swf_tag_sprite->tag ; tag ; tag=next_tag) {
-            next_tag = tag->next;
-            swf_tag_destroy(tag);
-        }
-        free(swf);
-        swf_tag_sprite->tag = NULL;
-    }
-    swf_tag_sprite->frame_count = 0;
+    swf_tag_info_t *tag_info = get_swf_tag_info(sprite_tag->tag);
+    swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
     free(sprite_tag->data);
     sprite_tag->data = NULL;
     sprite_tag->length = 0;
-    
+    if (sprite_tag->detail) {
+        detail_handler->destroy(sprite_tag);
+    }
+    tag->detail = detail_handler->create();
+    swf_tag_sprite = tag->detail;
     // Sprite 中のタグを削除
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
         int tag_no = tag->tag;
@@ -981,7 +976,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
             // TODO: 変数スコープ
               ;
               if (sprite_tag_tail == NULL) {
-                  sprite_tag_tail = swf_tag_sprite->tag = swf_tag_move(tag);
+                  swf_tag_sprite->tag = swf_tag_move(tag);
+                  sprite_tag_tail = swf_tag_sprite->tag;
               } else {
                   sprite_tag_tail->next = swf_tag_move(tag);
                   sprite_tag_tail = sprite_tag_tail->next;

@@ -251,14 +251,14 @@ swf_tag_place_destroy_detail(swf_tag_t *tag) {
 }
 
 int
-swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len) {
+swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len, struct swf_object_ *swf) {
     swf_tag_place_detail_t *swf_tag_place;
     if (! isPlaceTag(tag->tag)) {
         fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: ! isPlaceTag(%d)\n", tag->tag);
         return -1; // wrong tag
     }
     if (! tag->detail) {
-        tag->detail = swf_tag_place_create_detail();
+        swf_tag_create_input_detail(tag, swf);
     }
     swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
     if (swf_tag_place->flag_has_name == 0) {
