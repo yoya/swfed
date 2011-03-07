@@ -137,15 +137,63 @@ int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id) {
     return 0; // always 0
 }
 
-int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
+int swf_tag_shape_bitmap_get_refcid(swf_tag_t *tag) {
     swf_tag_shape_detail_t *swf_tag_shape;
     int i, ret;
     if (tag == NULL) {
-        fprintf(stderr, "swf_tag_shape_bitmap_identity: tag == NULL\n");
+        fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: tag == NULL\n");
+        return -1;
+    }
+    if (! isShapeTag(tag->tag)) {
+        fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: ! isShapeTag(%d)\n",
+                tag->tag);
+        return -1;
+    }
+    if (tag->detail == NULL) {
+        tag->detail = swf_tag_shape_create_detail();
+        swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
+        ret = swf_tag_shape_input_detail(tag, NULL);
+        if (ret) {
+            swf_tag_shape_destroy_detail(tag);
+            return -1; // no shape bitmap
+        }
+    } else {
+        swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
+    }
+    //
+    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
+        swf_fill_style_t *fill_style;
+        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
+        if (fill_style == NULL) {
+            fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
+            return -1; // Illegal!!!
+        }
+        switch (fill_style->type) {
+          case 0x40: // tilled  bitmap fill with smoothed edges
+          case 0x41: // clipped bitmap fill with smoothed edges
+          case 0x42: // tilled  bitmap fill with hard edges
+          case 0x43: // clipped bitmap fill with hard edges
+            if (fill_style->bitmap.bitmap_ref != 0xffff) {
+                return fill_style->bitmap.bitmap_ref;
+            }
+            break;
+          default:
+            break;
+        }
+    }
+    return -1; // not found
+}
+
+int swf_tag_shape_bitmap_replace_refcid(swf_tag_t *tag, int cid) {
+    swf_tag_shape_detail_t *swf_tag_shape;
+    int i, ret;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: tag == NULL\n");
         return 1;
     }
     if (! isShapeTag(tag->tag)) {
-        fprintf(stderr, "swf_tag_shape_bitmap_identity: ! isShapeTag(%d)\n",
+        fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: ! isShapeTag(%d)\n",
                 tag->tag);
         return 1;
     }
@@ -166,7 +214,7 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
         swf_fill_style_t *fill_style;
         fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
         if (fill_style == NULL) {
-            fprintf(stderr, "swf_tag_shape_bitmap_identity: fill_style == NULL i=%d\n", i);
+            fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
             return 1; // Illegal!!!
         }
         switch (fill_style->type) {
@@ -174,8 +222,14 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
           case 0x41: // clipped bitmap fill with smoothed edges
           case 0x42: // tilled  bitmap fill with hard edges
           case 0x43: // clipped bitmap fill with hard edges
-            if (fill_style->bitmap.bitmap_ref == bitmap_id) {
-                return 0; // found
+            if (fill_style->bitmap.bitmap_ref != 0xffff) {
+                fill_style->bitmap.bitmap_ref = cid;
+                if (tag->data) {
+                    // 内容が変わったので元データは削除
+                    free(tag->data);
+                    tag->data = NULL;
+                }
+                return 0; // success!
             }
             break;
           default:
@@ -184,7 +238,6 @@ int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id) {
     }
     return 1; // not found
 }
-
 
 unsigned char *
 swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,

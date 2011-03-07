@@ -50,7 +50,8 @@ extern void *swf_tag_shape_create_detail(void);
 extern int swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_shape_get_cid_detail(swf_tag_t *tag);
 extern int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id);
-extern int swf_tag_shape_bitmap_identity(swf_tag_t *tag, int bitmap_id);
+extern int swf_tag_shape_bitmap_get_refcid(swf_tag_t *tag);
+extern int swf_tag_shape_bitmap_replace_refcid(swf_tag_t *tag, int cid);
 extern unsigned char *swf_tag_shape_output_detail(swf_tag_t *tag,
                                                    unsigned long *length,
                                                    struct swf_object_ *swf);

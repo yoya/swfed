@@ -429,7 +429,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
         height_scale = (double) old_height / new_height;
         for (tag = swf->tag ; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, bitmap_id) == 0)) {
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
                 swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
 
                 swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
@@ -444,7 +444,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
         height_scale = (double) new_height / old_height;
         for (tag = swf->tag ; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, bitmap_id) == 0)) {
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
                 swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
                 swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
                                                 width_scale, height_scale,
@@ -455,7 +455,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
         for (tag = swf->tag ; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_identity(tag, bitmap_id) == 0)) {
+            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
                 swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
                 swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
             }
