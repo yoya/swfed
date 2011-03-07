@@ -985,7 +985,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       trans_table_set(cid_trans_table, cid, cid);
                       to_cid = cid;
                   }
-                  fprintf(stderr, "XXX: swf_tag_replace_cid: tag(cid=%d), to_cid(%d)\n", cid, to_cid);
                   swf_tag_replace_cid(tag, to_cid);
               }
               if (isShapeTag(tag_no)) {
