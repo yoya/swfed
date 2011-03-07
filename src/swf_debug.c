@@ -16,8 +16,15 @@ static struct malloc_debug_ {
 } malloc_debug_table[MALLOC_DEBUG_TABLE_NUM];
 
 
+static int malloc_debug_stack = 0;
+
 void malloc_debug_start(void) {
     int i;
+    malloc_debug_stack ++;
+    if (malloc_debug_stack > 1) {
+        fprintf(stderr, "malloc_debug_start: malloc_debug_stack=%d\n", malloc_debug_stack);
+        return ;
+    }
     for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         malloc_debug_table[i].ptr = NULL;
     }
@@ -26,6 +33,11 @@ void malloc_debug_start(void) {
 
 void malloc_debug_end(void) {
     int i, j = 0;
+    malloc_debug_stack --;
+    if (malloc_debug_stack > 0) {
+        fprintf(stderr, "malloc_debug_end: malloc_debug_stack=%d\n", malloc_debug_stack);
+        return ;
+    }
     for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
         if (malloc_debug_table[i].ptr) {
             fprintf(stderr, "XXX (%d) ptr=%p (%s, %d)\n",
