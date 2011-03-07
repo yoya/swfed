@@ -20,6 +20,7 @@
 #include "swf_action.h"
 #include "swf_object.h"
 #include "bitmap_util.h"
+#include "trans_table.h"
 
 swf_object_t *
 swf_object_open(void) {
@@ -864,10 +865,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
-    swf_object_t *swf4sprite;
-    swf_tag_info_t *tag_info;
-    swf_tag_detail_handler_t *detail_handler;
-    
+    swf_object_t *swf4sprite = NULL;
+    swf_tag_info_t *tag_info = NULL;
+    swf_tag_detail_handler_t *detail_handler = NULL;
+    trans_table_t *cid_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -904,6 +905,15 @@ swf_object_replace_movieclip(swf_object_t *swf,
     if (ret) {
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
+    }
+    // 既存の CID をチェックする
+    cid_trans_table = trans_table_open();
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        int cid;
+        cid = swf_tag_get_cid(tag);
+        if (cid > 0) {
+            trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
+        }
     }
     // Sprite タグの中を綺麗にする
     tag_info = get_swf_tag_info(sprite_tag->tag);
@@ -962,8 +972,32 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 83: // DefineShape4
           case 84: // DefineMorphShape2
           case 88: // DefineFontName
-            // Sprite の前に CID が被らないように展開
-            // TODO depth が被らないように。
+              // CID 変更
+              cid = swf_tag_get_cid(tag);
+              if (cid > 0) {
+                  int to_cid;
+                  to_cid = trans_table_get(cid_trans_table, cid);
+                  if (to_cid == TRANS_TABLE_RESERVE_ID) {
+                      to_cid = trans_table_get_freeid(cid_trans_table);
+                      trans_table_set(cid_trans_table, cid, to_cid);
+                      trans_table_set(cid_trans_table, to_cid, TRANS_TABLE_RESERVE_ID);
+                  } else if (to_cid == 0) {
+                      trans_table_set(cid_trans_table, cid, cid);
+                      to_cid = cid;
+                  }
+                  fprintf(stderr, "XXX: swf_tag_replace_cid: tag(cid=%d), to_cid(%d)\n", cid, to_cid);
+                  swf_tag_replace_cid(tag, to_cid);
+              }
+              if (isShapeTag(tag_no)) {
+                  int  bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
+                  if (bitmap_id > 0) {
+                      int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
+                      swf_tag_shape_bitmap_replace_refcid(tag, to_bitmap_id);
+                  }
+              }
+              // TODO depth が被らないように。
+              ;
+              // Sprite の前に CID が被らないように展開
               prev_sprite_tag->next = swf_tag_move(tag);
               prev_sprite_tag = prev_sprite_tag->next;
               prev_sprite_tag->next = sprite_tag;
@@ -980,8 +1014,11 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 59: // DoInitAction
             // Sprite の中に挿入
             // TODO: Character ID の変更に追随
+              switch (tag_no) {
+                case 26: // PlaceObject2
+                    
+              }
             // TODO: 変数スコープ
-              ;
               if (sprite_tag_tail == NULL) {
                   swf_tag_sprite->tag = swf_tag_move(tag);
                   sprite_tag_tail = swf_tag_sprite->tag;
@@ -997,6 +1034,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         }
     }
     swf_object_close(swf4sprite);
+    trans_table_close(cid_trans_table);
     return 0;
 }
 
