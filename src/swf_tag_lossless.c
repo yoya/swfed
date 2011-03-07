@@ -19,7 +19,8 @@ swf_tag_detail_handler_t lossless_detail_handler;
 swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void) {
     lossless_detail_handler.create   = swf_tag_lossless_create_detail;
     lossless_detail_handler.input    = swf_tag_lossless_input_detail;
-    lossless_detail_handler.identity = swf_tag_lossless_identity_detail;
+    lossless_detail_handler.get_cid  = swf_tag_lossless_get_cid_detail;
+    lossless_detail_handler.replace_cid = swf_tag_lossless_replace_cid_detail;
     lossless_detail_handler.output   = swf_tag_lossless_output_detail;
     lossless_detail_handler.print    = swf_tag_lossless_print_detail;
     lossless_detail_handler.destroy  = swf_tag_lossless_destroy_detail;
@@ -176,25 +177,30 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
 }
 
 int
-swf_tag_lossless_identity_detail(swf_tag_t *tag, int id) {
+swf_tag_lossless_get_cid_detail(swf_tag_t *tag) {
     unsigned char *data = tag->data;
-    int image_id;
     if (tag->detail) {
         swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
-        if (swf_tag_lossless->image_id == id) {
-            return 0;
-        }        
-        return 1;
+        return swf_tag_lossless->image_id;
     }
     if (data == NULL) {
-        fprintf(stderr, "swf_tag_lossless_identity_detail: data==NULL at line(%d)\n", __LINE__);
-        return 1;
+        fprintf(stderr, "swf_tag_lossless_get_cid_detail: data==NULL at line(%d)\n", __LINE__);
+        return -1;
     }
-    image_id = GetUShortLE(data);
-    if (id == image_id) {
-        return 0;
-    }        
-    return 1;
+    return GetUShortLE(data); // image_id;
+}
+
+int
+swf_tag_lossless_replace_cid_detail(swf_tag_t *tag, int id) {
+    unsigned char *data = tag->data;
+    if (tag->detail) {
+        swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+        swf_tag_lossless->image_id = id;
+    }
+    if (data) {
+        PutUShortLE(data, id);
+    }
+    return 0; // always 0
 }
 
 unsigned char *

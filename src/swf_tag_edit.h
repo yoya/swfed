@@ -51,7 +51,8 @@ extern swf_tag_detail_handler_t *swf_tag_edit_detail_handler(void);
 
 extern void *swf_tag_edit_create_detail(void);
 extern int swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
-extern int swf_tag_edit_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_edit_get_cid_detail(swf_tag_t *tag);
+extern int swf_tag_edit_replace_cid_detail(swf_tag_t *tag, int id);
 extern unsigned char *swf_tag_edit_output_detail(swf_tag_t *tag,
                                                  unsigned long *length,
                                                  struct swf_object_ *swf);

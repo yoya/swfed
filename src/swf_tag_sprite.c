@@ -16,7 +16,8 @@ swf_tag_detail_handler_t *
 swf_tag_sprite_detail_handler(void) {
     sprite_detail_handler.create   = swf_tag_sprite_create_detail;
     sprite_detail_handler.input    = swf_tag_sprite_input_detail;
-    sprite_detail_handler.identity = swf_tag_sprite_identity_detail;
+    sprite_detail_handler.get_cid  = swf_tag_sprite_get_cid_detail;
+    sprite_detail_handler.replace_cid = swf_tag_sprite_replace_cid_detail;
     sprite_detail_handler.output   = swf_tag_sprite_output_detail;
     sprite_detail_handler.print    = swf_tag_sprite_print_detail;
     sprite_detail_handler.destroy  = swf_tag_sprite_destroy_detail;
@@ -68,25 +69,29 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     return 0;
 }
 
-int swf_tag_sprite_identity_detail(swf_tag_t *tag, int id) {
+int swf_tag_sprite_get_cid_detail(swf_tag_t *tag) {
     unsigned char *data = tag->data;
-    bitstream_t *bs;
-    int sprite_id;
     if (tag->detail) {
         swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
-        if (swf_tag_sprite->sprite_id == id) {
-            return 0;
-        }        
-        return 1;
+        return swf_tag_sprite->sprite_id;
     }
-    bs = bitstream_open();
-    bitstream_input(bs, data, 2);
-    sprite_id = bitstream_getbytesLE(bs, 2);
-    bitstream_close(bs);
-    if (id == sprite_id) {
-        return 0;
+    if (data == NULL) {
+        fprintf(stderr, "swf_tag_sprite_get_cid_detail: data == NULL\n");
+        return -1;
+    }
+    return GetUShortLE(data); // sprite_id;
+}
+
+int swf_tag_sprite_replace_cid_detail(swf_tag_t *tag, int id) {
+    unsigned char *data = tag->data;
+    if (tag->detail) {
+        swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
+        swf_tag_sprite->sprite_id = id;
+    }
+    if (data) {
+        PutUShortLE(data, id);
     }        
-    return 1;
+    return 0; // always 0
 }
 
 unsigned char *

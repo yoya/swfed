@@ -262,7 +262,7 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf->tag;
     while (tag) {
-        if (swf_tag_identity(tag, cid) == 0) {
+        if (swf_tag_get_cid(tag) == cid) {
             break; // match
         }
         tag = tag->next;
@@ -295,7 +295,7 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf->tag;
     while (tag) {
-        if (swf_tag_identity(tag, cid) == 0) {
+        if (swf_tag_get_cid(tag) == cid) {
             break; // match
         }
         tag = tag->next;
@@ -324,7 +324,7 @@ swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
     swf_tag_t *tag;
     tag = swf->tag;
     while (tag) {
-        if (swf_tag_identity(tag, cid) == 0) {
+        if (swf_tag_get_cid(tag) == cid) {
             break; // match
         }
         tag = tag->next;
@@ -361,7 +361,7 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf->tag;
     while (tag) {
-        if (swf_tag_identity(tag, cid) == 0) {
+        if (swf_tag_get_cid(tag) ==  cid) {
             break; // match
         }
         tag = tag->next;
@@ -399,7 +399,7 @@ swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
     for (tag=swf->tag ; tag ; tag=tag->next) {
         register int tag_code = tag->tag;
         if (isBitmapTag(tag_code)) {
-            if (swf_tag_identity(tag, bitmap_id) == 0) {
+            if (swf_tag_get_cid(tag) == bitmap_id) {
                 return tag; // match
             }
         }
@@ -887,7 +887,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (isSpriteTag(tag->tag)) {
-            if (swf_tag_identity(tag, cid) == 0) {
+            if (swf_tag_get_cid(tag) ==  cid) {
                 sprite_tag = tag;
                 break;
             }

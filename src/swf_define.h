@@ -62,6 +62,8 @@ extern void print_hexbin(unsigned char *data, int data_len);
 #define GetULongLE(data) ((unsigned long) GV4B(data[3], data[2], data[1], data[0]))
 #define GetDoubleIEEE(data) ((double) GV8B(data[4], data[5], data[6], data[7], data[0], data[1], data[2], data[3]))
 
+#define PutUShortLE(data, value) ((data[0] = (value & 0xff)), (data[1] = (value >> 16)))
+
 // tag
 
 // DefineBitsJPEG1,2,3

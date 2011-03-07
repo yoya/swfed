@@ -32,7 +32,8 @@ extern swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void);
 extern void *swf_tag_lossless_create_detail(void);
 extern int swf_tag_lossless_input_detail(swf_tag_t *tag,
                                          struct swf_object_ *swf);
-extern int swf_tag_lossless_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_lossless_get_cid_detail(swf_tag_t *tag);
+extern int swf_tag_lossless_replace_cid_detail(swf_tag_t *tag, int id);
 extern unsigned char *swf_tag_lossless_output_detail(swf_tag_t *tag,
                                                      unsigned long *length,
                                                      struct swf_object_ *swf);

@@ -268,20 +268,29 @@ int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
 }
 
 int
-swf_tag_identity(swf_tag_t *tag, int cid) {
+swf_tag_get_cid(swf_tag_t *tag) {
     swf_tag_info_t *tag_info;
     tag_info = get_swf_tag_info(tag->tag);
     if (tag_info && tag_info->detail_handler) {
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, cid)) {
-                return 1; // no match
-            } else{
-                return 0; // match
-            }
+        if (detail_handler->get_cid) {
+            return detail_handler->get_cid(tag);
         }
     }
-    return 1; // no match - no identity method
+    return -1; // no cid tag
+}
+
+int
+swf_tag_replace_cid(swf_tag_t *tag, int cid) {
+    swf_tag_info_t *tag_info;
+    tag_info = get_swf_tag_info(tag->tag);
+    if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        if (detail_handler->replace_cid) {
+            return detail_handler->replace_cid(tag, cid);
+        }
+    }
+    return 1; // no cid tag
 }
 
 /* bitmap */
@@ -344,7 +353,6 @@ swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_t
 
 unsigned char *
 swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
-    swf_tag_info_t *tag_info;
     *length = 0;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_get_alpha_data: tag == NULL\n");
@@ -353,14 +361,8 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     if (tag->tag != 35) { // ! DefineBitsJPEG3
         return NULL;
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, image_id)) {
-                return NULL;
-            }
-        }
+    if (swf_tag_get_cid(tag) != image_id) {
+        return NULL;
     }
     if (! tag->detail) {
         swf_tag_create_input_detail(tag, NULL);
@@ -390,7 +392,7 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     }
     tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
-    if (detail_handler->identity(tag, image_id)) {
+    if (detail_handler->get_cid(tag) !=  image_id) {
         return 1;
     }
 
@@ -465,7 +467,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     }
     tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
-    if (detail_handler->identity(tag, image_id)) {
+    if (detail_handler->get_cid(tag) != image_id) {
         return 1;
     }
     
@@ -518,7 +520,7 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
     }
     tag_info = get_swf_tag_info(tag->tag); // Bitmap Tag
     detail_handler = tag_info->detail_handler();
-    if (detail_handler->identity(tag, image_id)) {
+    if (detail_handler->get_cid(tag) != image_id) {
         return 1;
     }
     
@@ -583,7 +585,6 @@ int
 swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
                           unsigned char *melo_data,
                           unsigned long melo_data_len) {
-    swf_tag_info_t *tag_info;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_melo_data: tag == NULL\n");
@@ -592,14 +593,8 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
     if (tag->tag != 14) { // DefineSound
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, sound_id)) {
-                return 1;
-            }
-        }
+    if (swf_tag_get_cid(tag) != sound_id) {
+        return 1;
     }
     if (! tag->detail) {
         swf_tag_create_input_detail(tag, NULL);
@@ -680,7 +675,6 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
                                   double rotate_rad,
                                   signed int trans_x, signed int trans_y,
                                   struct swf_object_ *swf) {
-    swf_tag_info_t *tag_info;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_apply_shape_matrix_factor: tag == NULL\n");
@@ -691,14 +685,8 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
         // ! DefineShape1,2,3, DefineMorphShape
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, shape_id)) {
-                return 1;
-            }
-        }
+    if (swf_tag_get_cid(tag) != shape_id) {
+        return 1;
     }
     if (! tag->detail) {
         swf_tag_create_input_detail(tag, swf);
@@ -724,7 +712,6 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
                                   double scale_x, double scale_y,
                                   signed int trans_x, signed int trans_y,
                                   struct swf_object_ *swf) {
-    swf_tag_info_t *tag_info;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_apply_shape_rect_factor: tag == NULL\n");
@@ -735,14 +722,8 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
         // ! DefineShape1,2,3, DefineMorphShape
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, shape_id)) {
-                return 1;
-            }
-        }
+    if (swf_tag_get_cid(tag) != shape_id) {
+        return 1;
     }
     if (! tag->detail) {
         swf_tag_create_input_detail(tag, swf);
@@ -765,7 +746,6 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
 int
 swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
                                 struct swf_object_ *swf) {
-    swf_tag_info_t *tag_info;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_apply_shape_type_tylled: tag == NULL\n");
@@ -776,14 +756,8 @@ swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
         // ! DefineShape1,2,3, DefineMorphShape
         return 1;
     }
-    tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->identity) {
-            if (detail_handler->identity(tag, shape_id)) {
-                return 1;
-            }
-        }
+    if (swf_tag_get_cid(tag) != shape_id) {
+        return 1;
     }
     if (! tag->detail) {
         swf_tag_create_input_detail(tag, swf);

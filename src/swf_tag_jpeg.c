@@ -23,7 +23,8 @@ swf_tag_detail_handler_t jpeg3_detail_handler;
 swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
     jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
     jpeg_detail_handler.input    = swf_tag_jpeg_input_detail;
-    jpeg_detail_handler.identity = swf_tag_jpeg_identity_detail;
+    jpeg_detail_handler.get_cid  = swf_tag_jpeg_get_cid_detail;
+    jpeg_detail_handler.replace_cid = swf_tag_jpeg_replace_cid_detail;
     jpeg_detail_handler.output   = swf_tag_jpeg_output_detail;
     jpeg_detail_handler.print    = swf_tag_jpeg_print_detail;
     jpeg_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
@@ -33,7 +34,8 @@ swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
 swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void) {
     jpegt_detail_handler.create   = swf_tag_jpeg_create_detail;
     jpegt_detail_handler.input    = swf_tag_jpegt_input_detail;
-    jpegt_detail_handler.identity = swf_tag_jpegt_identity_detail;
+    jpegt_detail_handler.get_cid  = NULL;
+    jpegt_detail_handler.replace_cid = NULL;
     jpegt_detail_handler.output   = swf_tag_jpegt_output_detail;
     jpegt_detail_handler.print    = swf_tag_jpeg_print_detail;
     jpegt_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
@@ -43,7 +45,8 @@ swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void) {
 swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void) {
     jpeg3_detail_handler.create   = swf_tag_jpeg_create_detail;
     jpeg3_detail_handler.input    = swf_tag_jpeg3_input_detail;
-    jpeg3_detail_handler.identity = swf_tag_jpeg_identity_detail;
+    jpeg3_detail_handler.get_cid  = swf_tag_jpeg_get_cid_detail;
+    jpeg3_detail_handler.replace_cid = swf_tag_jpeg_replace_cid_detail;
     jpeg3_detail_handler.output   = swf_tag_jpeg3_output_detail;
     jpeg3_detail_handler.print    = swf_tag_jpeg_print_detail;
     jpeg3_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
@@ -174,34 +177,30 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
 }
 
 int
-swf_tag_jpeg_identity_detail(swf_tag_t *tag, int id) {
+swf_tag_jpeg_get_cid_detail(swf_tag_t *tag) {
     unsigned char *data = tag->data;
-    int image_id;
     if (tag->detail) {
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;        
-        if (swf_tag_jpeg->image_id == id) {
-            return 0;
-        }        
-        return 1;
+        return swf_tag_jpeg->image_id;
     }
     if (data == NULL) {
-        fprintf(stderr, "swf_tag_jpeg_identity_detail: data==NULL\n");
-        return 1;
+        fprintf(stderr, "swf_tag_jpeg_get_cid_detail: data==NULL\n");
+        return -1;
     }
-    image_id = GetUShortLE(data);
-    if (id == image_id) {
-        return 0;
-    }        
-    return 1;
+    return GetUShortLE(data); // image_id;
 }
-
 int
-swf_tag_jpegt_identity_detail(swf_tag_t *tag, int id) {
-    (void) tag;
-    (void) id;
-    return 1; // always no match
+swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int image_id) {
+    unsigned char *data = tag->data;
+    if (tag->detail) {
+        swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;        
+        swf_tag_jpeg->image_id = image_id;
+    }
+    if (data) {
+        PutUShortLE(data, image_id);
+    }
+    return 0; // always 0
 }
-
 unsigned char *
 swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {

@@ -17,7 +17,8 @@ swf_tag_detail_handler_t *
 swf_tag_edit_detail_handler(void) {
     edit_detail_handler.create   = swf_tag_edit_create_detail;
     edit_detail_handler.input    = swf_tag_edit_input_detail;
-    edit_detail_handler.identity = swf_tag_edit_identity_detail;
+    edit_detail_handler.get_cid  = swf_tag_edit_get_cid_detail;
+    edit_detail_handler.replace_cid = swf_tag_edit_replace_cid_detail;
     edit_detail_handler.output   = swf_tag_edit_output_detail;
     edit_detail_handler.print    = swf_tag_edit_print_detail;
     edit_detail_handler.destroy  = swf_tag_edit_destroy_detail;
@@ -100,25 +101,29 @@ swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     return 0;
 }
 
-int swf_tag_edit_identity_detail(swf_tag_t *tag, int id) {
+int swf_tag_edit_get_cid_detail(swf_tag_t *tag) {
     unsigned char *data = tag->data;
-    bitstream_t *bs;
-    int edit_id;
     if (tag->detail) {
         swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
-        if (swf_tag_edit->edit_id == id) {
-            return 0;
-        }        
-        return 1;
+        return swf_tag_edit->edit_id;
     }
-    bs = bitstream_open();
-    bitstream_input(bs, data, 2);
-    edit_id = bitstream_getbytesLE(bs, 2);
-    bitstream_close(bs);
-    if (id == edit_id) {
-        return 0;
-    }        
-    return 1;
+    if (data == NULL) {
+        fprintf(stderr, "swf_tag_edit_get_cid_detail: data == NULL\n");
+        return -1;
+    }
+    return GetUShortLE(data); // edit_id;
+}
+
+int swf_tag_edit_replace_cid_detail(swf_tag_t *tag, int id) {
+    unsigned char *data = tag->data;
+    if (tag->detail) {
+        swf_tag_edit_detail_t *swf_tag_edit = (swf_tag_edit_detail_t *) tag->detail;
+        swf_tag_edit->edit_id = id;
+    }
+    if (data) {
+        PutUShortLE(data, id);
+    }
+    return 0; // always 0
 }
 
 unsigned char *

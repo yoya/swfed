@@ -27,8 +27,8 @@ extern void *swf_tag_jpeg_create_detail(void);
 extern int swf_tag_jpeg_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_jpegt_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_jpeg3_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
-extern int swf_tag_jpeg_identity_detail(swf_tag_t *tag, int id);
-extern int swf_tag_jpegt_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_jpeg_get_cid_detail(swf_tag_t *tag);
+extern int swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int id);
 extern unsigned char *swf_tag_jpeg_output_detail(swf_tag_t *tag,
                                                  unsigned long *length,
                                                  struct swf_object_ *swf);

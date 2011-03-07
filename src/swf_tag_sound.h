@@ -24,7 +24,8 @@ extern swf_tag_detail_handler_t *swf_tag_sound_detail_handler(void);
 
 extern void *swf_tag_sound_create_detail(void);
 extern int swf_tag_sound_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
-extern int swf_tag_sound_identity_detail(swf_tag_t *tag, int id);
+extern int swf_tag_sound_get_cid_detail(swf_tag_t *tag);
+extern int swf_tag_sound_replace_cid_detail(swf_tag_t *tag, int id);
 extern unsigned char *swf_tag_sound_output_detail(swf_tag_t *tag,
                                                   unsigned long *length,
                                                   struct swf_object_ *swf);

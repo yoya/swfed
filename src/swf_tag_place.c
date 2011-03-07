@@ -16,7 +16,8 @@ swf_tag_detail_handler_t *
 swf_tag_place_detail_handler(void) {
     place_detail_handler.create   = swf_tag_place_create_detail;
     place_detail_handler.input    = swf_tag_place_input_detail;
-    place_detail_handler.identity = NULL;
+    place_detail_handler.get_cid  = NULL;
+    place_detail_handler.replace_cid = NULL;
     place_detail_handler.output   = swf_tag_place_output_detail;
     place_detail_handler.print    = swf_tag_place_print_detail;
     place_detail_handler.destroy  = swf_tag_place_destroy_detail;
