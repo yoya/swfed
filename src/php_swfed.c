@@ -55,6 +55,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  __construct, NULL, 0)
     PHP_ME(swfed,  input, NULL, 0)
     PHP_ME(swfed,  output, NULL, 0)
+    PHP_ME(swfed,  _destroy_and_exit, NULL, 0) // for debug
     PHP_ME(swfed,  getHeaderInfo, NULL, 0)
     PHP_ME(swfed,  setHeaderInfo, NULL, 0)
     PHP_ME(swfed,  getTagList, NULL, 0)
@@ -309,6 +310,13 @@ PHP_METHOD(swfed, output) {
     memcpy(new_buff, data, len);
     free(data);
     RETURN_STRINGL(new_buff, len, 0);
+}
+
+PHP_METHOD(swfed, _destroy_and_exit) { // for debug
+    swf_object_t *swf = NULL;
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_close(swf);
+    exit(0);
 }
 
 PHP_METHOD(swfed, getHeaderInfo) {

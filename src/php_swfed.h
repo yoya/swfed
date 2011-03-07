@@ -47,6 +47,7 @@ static zend_class_entry *swfeditor_ce;
 PHP_METHOD(swfed, __construct);
 PHP_METHOD(swfed, input);
 PHP_METHOD(swfed, output);
+PHP_METHOD(swfed, _destroy_and_exit); // for debug
 //
 PHP_METHOD(swfed, getHeaderInfo);
 PHP_METHOD(swfed, setHeaderInfo);
