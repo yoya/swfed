@@ -37,6 +37,7 @@
 #include "swf_tag_action.h"
 #include "swf_tag_sprite.h"
 #include "swf_tag_shape.h"
+#include "swf_tag_place.h"
 #include "swf_tag.h"
 #include "swf_object.h"
 
@@ -91,7 +92,7 @@ zend_function_entry swfed_functions[] = {
 };
 /* }}} */
 
-#define SWFED_VERSION "0.32a"
+#define SWFED_VERSION "0.32"
 
 /* {{{ swfed_module_entry
  */
@@ -424,6 +425,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_action_detail_t   *tag_action;
         swf_tag_sprite_detail_t   *tag_sprite;
         swf_tag_shape_detail_t    *tag_shape;
+        swf_tag_place_detail_t    *tag_place;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
@@ -502,7 +504,21 @@ PHP_METHOD(swfed, getTagDetail) {
         add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
 //        tag_shape->shape_with_style.shape_records
         break;
+      case 4: // PlaceObject
+      case 26: // PlaceObject2
+        tag_place = tag->detail;
+        array_init(return_value);
+        if ((tag->tag == 4) || tag_place->flag_has_character) {
+            add_assoc_long(return_value, "character_id", tag_place->character_id);
+        }
+        add_assoc_long(return_value, "depth", tag_place->depth);
+        if (tag_place->flag_has_name) {
+            add_assoc_string_ex(return_value, "name",
+                                sizeof("name"), (char *)tag_place->name, 1);
+        }
+
       default:
+          break;
         RETURN_FALSE;
     }
     /* return_value */
