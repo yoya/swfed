@@ -74,7 +74,7 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         swf_tag_place->flag_has_color_transform = bitstream_getbit(bs);
         swf_tag_place->flag_has_matrix = bitstream_getbit(bs);
         swf_tag_place->flag_has_character = bitstream_getbit(bs);
-        swf_tag_place->flag_has_movie = bitstream_getbit(bs);
+        swf_tag_place->flag_has_move = bitstream_getbit(bs);
         swf_tag_place->depth = bitstream_getbytesLE(bs, 2);
         if (swf_tag_place->flag_has_character) {
             swf_tag_place->character_id = bitstream_getbytesLE(bs, 2);
@@ -90,7 +90,7 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
             }
         }
         if (swf_tag_place->flag_has_color_transform) {
-            ret = swf_cxform_parse(bs, &(swf_tag_place->color_transform));
+            ret = swf_cxformwithalpha_parse(bs, &(swf_tag_place->color_transform_with_alpha));
             if (ret) {
                 fprintf(stderr, "ERROR: swf_tag_place_input_detail: swf_tag_place->color_transform parse failed. character_id=%d\n", swf_tag_place->character_id);
                 bitstream_close(bs);
@@ -151,8 +151,10 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
         bitstream_putbit(bs, swf_tag_place->flag_has_color_transform);
         bitstream_putbit(bs, swf_tag_place->flag_has_matrix);
         bitstream_putbit(bs, swf_tag_place->flag_has_character);
-        bitstream_putbit(bs, swf_tag_place->flag_has_movie);
+        bitstream_putbit(bs, swf_tag_place->flag_has_move);
+        
         bitstream_putbytesLE(bs, swf_tag_place->depth, 2);
+
         if (swf_tag_place->flag_has_character) {
             bitstream_putbytesLE(bs, swf_tag_place->character_id, 2);
         }
@@ -165,7 +167,7 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
             }
         }
         if (swf_tag_place->flag_has_color_transform) {
-            ret = swf_cxform_build(bs, &(swf_tag_place->color_transform));
+            ret = swf_cxformwithalpha_build(bs, &(swf_tag_place->color_transform_with_alpha));
             if (ret) {
                 fprintf(stderr, "ERROR: swf_tag_place_output_detail: swf_tag_place->color_transform build failed. character_id=%d\n", swf_tag_place->character_id);
                 bitstream_close(bs);
@@ -203,7 +205,7 @@ swf_tag_place_print_detail(swf_tag_t *tag,
         swf_matrix_print(&(swf_tag_place->matrix), indent_depth);
         swf_cxform_print(&(swf_tag_place->color_transform), indent_depth);
     } else if (tag->tag == 26) { // PlaceObject2
-        printf("(clipact,clipdepth,name,ratio,coltrans,mat,cid,movie)=(%d,%d,%d,%d,%d,%d,%d,%d)\n",
+        printf("(clipact,clipdepth,name,ratio,coltrans,mat,cid,move)=(%d,%d,%d,%d,%d,%d,%d,%d)\n",
                swf_tag_place->flag_has_clip_action,
                swf_tag_place->flag_has_clip_depth,
                swf_tag_place->flag_has_name,
@@ -211,7 +213,7 @@ swf_tag_place_print_detail(swf_tag_t *tag,
                swf_tag_place->flag_has_color_transform,
                swf_tag_place->flag_has_matrix,
                swf_tag_place->flag_has_character,
-               swf_tag_place->flag_has_movie);
+               swf_tag_place->flag_has_move);
         if (swf_tag_place->flag_has_character) {
             print_indent(indent_depth);
             printf("character_id=%d\n", swf_tag_place->character_id);
@@ -220,7 +222,7 @@ swf_tag_place_print_detail(swf_tag_t *tag,
             swf_matrix_print(&(swf_tag_place->matrix), indent_depth);
         }
         if (swf_tag_place->flag_has_color_transform) {
-            swf_cxform_print(&(swf_tag_place->color_transform), indent_depth);
+            swf_cxformwithalpha_print(&(swf_tag_place->color_transform_with_alpha), indent_depth);
         }
         if (swf_tag_place->flag_has_ratio) {
             print_indent(indent_depth);

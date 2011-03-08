@@ -9,10 +9,11 @@
 
 #include "swf_matrix.h"
 #include "swf_cxform.h"
+#include "swf_cxformwithalpha.h"
 #include "swf_tag.h"
 
 typedef struct swf_tag_place_detail_ {
-    int character_id; //  Shape2 optional.
+    int character_id; //  optional if PlaceObject2
     int flag_has_clip_action;
     int flag_has_clip_depth;
     int flag_has_name;
@@ -20,13 +21,14 @@ typedef struct swf_tag_place_detail_ {
     int flag_has_color_transform;
     int flag_has_matrix;
     int flag_has_character;
-    int flag_has_movie;
+    int flag_has_move;
     int depth;
     swf_matrix_t matrix;
-    swf_cxform_t color_transform;
-    int ratio;
-    char *name;
-    int clip_depth;
+    swf_cxform_t color_transform; // PlaceObject
+    swf_cxformwithalpha_t color_transform_with_alpha; // PlaceObject2
+    int ratio;  // PlaceObject2
+    char *name; // PlaceObject2
+    int clip_depth; // PlaceObject2
 } swf_tag_place_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_place_detail_handler(void);
