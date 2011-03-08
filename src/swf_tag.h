@@ -51,6 +51,9 @@ extern void swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_de
 extern int swf_tag_get_cid(swf_tag_t *tag);
 extern int swf_tag_replace_cid(swf_tag_t *tag, int cid);
 
+extern int swf_tag_get_refcid(swf_tag_t *tag);
+extern int swf_tag_replace_refcid(swf_tag_t *tag, int cid);
+
 /* image */
 
 extern int swf_tag_get_bitmap_size(swf_tag_t *tag,

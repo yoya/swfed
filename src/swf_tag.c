@@ -293,6 +293,38 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
     return 1; // no cid tag
 }
 
+int
+swf_tag_get_refcid(swf_tag_t *tag) {
+    if (isPlaceTag(tag->tag)) { // PlaceObject, PlaceObject2
+        swf_tag_place_detail_t *swf_tag_place;
+        if (! tag->detail) {
+            swf_tag_create_input_detail(tag, NULL);
+        }
+        swf_tag_place = tag->detail;
+        return swf_tag_place->character_id;
+    }
+    return -1; // no cid tag
+}
+
+int
+swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
+//    fprintf(stderr, "XXX: swf_tag_replace_refcid(tag(code=%d), cid(%d))\n", tag->tag, cid);
+    if (isPlaceTag(tag->tag)) { // PlaceObject, PlaceObject2
+        swf_tag_place_detail_t *swf_tag_place;
+        if (! tag->detail) {
+            swf_tag_create_input_detail(tag, NULL);
+        }
+//        fprintf(stderr, "XXX: swf_tag_create_input_detail(tag, NULL)\n");
+        swf_tag_place = tag->detail;
+        swf_tag_place->character_id = cid;
+    }
+    if (tag->data) {
+        free(tag->data);
+        tag->data = NULL;
+    }
+    return 0; // always 0;
+}
+
 /* bitmap */
 
 int
