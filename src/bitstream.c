@@ -250,7 +250,7 @@ bitstream_putbit(bitstream_t *bs, int bit) {
 //        fprintf(stderr, "bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
 //                bs->data_len, bs->byte_offset);
         if (bs->data_alloc_len <= bs->byte_offset) {
-            fprintf(stderr, "bitstream_putbit: alloc_len=%lu\n", bs->data_alloc_len);
+//            fprintf(stderr, "bitstream_putbit: alloc_len=%lu\n", bs->data_alloc_len);
             bitstream_realloc(bs);
         }
         bs->data[bs->byte_offset] = 0;
