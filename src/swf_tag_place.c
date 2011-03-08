@@ -78,6 +78,8 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         swf_tag_place->depth = bitstream_getbytesLE(bs, 2);
         if (swf_tag_place->flag_has_character) {
             swf_tag_place->character_id = bitstream_getbytesLE(bs, 2);
+        } else {
+            swf_tag_place->character_id = 0;
         }
         if (swf_tag_place->flag_has_matrix) {
             ret = swf_matrix_parse(bs, &(swf_tag_place->matrix));
