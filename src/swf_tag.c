@@ -270,11 +270,34 @@ int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
 int
 swf_tag_get_cid(swf_tag_t *tag) {
     swf_tag_info_t *tag_info;
-    tag_info = get_swf_tag_info(tag->tag);
+    int tag_no = tag->tag;
+    tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->get_cid) {
             return detail_handler->get_cid(tag);
+        }
+    } else {
+        int cid;
+        switch (tag_no) {
+          case 7:  // DefineButton
+          case 10: // DefineFont
+          case 11: // DefineText
+          case 13: // DefineFontInfo
+          case 14: // DefineSound
+          case 17: // DefineButtonSound
+          case 33: // DefineText2
+          case 34: // DefineButton2
+          case 39: // DefineSprite ///////////////
+          case 46: // DefineMorphShape
+          case 48: // DefineFont2
+          case 88: // DefineFontName
+              if (tag->data) {
+                  return GetUShortLE(tag->data);
+              }
+              break;
+          default:
+              ;
         }
     }
     return -1; // no cid tag
@@ -283,11 +306,33 @@ swf_tag_get_cid(swf_tag_t *tag) {
 int
 swf_tag_replace_cid(swf_tag_t *tag, int cid) {
     swf_tag_info_t *tag_info;
-    tag_info = get_swf_tag_info(tag->tag);
+    int tag_no = tag->tag;
+    tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->replace_cid) {
             return detail_handler->replace_cid(tag, cid);
+        }
+    } else {
+        switch (tag_no) {
+          case 7:  // DefineButton
+          case 10: // DefineFont
+          case 11: // DefineText
+          case 13: // DefineFontInfo
+          case 14: // DefineSound
+          case 17: // DefineButtonSound
+          case 33: // DefineText2
+          case 34: // DefineButton2
+          case 39: // DefineSprite ///////////////
+          case 46:  // DefineMorphShape
+          case 48: // DefineFont2
+          case 88: // DefineFontName
+            if (tag->data) {
+                return PutUShortLE(tag->data, cid);
+            }
+            break;
+          default:
+              ;
         }
     }
     return 1; // no cid tag
