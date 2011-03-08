@@ -860,7 +860,7 @@ int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
-    int cid = 0, ret = 0;
+    int cid = 0, sprite_cid = 0, ret = 0;
     swf_tag_t *tag = NULL;
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
@@ -890,6 +890,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         if (isSpriteTag(tag->tag)) {
             if (swf_tag_get_cid(tag) ==  cid) {
                 sprite_tag = tag;
+                sprite_cid = cid;
                 break;
             }
         }
@@ -927,6 +928,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     sprite_tag->detail = detail_handler->create();
     swf_tag_sprite = sprite_tag->detail;
+    swf_tag_sprite->sprite_id = sprite_cid;
 
     // SWF 中のタグを種類に応じて展開する
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
