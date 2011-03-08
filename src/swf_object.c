@@ -934,7 +934,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
         switch (tag_no) {
             // tag skip
           default: // misc
-          case 0: // End
           case 3: // FreeCharacter
           case 9: // SetBackgroundColor
             // 16 missing
@@ -985,7 +984,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       trans_table_set(cid_trans_table, cid, cid);
                       to_cid = cid;
                   }
-                  swf_tag_replace_cid(tag, to_cid);
+                  if (cid != to_cid) {
+                      swf_tag_replace_cid(tag, to_cid);
+                  }
               }
               if (isShapeTag(tag_no)) {
                   int  bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
@@ -1002,6 +1003,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
               prev_sprite_tag->next = sprite_tag;
             break;
             // Control Tag
+          case 0: // End
           case 1: // ShowFrame
           case 4: // PlaceObject
           case 5: // RemoveObject
@@ -1014,8 +1016,14 @@ swf_object_replace_movieclip(swf_object_t *swf,
             // Sprite の中に挿入
             // TODO: Character ID の変更に追随
               switch (tag_no) {
+                int refcid, to_refcid;
                 case 26: // PlaceObject2
-                    
+                  refcid = swf_tag_get_refcid(tag);
+                  to_refcid = trans_table_get(cid_trans_table, refcid);
+                  if (refcid != to_refcid) {
+                      swf_tag_replace_refcid(tag, to_refcid);
+                  }
+                  break;
               }
             // TODO: 変数スコープ
               if (sprite_tag_tail == NULL) {
