@@ -137,7 +137,7 @@ swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
     swf_shape_record_t *current_record;
 
     // top-left base adjust
-    signed min_x = 20*10000, min_y = 20*10000;
+    signed min_x = SWF_TWIPS*10000, min_y = SWF_TWIPS*10000;
     for (current_record = shape_record ; current_record ; current_record = current_record->next) {
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
@@ -159,12 +159,12 @@ swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
         next_5bits = current_record->first_6bits & 0x1f;
         if (first_bit) { // edge
             swf_shape_record_edge_t *edge = &(current_record->shape.shape_edge);
-            edge->shape_x = (edge->shape_x - min_x) * scale_x + min_x + trans_x;
-            edge->shape_y = (edge->shape_y - min_y) * scale_y + min_y + trans_y;
+            edge->shape_x = (edge->shape_x - min_x) * scale_x + min_x + trans_x * SWF_TWIPS;
+            edge->shape_y = (edge->shape_y - min_y) * scale_y + min_y + trans_y * SWF_TWIPS;
         } else if (next_5bits) { // setup
             swf_shape_record_setup_t *setup = &(current_record->shape.shape_setup);
-            setup->shape_move_x = (setup->shape_move_x - min_x) * scale_x + min_x + trans_x;
-            setup->shape_move_y = (setup->shape_move_y - min_y) * scale_y + min_y + trans_y;
+            setup->shape_move_x = (setup->shape_move_x - min_x) * scale_x + min_x + trans_x * SWF_TWIPS;
+            setup->shape_move_y = (setup->shape_move_y - min_y) * scale_y + min_y + trans_y * SWF_TWIPS;
         } else { // end
             break;
         }
