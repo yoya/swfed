@@ -856,6 +856,84 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+/*
+ * 利用している全 depth 値を取得する。
+ */
+static void
+trans_table_reserve_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_trans_table) {
+    for (; tag ; tag=tag->next) {
+        int tag_no = tag->tag;
+        if (isPlaceTag(tag_no)) {
+            swf_tag_place_detail_t *tag_place;
+            if (tag->detail == NULL) {
+                swf_tag_create_input_detail(tag, NULL);
+            }
+            tag_place = tag->detail;
+            trans_table_set(depth_trans_table, tag_place->depth, TRANS_TABLE_RESERVE_ID);
+        } else if (isSpriteTag(tag_no)) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            if (tag->detail == NULL) {
+                swf_tag_create_input_detail(tag, NULL);
+            }
+            tag_sprite = tag->detail;
+            trans_table_reserve_place_depth_recursive(tag_sprite->tag, depth_trans_table);
+        }
+    }
+}
+
+/*
+ * depth 値を入れ替える
+ */
+static void
+trans_table_replace_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_trans_table) {
+    for ( ; tag ; tag=tag->next) {
+        int tag_no = tag->tag;
+        if (isPlaceTag(tag_no)) {
+            swf_tag_place_detail_t *tag_place;
+            int depth;
+            if (tag->detail == NULL) {
+                swf_tag_create_input_detail(tag, NULL);
+            }
+            tag_place = tag->detail;
+            depth = tag_place->depth;
+            tag_place = tag->detail;
+        } else if (isSpriteTag(tag_no)) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            if (tag->detail == NULL) {
+                swf_tag_create_input_detail(tag, NULL);
+            }
+            tag_sprite = tag->detail;
+            trans_table_reserve_place_depth_recursive(tag_sprite->tag, depth_trans_table);
+        }
+    }
+}
+
+/*
+ * 参照側の cid 値を入れ替える // 未使用
+ */
+static void
+trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_table) {
+    for ( ; tag ; tag=tag->next) {
+        int tag_no = tag->tag;
+        if (isSpriteTag(tag_no)) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            if (tag->detail == NULL) {
+                swf_tag_create_input_detail(tag, NULL);
+            }
+            tag_sprite = tag->detail;
+            trans_table_replace_refcid_recursive(tag_sprite->tag, cid_trans_table);
+        } else if (isPlaceTag(tag_no)) {
+            int refcid = swf_tag_get_refcid(tag);
+            if (refcid > 0) {
+                int to_refcid = trans_table_get(cid_trans_table, refcid);
+                if (refcid != to_refcid) {
+                    swf_tag_replace_refcid(tag, to_refcid);
+                }
+            }
+        }
+    }
+}
+
 int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
@@ -869,6 +947,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table;
+    trans_table_t *depth_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -907,8 +986,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
-    // 既存の CID をチェックする
+    // 既存の CID
     cid_trans_table = trans_table_open();
+    depth_trans_table = trans_table_open();
     for (tag=swf->tag ; tag ; tag=tag->next) {
         int cid;
         cid = swf_tag_get_cid(tag);
@@ -916,6 +996,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
             trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
         }
     }
+    // 既存の DEPTH をチェックする
+    trans_table_reserve_place_depth_recursive(swf->tag, depth_trans_table);
+    
     // Sprite タグの中を綺麗にする
     tag_info = get_swf_tag_info(sprite_tag->tag);
     detail_handler = tag_info->detail_handler();
@@ -996,6 +1079,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
                       swf_tag_shape_bitmap_replace_refcid(tag, to_bitmap_id);
                   }
+              } else if (isSpriteTag(tag_no)) {
+                  swf_tag_sprite_detail_t *s = sprite_tag->detail;
+                  // 未使用
+                  // trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
               }
               // TODO depth が被らないように。
               ;
@@ -1016,18 +1103,21 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 43: // FrameLabel
           case 59: // DoInitAction
             // Sprite の中に挿入
-            // TODO: Character ID の変更に追随
+            // Character ID の変更に追随
               switch (tag_no) {
                 int refcid, to_refcid;
+                case 4:  // PlaceObject
                 case 26: // PlaceObject2
                   refcid = swf_tag_get_refcid(tag);
-                  to_refcid = trans_table_get(cid_trans_table, refcid);
-                  if (refcid != to_refcid) {
-                      swf_tag_replace_refcid(tag, to_refcid);
+                  if (refcid > 0) {
+                      to_refcid = trans_table_get(cid_trans_table, refcid);
+                      if (refcid != to_refcid) {
+                          swf_tag_replace_refcid(tag, to_refcid);
+                      }
                   }
                   break;
               }
-            // TODO: 変数スコープ
+              // Sprite への tag 埋め込み
               if (sprite_tag_tail == NULL) {
                   swf_tag_sprite->tag = swf_tag_move(tag);
                   sprite_tag_tail = swf_tag_sprite->tag;
@@ -1042,8 +1132,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
             break;
         }
     }
+    trans_table_replace_place_depth_recursive(swf_tag_sprite->tag, depth_trans_table);
     swf_object_close(swf4sprite);
     trans_table_close(cid_trans_table);
+    trans_table_close(depth_trans_table);
     return 0;
 }
 
