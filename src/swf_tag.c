@@ -974,7 +974,8 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
     return 0;
 }
 
-extern swf_tag_t * swf_tag_move(swf_tag_t *from_tag) {
+swf_tag_t *
+swf_tag_move(swf_tag_t *from_tag) {
     swf_tag_t *to_tag = NULL;
     if (from_tag == NULL) {
         fprintf(stderr, "swf_tag_move: from_tag == NULL\n");

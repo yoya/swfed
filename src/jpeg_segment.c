@@ -233,8 +233,8 @@ void jpeg_segment_print(jpeg_segment_t *jpeg_seg) {
     }
 }
 
-extern unsigned char *jpeg_segment_output(jpeg_segment_t *jpeg_seg,
-                                          unsigned long *length) {
+unsigned char *
+jpeg_segment_output(jpeg_segment_t *jpeg_seg, unsigned long *length) {
     bitstream_t *bs;
     unsigned char *data;
     jpeg_segment_node_t *node;
