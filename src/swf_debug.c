@@ -15,10 +15,10 @@ static struct malloc_debug_ {
     int  linenum;
 } malloc_debug_table[MALLOC_DEBUG_TABLE_NUM];
 
-
 static int malloc_debug_stack = 0;
 
-void malloc_debug_start(void) {
+void
+malloc_debug_start(void) {
     int i;
     malloc_debug_stack ++;
     if (malloc_debug_stack > 1) {
@@ -31,7 +31,8 @@ void malloc_debug_start(void) {
     fprintf(stderr, "malloc_debug_start: 0/n=0/%d\n", MALLOC_DEBUG_TABLE_NUM);
 }
 
-void malloc_debug_end(void) {
+void
+malloc_debug_end(void) {
     int i, j = 0;
     malloc_debug_stack --;
     if (malloc_debug_stack > 0) {

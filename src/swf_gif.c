@@ -39,7 +39,8 @@ typedef gif_color *   gif_colorp;
  * gif read
  */
 
-int gif_data_read_func(GifFileType* GifFile, GifByteType* buf, int count) {
+int
+gif_data_read_func(GifFileType* GifFile, GifByteType* buf, int count) {
     my_gif_buffer *gif_buff = (my_gif_buffer *) GifFile->UserData;
     if (gif_buff->data_offset + count <= gif_buff->data_len) {
         memcpy(buf, gif_buff->data + gif_buff->data_offset, count);
@@ -56,7 +57,8 @@ int gif_data_read_func(GifFileType* GifFile, GifByteType* buf, int count) {
  * gif write
  */
 
-int gif_data_write_func(GifFileType* GifFile, const GifByteType* buf, int count)
+int
+gif_data_write_func(GifFileType* GifFile, const GifByteType* buf, int count)
 {
     my_gif_buffer *gif_buff = (my_gif_buffer *) GifFile->UserData;
     unsigned long new_data_len;
@@ -81,7 +83,8 @@ int gif_data_write_func(GifFileType* GifFile, const GifByteType* buf, int count)
 /*
  * getTransparentIndex
  */
-int getTransparentIndex(SavedImage Image) {
+int
+getTransparentIndex(SavedImage Image) {
     int i;
     int transparent_index = -1;
     if ((Image.ExtensionBlockCount == 0) || (Image.ExtensionBlocks == NULL)) {

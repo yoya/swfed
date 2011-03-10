@@ -216,6 +216,7 @@ swf_tag_jpeg_get_cid_detail(swf_tag_t *tag) {
     }
     return GetUShortLE(data); // image_id;
 }
+
 int
 swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int image_id) {
     unsigned char *data = NULL;
@@ -233,6 +234,7 @@ swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int image_id) {
     }
     return 0;
 }
+
 unsigned char *
 swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {
@@ -398,11 +400,12 @@ swf_tag_jpeg_destroy_detail(swf_tag_t *tag) {
     return ;
 }
     
-unsigned char *swf_tag_jpeg_get_jpeg_data(void *detail,
-                                          unsigned long *length,
-                                          int image_id,
-                                          unsigned char *jpeg_table_data,
-                                          unsigned long jpeg_table_data_len) {
+unsigned char *
+swf_tag_jpeg_get_jpeg_data(void *detail,
+                           unsigned long *length,
+                           int image_id,
+                           unsigned char *jpeg_table_data,
+                           unsigned long jpeg_table_data_len) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) detail;
     unsigned char *data;
     if (detail == NULL) {

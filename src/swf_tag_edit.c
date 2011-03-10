@@ -25,7 +25,6 @@ swf_tag_edit_detail_handler(void) {
     return &edit_detail_handler;
 }
 
-
 void *
 swf_tag_edit_create_detail(void) {
     swf_tag_edit_detail_t *swf_tag_edit;

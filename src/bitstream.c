@@ -383,11 +383,10 @@ unsigned long
 bitstream_length(bitstream_t *bs) {
     return bs->data_len;
 }
+
 /*
  * utility
  */
-
-
 
 signed long
 bitstream_unsigned2signed(unsigned long num, int size) {
@@ -439,7 +438,6 @@ bitstream_need_bits_signed(signed long n) {
     return ret;
 }
 
-
 /*
  * error handling
  */
@@ -454,6 +452,7 @@ void
 bitstream_printerror(bitstream_t *bs) {
     (void) bs;
 }
+
 /*
  * for debug
  */

@@ -135,7 +135,6 @@ void swf_tag_destroy(swf_tag_t *tag) {
     free(tag);
 }
 
-
 static int swf_tag_and_length_build(bitstream_t *bs, swf_tag_t *tag) {
     signed short tag_and_length;
     if (bs == NULL) {
@@ -430,9 +429,7 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         return 1;
     }
     return ret;
-
 }
-
 
 unsigned char *
 swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables) {
@@ -745,7 +742,6 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
     return result;
 }
 
-
 char *
 swf_tag_get_edit_string(swf_tag_t *tag,
                         char *variable_name, int variable_name_len,
@@ -768,7 +764,6 @@ swf_tag_get_edit_string(swf_tag_t *tag,
     return swf_tag_edit_get_string(tag->detail,
                                    variable_name, variable_name_len);
 }
-
 
 int
 swf_tag_replace_edit_string(swf_tag_t *tag,

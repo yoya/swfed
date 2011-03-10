@@ -45,6 +45,7 @@ swf_object_close(swf_object_t *swf) {
     malloc_debug_end(); /* DEBUG XXX */
     return ;
 }
+
 int
 swf_object_input(swf_object_t *swf, unsigned char *data,
                  unsigned long data_len) {
@@ -319,7 +320,6 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
     return 1; // failure
 }
 
-
 unsigned char *
 swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
     swf_tag_t *tag;
@@ -527,7 +527,6 @@ swf_object_get_alphadata(swf_object_t *swf, unsigned long *length, int image_id)
     return data;
 }
 
-
 int
 swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             unsigned char *jpeg_data,
@@ -622,7 +621,6 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
     }
     return result;
 }
-
 
 #endif /* HAVE_PNG */
 

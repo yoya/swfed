@@ -202,6 +202,7 @@ jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
     }
     return count;
 }
+
 int
 jpeg_segment_peek_marker(jpeg_segment_t *jpeg_seg) {
     jpeg_segment_node_t *node;
@@ -213,7 +214,8 @@ jpeg_segment_peek_marker(jpeg_segment_t *jpeg_seg) {
     return -1;
 }
 
-void jpeg_segment_print(jpeg_segment_t *jpeg_seg) {
+void
+jpeg_segment_print(jpeg_segment_t *jpeg_seg) {
     int i;
     jpeg_segment_node_t *node;
     if (jpeg_seg == NULL) {
@@ -267,6 +269,7 @@ jpeg_segment_output(jpeg_segment_t *jpeg_seg, unsigned long *length) {
     bitstream_close(bs);
     return data;
 }
+
 void jpeg_segment_destroy(jpeg_segment_t *jpeg_seg) {
     jpeg_segment_node_t *node, *next_node;
     if (jpeg_seg == NULL) {

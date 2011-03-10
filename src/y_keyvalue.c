@@ -39,7 +39,6 @@ y_keyvalue_close(y_keyvalue_t *st) {
     free(st);
 }
 
-
 /*
  * set/get/delete
  */
@@ -138,6 +137,7 @@ y_keyvalue_next(y_keyvalue_t *st) {
     return 0;// false
     
 }
+
 char *
 y_keyvalue_get_currentkey(y_keyvalue_t *st, int *key_len) {
     if (st->get_offset >= st->use_len) {
@@ -146,6 +146,7 @@ y_keyvalue_get_currentkey(y_keyvalue_t *st, int *key_len) {
     *key_len = st->table[st->get_offset].key_len;
     return st->table[st->get_offset].key;
 }
+
 char *
 y_keyvalue_get_currentvalue(y_keyvalue_t *st, int *value_len) {
     if (st->get_offset >= st->use_len) {

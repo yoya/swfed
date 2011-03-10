@@ -213,7 +213,6 @@ swf_action_print(swf_action_t *act, int indent_depth) {
     return 0;
 }
 
-
 swf_action_list_t *
 swf_action_list_create(bitstream_t *bs) {
     swf_action_list_t *action_list;
@@ -285,7 +284,8 @@ swf_action_list_print(swf_action_list_t *action_list, int indent_depth) {
     }
 }
 
-int swf_action_data_print(unsigned char *action_data, unsigned short action_data_len) {
+int
+swf_action_data_print(unsigned char *action_data, unsigned short action_data_len) {
     unsigned char type = action_data[0] & 0xff;
     unsigned char *data = action_data+1;
     unsigned short data_len = action_data_len - 1;

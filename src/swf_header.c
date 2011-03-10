@@ -15,6 +15,7 @@ swf_header_parse(bitstream_t *bs, swf_header_t *header) {
     header->file_length = bitstream_getbytesLE(bs, 4);
     return 0;
 }
+
 int
 swf_header_build(bitstream_t *bs, swf_header_t *header) {
     if (bitstream_putstring(bs, header->magic, 3)) {
@@ -63,4 +64,3 @@ int swf_header_movie_print(swf_header_movie_t *header_movie) {
            header_movie->frame_count);
     return 0;
 }
-

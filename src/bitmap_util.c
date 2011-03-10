@@ -57,7 +57,6 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
     return 1; // ng
 }
 
-
 int
 png_size(unsigned char *data, unsigned long data_len,
          int *width, int *height) {
@@ -71,7 +70,6 @@ png_size(unsigned char *data, unsigned long data_len,
 }
 
 int
-
 gif_size(unsigned char *data, unsigned long data_len,
                     int *width, int *height) {
     if (data_len < 10) {
@@ -82,7 +80,6 @@ gif_size(unsigned char *data, unsigned long data_len,
     *height = 0x100 * data[9] + data[8];
     return 0;
 }
-
 
 #ifdef __BITMAP_UTIL_DEBUG__  /* for component debug */
 

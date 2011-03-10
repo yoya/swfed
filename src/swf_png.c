@@ -28,7 +28,8 @@ typedef struct my_png_buffer_ {
  * png read
  */
 
-static void png_data_read_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
+static void
+png_data_read_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     my_png_buffer *png_buff = (my_png_buffer *)png_get_io_ptr(png_ptr);
     if (png_buff->data_offset + size <= png_buff->data_len) {
         memcpy(buf, png_buff->data + png_buff->data_offset, size);
@@ -49,7 +50,8 @@ static void png_data_read(png_structp png_ptr, my_png_buffer *png_buff) {
  * png write
  */
 
-void png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
+void
+png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     my_png_buffer *png_buff = (my_png_buffer *)png_get_io_ptr(png_ptr);
     unsigned long new_data_len;
     if (png_buff->data_offset + size > png_buff->data_len) {
@@ -70,7 +72,8 @@ void png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     png_buff->data_offset += size;
 }
 
-void png_data_write(png_structp png_ptr, my_png_buffer *png_buff) {
+void
+png_data_write(png_structp png_ptr, my_png_buffer *png_buff) {
     png_set_write_fn(png_ptr, (png_voidp) png_buff,
                      (png_rw_ptr)png_data_write_func, NULL);
 }
