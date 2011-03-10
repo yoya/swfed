@@ -14,11 +14,15 @@ unsigned char *
 jpegconv_std2swf(unsigned char *data, unsigned long data_len,
                  unsigned long *length) {
     jpeg_segment_t *jpeg_data = NULL;
-    jpeg_segment_t *jpeg_output;
-    unsigned char *d;
+    jpeg_segment_t *jpeg_output = NULL;
+    unsigned char *d = NULL;
     unsigned long d_len;
     int m;
     unsigned char *ret_data;
+    if (data == NULL) {
+        fprintf(stderr, "jpegconv_std2swf: data == NULL\n");
+        return NULL;
+    }
     jpeg_data = jpeg_segment_parse(data, data_len, 1);
     if (jpeg_data == NULL) {
         fprintf(stderr, "jpegconv_std2swf: Can't create jpeg segment for data\n");
@@ -56,13 +60,17 @@ unsigned char *
 jpegconv_swf2std(unsigned char *data, unsigned long data_len,
                  unsigned long *length, unsigned char *table_data,
                  unsigned long table_data_len) {
-    jpeg_segment_t *jpeg_data, *jpeg_table = NULL;
-    jpeg_segment_t *jpeg_output;
+    jpeg_segment_t *jpeg_data = NULL, *jpeg_table = NULL;
+    jpeg_segment_t *jpeg_output = NULL;
     int m;
-    unsigned char *d;
+    unsigned char *d = NULL;
     unsigned long d_len;
-    unsigned char *ret_data;
+    unsigned char *ret_data = NULL;
     *length = 0;
+    if (data == NULL) {
+        fprintf(stderr, "jpegconv_swf2std: data == NULL\n");
+        return NULL;
+    }
     jpeg_data = jpeg_segment_parse(data, data_len, 1);
     if (jpeg_data == NULL) {
             fprintf(stderr, "jpegconv_swf2std: Can't create jpeg segment for data\n");

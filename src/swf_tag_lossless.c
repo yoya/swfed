@@ -51,19 +51,26 @@ swf_tag_lossless_create_detail(void) {
 int
 swf_tag_lossless_input_detail(swf_tag_t *tag,
                               struct swf_object_ *swf) {
-    swf_tag_lossless_detail_t *swf_tag_lossless = tag->detail;
-    unsigned char *data  = tag->data;
-    unsigned long length = tag->length;
-    bitstream_t *bs, *bs2;
-    (void) swf;
+    swf_tag_lossless_detail_t *swf_tag_lossless = NULL;
+    unsigned char *data = NULL;
+    unsigned long length;
+    bitstream_t *bs = NULL, *bs2 = NULL;
     unsigned long i;
-    unsigned char *tmp_buff, *old_buff_ref;
+    unsigned char *tmp_buff = NULL, *old_buff_ref = NULL;
     unsigned long origsize, old_size, offset;
     int result;
-    if (swf_tag_lossless == NULL) {
-        fprintf(stderr, "swf_tag_lossless_input_detail: swf_tag_lossless == NULL\n");
+    (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_input_detail: tag == NULL\n");
         return 1;
     }
+    if (tag->detail == NULL) {
+        fprintf(stderr, "swf_tag_lossless_input_detail: tag->detail== NULL\n");
+        return 1;
+    }
+    swf_tag_lossless = tag->detail;
+    data = tag->data;
+    length = tag->length;
 
     bs = bitstream_open();
     bitstream_input(bs, data, length);
@@ -178,7 +185,12 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
 
 int
 swf_tag_lossless_get_cid_detail(swf_tag_t *tag) {
-    unsigned char *data = tag->data;
+    unsigned char *data = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_get_cid_detail: tag == NULL\n");
+        return 1;
+    }
+    data = tag->data;
     if (tag->detail) {
         swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
         return swf_tag_lossless->image_id;
@@ -192,7 +204,12 @@ swf_tag_lossless_get_cid_detail(swf_tag_t *tag) {
 
 int
 swf_tag_lossless_replace_cid_detail(swf_tag_t *tag, int id) {
-    unsigned char *data = tag->data;
+    unsigned char *data = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_replace_cid_detail: tag == NULL\n");
+        return 1;
+    }
+    data = tag->data;
     if (tag->detail) {
         swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
         swf_tag_lossless->image_id = id;
@@ -207,13 +224,22 @@ unsigned char *
 swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                                struct swf_object_ *swf) {
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
-    bitstream_t *bs, *bs2;
-    unsigned char *data;
+    bitstream_t *bs = NULL, *bs2 = NULL;
+    unsigned char *data = NULL;
     unsigned long i;
-    unsigned char *tmp_buff, *old_buff_ref;
+    unsigned char *tmp_buff = NULL, *old_buff_ref = NULL;
     unsigned long compsize, old_size;
     int result;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_output_detail: tag == NULL\n");
+        return NULL;
+    }
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_lossless_output_detail: length == NULL\n");
+        return NULL;
+    }
+
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_lossless->image_id, 2);
@@ -305,12 +331,17 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
 void
 swf_tag_lossless_print_detail(swf_tag_t *tag,
                               struct swf_object_ *swf, int indent_depth) {
-    swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+    swf_tag_lossless_detail_t *swf_tag_lossless = NULL;
     (void) swf;
-    if (swf_tag_lossless == NULL) {
-        fprintf(stderr, "swf_tag_lossless_print_detail: swf_tag_lossless == NULL\n");
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_print_detail: tag == NULL\n");
         return ;
     }
+    if (tag->detail == NULL) {
+        fprintf(stderr, "swf_tag_lossless_print_detail: tag->detail == NULL\n");
+        return ;
+    }
+    swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
     print_indent(indent_depth);
     printf("image_id=%d  format=%d  width=%u  height=%u\n",
            swf_tag_lossless->image_id, swf_tag_lossless->format,
@@ -342,7 +373,12 @@ swf_tag_lossless_print_detail(swf_tag_t *tag,
 
 void
 swf_tag_lossless_destroy_detail(swf_tag_t *tag) {
-    swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+    swf_tag_lossless_detail_t *swf_tag_lossless;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_lossless_destroy_detail: tag == NULL\n");
+        return ;
+    }
+    swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
     if (swf_tag_lossless) {
         free(swf_tag_lossless->colormap);
         free(swf_tag_lossless->colormap2);
@@ -363,18 +399,22 @@ swf_tag_lossless_destroy_detail(swf_tag_t *tag) {
 #ifdef HAVE_PNG
 
 unsigned char *swf_tag_lossless_get_png_data(void *detail,
-                                          unsigned long *length,
+                                             unsigned long *length,
                                              int image_id,
                                              swf_tag_t *tag) {
-    swf_tag_lossless_detail_t *swf_tag_lossless;
-    unsigned char *data;
+    swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
+    unsigned char *data = NULL;
     *length = 0;
     void *index_data = NULL;
     void *image_data = NULL;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_lossless_get_lossless_data: detail == NULL at line(%d)\n", __LINE__);
+        return NULL;
     }
-    swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_lossless_get_lossless_data: length == NULL at line(%d)\n", __LINE__);
+        return NULL;
+    }
     if (swf_tag_lossless->image_id != image_id) {
         return NULL;
     }
@@ -418,12 +458,16 @@ swf_tag_lossless_replace_png_data(void *detail, int image_id,
                                   unsigned long png_data_len, swf_tag_t *tag) {
     int tag_no, format;
     unsigned short width, height;
-    unsigned char *result_data;
+    unsigned char *result_data = NULL;
     void *colormap = NULL;
     int colormap_count = 0;
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_lossess_replace_png_data: detail == NULL at line(%d)\n", __LINE__);
+        return 1;
+    }
+    if (png_data == NULL) {
+        fprintf(stderr, "swf_tag_lossess_replace_png_data: png_data == NULL at line(%d)\n", __LINE__);
         return 1;
     }
     swf_tag_lossless->image_id = image_id;
@@ -497,12 +541,16 @@ swf_tag_lossless_replace_gif_data(void *detail, int image_id,
                                   unsigned long gif_data_len, swf_tag_t *tag) {
     int tag_no, format;
     unsigned short width, height;
-    unsigned char *result_data;
+    unsigned char *result_data = NULL;
     void *colormap = NULL;
     int colormap_count = 0;
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_lossless_replace_gif_data: detail == NULL at line(%d)\n", __LINE__);
+        return 1;
+    }
+    if (gif_data == NULL) {
+        fprintf(stderr, "swf_tag_lossless_replace_gif_data: gif_data == NULL at line(%d)\n", __LINE__);
         return 1;
     }
     swf_tag_lossless->image_id = image_id;

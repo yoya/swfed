@@ -92,13 +92,17 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     png_uint_32 png_width = 0, png_height = 0;
     volatile png_bytepp png_image_data = NULL;
     png_uint_32 x, y;
-    void *image_data;
+    void *image_data = NULL;
     png_color *palette = NULL;
     int palette_num = 0;
     png_bytep trans = NULL;
     int num_trans = 0;
     png_color_16p trans_values = NULL;
 
+    if (png_data == NULL) {
+        fprintf(stderr, "pngconv_png2lossless: png_data == NULL\n");
+        return NULL;
+    }
     is_png = png_check_sig((png_bytep)png_data, 8);
     if (! is_png) {
         fprintf(stderr, "pngconv_png2lossless: is not PNG!\n");
@@ -281,6 +285,10 @@ pngconv_lossless2png(void *image_data,
     volatile png_bytepp png_image_data = NULL;
     png_uint_32 x, y;
     volatile png_colorp png_palette = NULL;
+    if (image_data == NULL) {
+        fprintf(stderr, "pngconv_lossless2png: image_data == NULL\n");
+        return NULL;
+    }
     if ((format != 3) && (format != 5)) {
         fprintf(stderr, "jpegconv_lossless2png: format=%d not implemented yes.\n", format);
         return NULL;

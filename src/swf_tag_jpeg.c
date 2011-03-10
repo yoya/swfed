@@ -73,11 +73,18 @@ swf_tag_jpeg_create_detail(void) {
 int
 swf_tag_jpeg_input_detail(swf_tag_t *tag,
                           struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = tag->detail;
-    unsigned char *data  = tag->data;
-    unsigned long length = tag->length;
-    bitstream_t *bs;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    unsigned char *data = NULL;
+    unsigned long length;
+    bitstream_t *bs = NULL;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_jpeg_input_detail: swf_tag_jpeg == NULL\n");
+        return 1;
+    }
+    swf_tag_jpeg = tag->detail;
+    data  = tag->data;
+    length = tag->length;
     if (swf_tag_jpeg == NULL) {
         fprintf(stderr, "ERROR: swf_tag_jpeg_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
@@ -96,10 +103,17 @@ swf_tag_jpeg_input_detail(swf_tag_t *tag,
 int
 swf_tag_jpegt_input_detail(swf_tag_t *tag,
                           struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = tag->detail;
-    unsigned char *data  = tag->data;
-    unsigned long length = tag->length;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    unsigned char *data  = NULL;
+    unsigned long length;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_jpegt_input_detail: tag == NULL\n");
+        return 1;
+    }
+    swf_tag_jpeg = tag->detail;
+    data  = tag->data;
+    length = tag->length;
     if (swf_tag_jpeg == NULL) {
         fprintf(stderr, "ERROR: swf_tag_jpegt_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
@@ -116,16 +130,23 @@ swf_tag_jpegt_input_detail(swf_tag_t *tag,
 int
 swf_tag_jpeg3_input_detail(swf_tag_t *tag,
                            struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = tag->detail;
-    unsigned char *data  = tag->data;
-    unsigned long length = tag->length;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    unsigned char *data = NULL;
+    unsigned long length;
     unsigned long offset_to_alpha;
-    bitstream_t *bs;
+    bitstream_t *bs = NULL;
     unsigned long  offset, alpha_data_len;
-    unsigned char *old_buff_ref, *new_buff;
+    unsigned char *old_buff_ref = NULL, *new_buff = NULL;
     unsigned long origsize;
     int result;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg3_input_detail: tag == NULL\n");
+        return 1;
+    }
+    swf_tag_jpeg = tag->detail;
+    data  = tag->data;
+    length = tag->length;
     if (swf_tag_jpeg == NULL) {
         fprintf(stderr, "ERROR: swf_tag_jpeg3_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
@@ -178,7 +199,13 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
 
 int
 swf_tag_jpeg_get_cid_detail(swf_tag_t *tag) {
-    unsigned char *data = tag->data;
+    unsigned char *data = NULL;
+
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_get_cid_detail: tag == NULL\n");
+        return -1;
+    }
+    data = tag->data;
     if (tag->detail) {
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;        
         return swf_tag_jpeg->image_id;
@@ -191,7 +218,12 @@ swf_tag_jpeg_get_cid_detail(swf_tag_t *tag) {
 }
 int
 swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int image_id) {
-    unsigned char *data = tag->data;
+    unsigned char *data = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_replace_cid_detail: tag == NULL\n");
+        return 1;
+    }
+    data = tag->data;
     if (tag->detail) {
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;        
         swf_tag_jpeg->image_id = image_id;
@@ -199,15 +231,20 @@ swf_tag_jpeg_replace_cid_detail(swf_tag_t *tag, int image_id) {
     if (data) {
         PutUShortLE(data, image_id);
     }
-    return 0; // always 0
+    return 0;
 }
 unsigned char *
 swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
-    bitstream_t *bs;
-    unsigned char *data;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    bitstream_t *bs = NULL;
+    unsigned char *data = NULL;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_output_detail: tag == NULL\n");
+        return NULL;
+    }
+    swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_jpeg->image_id, 2);
@@ -220,11 +257,20 @@ swf_tag_jpeg_output_detail(swf_tag_t *tag, unsigned long *length,
 unsigned char *
 swf_tag_jpegt_output_detail(swf_tag_t *tag, unsigned long *length,
                             struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
-    bitstream_t *bs;
-    unsigned char *data;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    bitstream_t *bs = NULL;
+    unsigned char *data = NULL;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpegt_output_detail: tag == NULL\n");
+        return NULL;
+    }
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_jpegt_output_detail: length == NULL\n");
+        return NULL;
+    }
     *length = 0;
+    swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     bs = bitstream_open();
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     data = bitstream_steal(bs, length);
@@ -235,13 +281,20 @@ swf_tag_jpegt_output_detail(swf_tag_t *tag, unsigned long *length,
 unsigned char *
 swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
                             struct swf_object_ *swf) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
-    bitstream_t *bs;
-    unsigned char *data, *new_buff;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    bitstream_t *bs = NULL;
+    unsigned char *data = NULL, *new_buff = NULL;
     unsigned long offset_to_alpha;
     unsigned long compsize, old_size;
     int result;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg3_output_detail: tag == NULL\n");
+    }
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_jpeg3_output_detail: length == NULL\n");
+    }
+    swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     *length = 0;
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_jpeg->image_id, 2);
@@ -274,14 +327,20 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
 void
 swf_tag_jpeg_print_detail(swf_tag_t *tag,
                           struct swf_object_ *swf, int indent_depth) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
-    jpeg_segment_t *jpeg_seg;
-    jpeg_segment_node_t *node;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    jpeg_segment_t *jpeg_seg = NULL;
+    jpeg_segment_node_t *node = NULL;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_print_detail: tag == NULL\n");
+        return ;
+    }
+    swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     if (swf_tag_jpeg == NULL) {
         fprintf(stderr, "swf_tag_jpeg_print_detail: swf_tag_jpeg == NULL\n");
         return ;
     }
+        
     print_indent(indent_depth);
     if (swf_tag_jpeg->image_id == -1) {
         printf("jpeg_data_size=%lu\n", swf_tag_jpeg->jpeg_data_len);
@@ -322,7 +381,12 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
 
 void
 swf_tag_jpeg_destroy_detail(swf_tag_t *tag) {
-    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_destroy_detail: tag == NULL\n");
+        return ;
+    }
+    swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
     if (swf_tag_jpeg) {
         free(swf_tag_jpeg->jpeg_data);
         free(swf_tag_jpeg->alpha_data);
@@ -341,10 +405,13 @@ unsigned char *swf_tag_jpeg_get_jpeg_data(void *detail,
                                           unsigned long jpeg_table_data_len) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) detail;
     unsigned char *data;
-    *length = 0;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_jpeg_get_jpeg_data: detail == NULL\n");
     }
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_get_jpeg_data: length == NULL\n");
+    }
+    *length = 0;
     if (swf_tag_jpeg->image_id != image_id) {
         return NULL;
     }
@@ -362,12 +429,17 @@ unsigned char *swf_tag_jpeg_get_jpeg_data(void *detail,
 
 unsigned char *swf_tag_jpeg_get_alpha_data(void *detail, unsigned long *length, int image_id) {
     swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) detail;
-    unsigned char *data;
-    *length = 0;
+    unsigned char *data = NULL;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_jpeg_get_alpha_data: detail == NULL\n");
         return NULL;
     }
+    if (length == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_get_alpha_data: length == NULL\n");
+        return NULL;
+    }
+
+    *length = 0;
     if (swf_tag_jpeg->image_id != image_id) {
         return NULL;
     }
