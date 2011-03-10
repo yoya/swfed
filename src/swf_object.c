@@ -1080,9 +1080,13 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       swf_tag_shape_bitmap_replace_refcid(tag, to_bitmap_id);
                   }
               } else if (isSpriteTag(tag_no)) {
-                  swf_tag_sprite_detail_t *s = sprite_tag->detail;
+                  swf_tag_sprite_detail_t *s;
+                  if (tag->detail == NULL) {
+                      swf_tag_create_input_detail(tag, swf);
+                  }
+                  s = tag->detail;
                   // 未使用
-                  // trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
+                  trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
               }
               // TODO depth が被らないように。
               ;
