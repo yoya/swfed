@@ -380,9 +380,8 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         fprintf(stderr, "swf_tag_get_bitmap_size: tag == NULL\n");
         return 1;
     }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_get_bitmap_size: tag->detail == NULL\n");
-        return 1;
+    if (tag->detail == NULL) {
+        swf_tag_create_input_detail(tag, NULL);
     }
 
     if (isBitsJPEGTag(tag->tag)) {

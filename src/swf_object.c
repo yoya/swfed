@@ -474,9 +474,6 @@ swf_object_get_bitmap_size(swf_object_t *swf, int bitmap_id,
     if (tag == NULL) {
         return 1;
     }
-    if (tag->detail == NULL) {
-        swf_tag_create_input_detail(tag, swf);
-    }
     ret = swf_tag_get_bitmap_size(tag, width, height);
     return ret;
 }
@@ -550,9 +547,6 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        if (tag->detail == NULL) {
-            swf_tag_create_input_detail(tag, swf);
-        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         jpeg_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
     }
@@ -612,9 +606,6 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        if (tag->detail == NULL) {
-            swf_tag_create_input_detail(tag, swf);
-        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         png_size(png_data, png_data_len, &new_width, &new_height);
     }
@@ -654,9 +645,6 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
         return 1;
     }
     if (swf->shape_adjust_mode) {
-        if (tag->detail == NULL) {
-            swf_tag_create_input_detail(tag, swf);
-        }
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
         gif_size(gif_data, gif_data_len, &new_width, &new_height);
     }
