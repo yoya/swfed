@@ -30,6 +30,7 @@ trans_table_realloc(trans_table_t *trans_table, int offset) {
     for (i = trans_table->table_num ; i < new_table_num ; i++) {
         trans_table->table[i] = 0;
     }
+    return 0;
 }
 int
 trans_table_get(trans_table_t  *trans_table, int offset) {
@@ -40,11 +41,11 @@ trans_table_get(trans_table_t  *trans_table, int offset) {
 }
 int
 trans_table_set(trans_table_t  *trans_table, int offset, int cid) {
-    int i, new_table_num;
     if (trans_table->table_num <= offset) {
         trans_table_realloc(trans_table, offset);
     }
     trans_table->table[offset] = cid;
+    return 0;
 }
 int
 trans_table_get_freeid(trans_table_t  *trans_table) {
