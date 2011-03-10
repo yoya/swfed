@@ -768,10 +768,11 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     if ((tag->tag != 12) &&  (tag->tag != 59)) { //  DoAction, DoInitAction
         return NULL;
     }
-    if (tag->detail == NULL) {
-        swf_tag_create_input_detail(tag, swf);
+    swf_tag_action = (swf_tag_action_detail_t *) swf_tag_create_input_detail(tag, swf);
+    if (swf_tag_action == NULL) {
+        fprintf(stderr, "swf_object_get_actiondata: swf_tag_create_input_detail failed");
+        return NULL;
     }
-    swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     *length = swf_tag_action->action_record_len;
     return swf_tag_action->action_record;
 }
@@ -853,17 +854,19 @@ trans_table_reserve_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_t
         int tag_no = tag->tag;
         if (isPlaceTag(tag_no)) {
             swf_tag_place_detail_t *tag_place;
-            if (tag->detail == NULL) {
-                swf_tag_create_input_detail(tag, NULL);
+            tag_place = swf_tag_create_input_detail(tag, NULL);
+            if (tag_place == NULL) {
+                fprintf(stderr, "trans_table_reserve_place_depth_recursive: tag_place swf_tag_create_input_detail failed\n");
+                continue; // skip wrong place tag;
             }
-            tag_place = tag->detail;
             trans_table_set(depth_trans_table, tag_place->depth, TRANS_TABLE_RESERVE_ID);
         } else if (isSpriteTag(tag_no)) {
             swf_tag_sprite_detail_t *tag_sprite;
-            if (tag->detail == NULL) {
-                swf_tag_create_input_detail(tag, NULL);
+            tag_sprite = swf_tag_create_input_detail(tag, NULL);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "trans_table_reserve_place_depth_recursive: tag_sprite swf_tag_create_input_detail failed\n");
+                continue; // skip wrong sprite tag
             }
-            tag_sprite = tag->detail;
             trans_table_reserve_place_depth_recursive(tag_sprite->tag, depth_trans_table);
         }
     }
@@ -879,18 +882,21 @@ trans_table_replace_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_t
         if (isPlaceTag(tag_no)) {
             swf_tag_place_detail_t *tag_place;
             int depth;
-            if (tag->detail == NULL) {
-                swf_tag_create_input_detail(tag, NULL);
+            tag_place = swf_tag_create_input_detail(tag, NULL);
+            if (tag_place == NULL) {
+                fprintf(stderr, "trans_table_replace_place_depth_recursive: tag_place swf_tag_create_input_detail failed");
+                continue; // skip wrong place tag
+                
             }
-            tag_place = tag->detail;
             depth = tag_place->depth;
             tag_place = tag->detail;
         } else if (isSpriteTag(tag_no)) {
             swf_tag_sprite_detail_t *tag_sprite;
-            if (tag->detail == NULL) {
-                swf_tag_create_input_detail(tag, NULL);
+            tag_sprite = swf_tag_create_input_detail(tag, NULL);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "trans_table_replace_place_depth_recursive: tag_sprite swf_tag_create_input_detail failed");
+                continue; // skip wrong sprite tag
             }
-            tag_sprite = tag->detail;
             trans_table_reserve_place_depth_recursive(tag_sprite->tag, depth_trans_table);
         }
     }
@@ -905,10 +911,10 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
         int tag_no = tag->tag;
         if (isSpriteTag(tag_no)) {
             swf_tag_sprite_detail_t *tag_sprite;
-            if (tag->detail == NULL) {
-                swf_tag_create_input_detail(tag, NULL);
+            tag_sprite = swf_tag_create_input_detail(tag, NULL);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed");
             }
-            tag_sprite = tag->detail;
             trans_table_replace_refcid_recursive(tag_sprite->tag, cid_trans_table);
         } else if (isPlaceTag(tag_no)) {
             int refcid = swf_tag_get_refcid(tag);
@@ -1069,10 +1075,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
               } else if (isSpriteTag(tag_no)) {
                   swf_tag_sprite_detail_t *s;
-                  if (tag->detail == NULL) {
-                      swf_tag_create_input_detail(tag, swf);
+                  s = swf_tag_create_input_detail(tag, swf);
+                  if (s == NULL) {
+                      fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed");
                   }
-                  s = tag->detail;
                   // 未使用
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
               }

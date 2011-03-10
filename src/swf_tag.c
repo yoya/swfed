@@ -247,11 +247,14 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     }
 }
 
-int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
+void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_create_input_detail: tag == NULL\n");
-        return 1;
+        return NULL;
+    }
+    if (tag->detail) {
+        return tag->detail;
     }
     tag_info = get_swf_tag_info(tag->tag);
     if (tag_info && tag_info->detail_handler) {
@@ -260,20 +263,20 @@ int swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         if (detail_handler->create == NULL) {
             fprintf(stderr, "detail_handler->create == NULL (tag=%d)\n",
                     tag->tag);
-            return 1;
+            return NULL;
         }
         tag->detail = detail_handler->create();
         if (tag->detail == NULL) {
             fprintf(stderr, "can't create tag detail (tag=%d)\n", tag->tag);
-            return 1;
+            return NULL;
         }
         result = detail_handler->input(tag, swf);
         if (result) {
             fprintf(stderr, "can't input tag detail (result=%d)\n", result);
-            return 1;
+            return NULL;
         }
     }
-    return 1;
+    return tag->detail;
 }
 
 int
@@ -292,7 +295,6 @@ swf_tag_get_cid(swf_tag_t *tag) {
             return detail_handler->get_cid(tag);
         }
     } else {
-        int cid;
         switch (tag_no) {
           case 7:  // DefineButton
           case 10: // DefineFont

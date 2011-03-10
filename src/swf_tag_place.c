@@ -262,10 +262,10 @@ swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_n
         fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: ! isPlaceTag(%d)\n", tag->tag);
         return -1; // wrong tag
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
+    swf_tag_place = (swf_tag_place_detail_t *) swf_tag_create_input_detail(tag, swf);
+    if (swf_tag_place == NULL) {
+        fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: swf_tag_place swf_tag_create_input_detail failed\n");
     }
-    swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
     if (swf_tag_place->flag_has_name == 0) {
         return -2; // no name
     }
