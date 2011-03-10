@@ -237,8 +237,9 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     }
     printf("\n");
     if (tag_info && tag_info->detail_handler) {
-        if (tag->detail == NULL) {
-            swf_tag_create_input_detail(tag, swf);
+        if (swf_tag_create_input_detail(tag, swf) == NULL) {
+            fprintf(stderr, "swf_tag_print: swf_tag_create_input_detail failed\n");
+            return ;
         }
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->print) {
@@ -367,10 +368,11 @@ swf_tag_get_refcid(swf_tag_t *tag) {
     }
     if (isPlaceTag(tag->tag)) { // PlaceObject, PlaceObject2
         swf_tag_place_detail_t *swf_tag_place;
-        if (! tag->detail) {
-            swf_tag_create_input_detail(tag, NULL);
+        swf_tag_place = swf_tag_create_input_detail(tag, NULL);
+        if (swf_tag_place == NULL) {
+            fprintf(stderr, "swf_tag_get_refcid: swf_tag_place swf_tag_create_input_detail failed\n");
+            return -1;
         }
-        swf_tag_place = tag->detail;
         return swf_tag_place->character_id;
     }
     return -1; // no cid tag
@@ -378,18 +380,17 @@ swf_tag_get_refcid(swf_tag_t *tag) {
 
 int
 swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
-//    fprintf(stderr, "XXX: swf_tag_replace_refcid(tag(code=%d), cid(%d))\n", tag->tag, cid);
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_refcid: tag == NULL\n");
         return 1; // failure
     }
     if (isPlaceTag(tag->tag)) { // PlaceObject, PlaceObject2
         swf_tag_place_detail_t *swf_tag_place;
-        if (! tag->detail) {
-            swf_tag_create_input_detail(tag, NULL);
+        swf_tag_place = swf_tag_create_input_detail(tag, NULL);
+        if (swf_tag_place == NULL) {
+            fprintf(stderr, "swf_tag_replace_refcid: swf_tag_place swf_tag_create_input_detail failed\n");
+            return 1; // failure
         }
-//        fprintf(stderr, "XXX: swf_tag_create_input_detail(tag, NULL)\n");
-        swf_tag_place = tag->detail;
         swf_tag_place->character_id = cid;
     }
     if (tag->data) {
@@ -413,10 +414,10 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         fprintf(stderr, "swf_tag_get_bitmap_size: width == NULL or height == NULL\n");
         return 1;
     }
-    if (tag->detail == NULL) {
-        swf_tag_create_input_detail(tag, NULL);
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_bitmap_size: swf_tag_create_input_detail failed\n");
+        return 1;
     }
-
     if (isBitsJPEGTag(tag->tag)) {
         swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         ret = jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
@@ -449,11 +450,8 @@ swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_t
     if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35)) {
         return NULL;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, NULL);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_get_jpeg_data: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_jpeg_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
     if (tag_jpegtables) {
@@ -483,11 +481,8 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     if (swf_tag_get_cid(tag) != image_id) {
         return NULL;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, NULL);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_get_alpha_data: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_alpha_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
     return swf_tag_jpeg_get_alpha_data(tag->detail, length, image_id);
@@ -568,11 +563,8 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     if ((tag->tag != 20) && (tag->tag != 36)) {
         return NULL;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, NULL);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_get_png_data: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_png_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
     return swf_tag_lossless_get_png_data(tag->detail, length, image_id, tag);
@@ -711,10 +703,10 @@ swf_tag_get_sound_data(swf_tag_t *tag, unsigned long *length, int sound_id) {
         return NULL;
     }
     if (! tag->detail) {
-        swf_tag_create_input_detail(tag, NULL);
+        
     }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_get_sound_data: Can't create tag detail\n");
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_sound_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
     return swf_tag_sound_get_sound_data(tag->detail, length, sound_id);
@@ -739,11 +731,8 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
     if (swf_tag_get_cid(tag) != sound_id) {
         return 1;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, NULL);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_replace_melog_data: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_replace_melog_data: swf_tag_create_input_detail failed\n");
         return 1;
     }
     result= swf_tag_sound_replace_melo_data(tag->detail, sound_id,
@@ -772,11 +761,8 @@ swf_tag_get_edit_string(swf_tag_t *tag,
     if (tag->tag != 37) { // DefineEditText
         return NULL;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_get_edit_string: swf_tag_create_input_detail failed\n");
         return NULL;
     }
     return swf_tag_edit_get_string(tag->detail,
@@ -801,12 +787,8 @@ swf_tag_replace_edit_string(swf_tag_t *tag,
     if (tag->tag != 37) { // DefineEditText
         return 1;
     }
-    
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_replace_edit_string: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_replace_edit_string: swf_tag_create_input_detail failed\n");
         return 1;
     }
     result = swf_tag_edit_replace_string(tag->detail,
@@ -839,11 +821,8 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
     if (swf_tag_get_cid(tag) != shape_id) {
         return 1;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_apply_shape_matrix_factor: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, swf)) {
+        fprintf(stderr, "swf_tag_apply_shape_matrix_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
     result = swf_tag_shape_apply_matrix_factor(tag->detail, shape_id,
@@ -876,11 +855,8 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
     if (swf_tag_get_cid(tag) != shape_id) {
         return 1;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_apply_shape_rect_factor: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_apply_shape_rect_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
     result = swf_tag_shape_apply_rect_factor(tag->detail, shape_id,
@@ -910,11 +886,8 @@ swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
     if (swf_tag_get_cid(tag) != shape_id) {
         return 1;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
-    }
-    if (! tag->detail) {
-        fprintf(stderr, "swf_tag_apply_shape_rect_factor: Can't create tag\n");
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_apply_shape_rect_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
     result = swf_tag_shape_apply_type_tilled(tag->detail, shape_id);
@@ -959,8 +932,9 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
         fprintf(stderr, "swf_tag_put_action_setvariables: kv == NULL\n");
         return 1;
     }
-    if (! tag->detail) {
-        swf_tag_create_input_detail(tag, swf);
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_put_action_setvariables: swf_tag_create_input_detail failed\n");
+        return 1;
     }
     ret = swf_tag_action_put_setvaribles(tag, kv);
     if (ret) {
