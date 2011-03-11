@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include "trans_table.h"
 
@@ -30,6 +31,7 @@ trans_table_realloc(trans_table_t *trans_table, int offset) {
     for (i = trans_table->table_num ; i < new_table_num ; i++) {
         trans_table->table[i] = 0;
     }
+    trans_table->table_num = new_table_num;
     return 0;
 }
 int
@@ -58,4 +60,18 @@ trans_table_get_freeid(trans_table_t  *trans_table) {
     }
     trans_table_realloc(trans_table, i);
     return i;
+}
+
+void
+trans_table_print(trans_table_t  *trans_table) {
+    int i, new_table_num = trans_table->table_num;
+    printf("trans_table_print num=%d\n", new_table_num);
+    for (i = 1 ; i < new_table_num ; i++) {
+        int v = trans_table->table[i];
+        if (v > 0) {
+            printf("%d: %d\n", i, v);
+        } else if (v == TRANS_TABLE_RESERVE_ID) {
+            printf("%d: reserved\n", i);
+        }
+    }
 }

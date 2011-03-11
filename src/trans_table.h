@@ -14,5 +14,6 @@ extern void trans_table_close(trans_table_t  *trans_table);
 extern int trans_table_get(trans_table_t  *trans_table, int offset);
 extern int trans_table_set(trans_table_t  *trans_table, int offset, int cid);
 extern int trans_table_get_freeid(trans_table_t  *trans_table);
+extern void trans_table_print(trans_table_t  *trans_table);
 
 #endif /* __TRANS_TABLE_H__ */
