@@ -1062,7 +1062,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       to_cid = cid;
                   }
                   if (cid != to_cid) {
-                      swf_tag_replace_cid(tag, to_cid);
+                      if (swf_tag_replace_cid(tag, to_cid)) {
+                          fprintf(stderr, "swf_object_replace_movieclip: swf_tag_replace_cid %d => %d failed\n", cid, to_cid);
+                          // no stop
+                      }
                   }
               }
               if (isShapeTag(tag_no)) {
@@ -1075,7 +1078,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   swf_tag_sprite_detail_t *s;
                   s = swf_tag_create_input_detail(tag, swf);
                   if (s == NULL) {
-                      fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed");
+                      fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
                   }
                   // 未使用
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
