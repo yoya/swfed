@@ -61,7 +61,7 @@ swf_cxformwithalpha_print(swf_cxformwithalpha_t *cx, int indent_depth) {
     print_indent(indent_depth);
     printf("CXFORMWITHALPHA:");
     if (cx->has_mult_terms) {
-        printf("  MultTerm:%02x%02x%02x",
+        printf("  MultTerm:%02x%02x%02x(%02x)",
                cx->red_mult_term, cx->green_mult_term, cx->blue_mult_term,
                cx->alpha_mult_term);
     }
