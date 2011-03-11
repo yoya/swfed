@@ -27,7 +27,7 @@ trans_table_realloc(trans_table_t *trans_table, int offset) {
     while (new_table_num <= offset) {
         new_table_num *= 2;
     }
-    trans_table->table = realloc(trans_table->table, new_table_num);
+    trans_table->table = realloc(trans_table->table, new_table_num * sizeof(int));
     for (i = trans_table->table_num ; i < new_table_num ; i++) {
         trans_table->table[i] = 0;
     }

@@ -901,7 +901,30 @@ trans_table_replace_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_t
 }
 
 /*
- * 参照側の cid 値を入れ替える // 未使用
+ * 参照側の全 cid 値を取得する
+ */
+static void
+trans_table_reserve_refcid_recursive(swf_tag_t *tag, trans_table_t *trans_table) {
+    for (; tag ; tag=tag->next) {
+        int tag_no = tag->tag;
+        if (isPlaceTag(tag_no)) {
+            int refcid = swf_tag_get_refcid(tag);
+            if (refcid > 0) {
+                trans_table_set(trans_table, refcid, TRANS_TABLE_RESERVE_ID);
+            }
+        } else if (isSpriteTag(tag_no)) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            tag_sprite = swf_tag_create_input_detail(tag, NULL);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "trans_table_reserve_refcid_recursive: tag_sprite swf_tag_create_input_detail failed\n");
+                continue; // skip wrong sprite tag
+            }
+            trans_table_reserve_refcid_recursive(tag_sprite->tag, trans_table);
+        }
+    }
+}
+/*
+ * 参照側の cid 値を入れ替える
  */
 static void
 trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_table) {
@@ -931,7 +954,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
     int cid = 0, sprite_cid = 0, ret = 0;
-    swf_tag_t *tag = NULL;
+    swf_tag_t *tag = NULL, *prev_tag = NULL;
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
@@ -939,6 +962,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table;
+    trans_table_t *orig_sprite_refcid_trans_table;
     trans_table_t *depth_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
@@ -981,6 +1005,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     // 既存の CID
     cid_trans_table = trans_table_open();
     depth_trans_table = trans_table_open();
+    orig_sprite_refcid_trans_table = trans_table_open();
     for (tag=swf->tag ; tag ; tag=tag->next) {
         int cid;
         cid = swf_tag_get_cid(tag);
@@ -988,8 +1013,22 @@ swf_object_replace_movieclip(swf_object_t *swf,
             trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
         }
     }
-    // 既存の DEPTH をチェックする
-    trans_table_reserve_place_depth_recursive(swf->tag, depth_trans_table);
+#if 0
+    // Sprite タグから参照するコンテンツを削除する
+    swf_tag_sprite = swf_tag_create_input_detail(sprite_tag, NULL);
+    trans_table_reserve_refcid_recursive(swf_tag_sprite->tag, orig_sprite_refcid_trans_table);
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        int cid;
+        cid = swf_tag_get_cid(tag);
+        if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
+            prev_tag->next = tag->next;
+            swf_tag_destroy(tag);
+            tag = prev_tag;
+        } else {
+            prev_tag = tag;
+        }
+    }
+#endif 
     
     // Sprite タグの中を綺麗にする
     tag_info = get_swf_tag_info(sprite_tag->tag);
@@ -998,12 +1037,14 @@ swf_object_replace_movieclip(swf_object_t *swf,
     sprite_tag->data = NULL;
     sprite_tag->length = 0;
     if (sprite_tag->detail) {
-        fprintf(stderr, "if (sprite_tag->detail)\n");
         detail_handler->destroy(sprite_tag);
     }
     sprite_tag->detail = detail_handler->create();
     swf_tag_sprite = sprite_tag->detail;
     swf_tag_sprite->sprite_id = sprite_cid;
+
+    // 既存の DEPTH をチェックする
+    trans_table_reserve_place_depth_recursive(swf->tag, depth_trans_table);
 
     // SWF 中のタグを種類に応じて展開する
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
@@ -1080,7 +1121,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   if (s == NULL) {
                       fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
                   }
-                  // 未使用
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
               }
               // TODO depth が被らないように。
@@ -1131,10 +1171,12 @@ swf_object_replace_movieclip(swf_object_t *swf,
             break;
         }
     }
+    // Sprite の depth 値入れ替え
     trans_table_replace_place_depth_recursive(swf_tag_sprite->tag, depth_trans_table);
     swf_object_close(swf4sprite);
     trans_table_close(cid_trans_table);
     trans_table_close(depth_trans_table);
+    trans_table_close(orig_sprite_refcid_trans_table);
     return 0;
 }
 
