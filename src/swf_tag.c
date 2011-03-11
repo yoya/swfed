@@ -349,7 +349,8 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
           case 48: // DefineFont2
           case 88: // DefineFontName
             if (tag->data) {
-                return PutUShortLE(tag->data, cid);
+                PutUShortLE(tag->data, cid);
+                return 0;
             }
             break;
           default:
