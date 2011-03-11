@@ -177,13 +177,13 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
     unsigned char *data = NULL;
     unsigned long data_len = 0;
-    swf_tag_detail_handler_t * detail_handler = NULL;
+    swf_tag_detail_handler_t *detail_handler = NULL;
     if (bs == NULL) {
-        fprintf(stderr, "swf_tag_and_length_build: bs == NULL\n");
+        fprintf(stderr, "swf_tag_build: bs == NULL\n");
         return 1;
     }
     if (tag == NULL) {
-        fprintf(stderr, "swf_tag_and_length_build: tag == NULL\n");
+        fprintf(stderr, "swf_tag_build: tag == NULL\n");
         return 1;
     }
 //    fprintf(stderr, "XXX: swf_tag_build: tag->tag=%d\n",tag->tag);
