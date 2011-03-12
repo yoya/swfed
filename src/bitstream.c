@@ -25,6 +25,7 @@ void
 bitstream_close(bitstream_t * bs) {
     if (bs->data) {
         free(bs->data);
+        bs->data = NULL;
     }
     free(bs);
     return ;
@@ -75,13 +76,14 @@ unsigned char *
 bitstream_steal(bitstream_t *bs, unsigned long *length) {
     unsigned char *data, *tmp;
     *length = 0;
-    if (! bs) {
+    if (bs == NULL) {
+        fprintf(stderr, "bitstream_steal: bs == NULL\n");
         return NULL;
     }
     data = bs->data;
     *length = bs->data_len;
     if ((tmp = realloc(data, *length)) == NULL) {
-        fprintf(stderr, "Can't realloc\n");
+        fprintf(stderr, "bitstream_steal: Can't realloc\n");
     }
     bs->data = NULL;
     bs->data_len = 0;
@@ -92,8 +94,8 @@ bitstream_steal(bitstream_t *bs, unsigned long *length) {
 unsigned char *
 bitstream_output_sub(bitstream_t *bs, unsigned long offset, unsigned long length) {
     unsigned char *data;
-    if (! bs) {
-        fprintf(stderr, "bs == NULL");
+    if (bs == NULL) {
+        fprintf(stderr, "bitstream_output_sub: bs == NULL\n");
         return NULL;
     }
     if (bs->data_len < offset + length ) {
