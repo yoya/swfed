@@ -246,9 +246,11 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
     if (tag) {
         if (tag->data) {
             free(tag->data);
+            tag->data = NULL;
         }
-        if (tag->detail) { // FIXME
-            swf_tag_destroy(tag);
+        if (tag->detail) {
+            swf_tag_detail_destroy(tag);
+	    tag->detail = NULL;
         }
         tag->length = length;
         tag->data = malloc(length);

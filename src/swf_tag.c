@@ -111,7 +111,7 @@ swf_tag_t *swf_tag_create(bitstream_t *bs) {
 }
 
 void swf_tag_destroy(swf_tag_t *tag) {
-    if (! tag) {
+    if (tag == NULL) {
         return;
     }
     if (tag->data) {
@@ -119,18 +119,8 @@ void swf_tag_destroy(swf_tag_t *tag) {
         tag->data = NULL;
     }
     if (tag->detail) {
-        swf_tag_info_t *tag_info = get_swf_tag_info(tag->tag);
-        if (tag_info && tag_info->detail_handler) {
-            swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-            if (detail_handler->destroy) {
-               detail_handler->destroy(tag);
-            } else {
-                fprintf(stderr, "detail_handler->destroy == NULL (tag=%d)\n",
-                        tag->tag);
-            }
-        } else {
-            fprintf(stderr, "not impremented yet. destroy tag detail\n");
-        }
+        swf_tag_destroy_detail(tag);
+	tag->detail = NULL;
     }
     free(tag);
 }
@@ -278,6 +268,28 @@ void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     }
     return tag->detail;
 }
+
+void swf_tag_destroy_detail(swf_tag_t *tag) {
+    if (tag == NULL) {
+        return;
+    }
+    if (tag->detail) {
+        swf_tag_info_t *tag_info = get_swf_tag_info(tag->tag);
+        if (tag_info && tag_info->detail_handler) {
+            swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+            if (detail_handler->destroy) {
+                detail_handler->destroy(tag);
+            } else {
+	        fprintf(stderr, "detail_handler->destroy == NULL (tag=%d)\n",
+                        tag->tag);
+            }
+        } else {
+	    fprintf(stderr, "not impremented yet. destroy tag detail\n");
+        }
+	tag->detail = NULL;
+    }
+}
+
 
 int
 swf_tag_get_cid(swf_tag_t *tag) {
