@@ -682,7 +682,7 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     i = 0;
     for (tag = swf->tag ; tag ; tag=tag->next) {
         register int tag_code = tag->tag;
-        if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_cid(tag) == bitmap_id)) {
+        if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
             swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
             add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
             i++;
