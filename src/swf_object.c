@@ -249,7 +249,7 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
             tag->data = NULL;
         }
         if (tag->detail) {
-            swf_tag_detail_destroy(tag);
+            swf_tag_destroy_detail(tag);
 	    tag->detail = NULL;
         }
         tag->length = length;
