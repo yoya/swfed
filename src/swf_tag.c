@@ -84,13 +84,12 @@ swf_tag_t *swf_tag_create(bitstream_t *bs) {
         fprintf(stderr, "swf_tag_create: bs == NULL\n");
         return NULL;
     }
-    tag = calloc(sizeof(*tag), 1);
     tag_and_length = bitstream_getbytesLE(bs, 2);
     if (tag_and_length == (unsigned short) -1) {
         fprintf(stderr, "swf_tag_create: tag_and_length(short) == -1\n");
-        free(tag);
         return NULL;
     }
+    tag = calloc(sizeof(*tag), 1);
     tag->tag = tag_and_length >> 6;
     tag->length = tag_and_length & 0x3f;
     tag->length_longformat = 0;
