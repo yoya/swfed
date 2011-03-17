@@ -909,6 +909,9 @@ trans_table_replace_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_t
 
 #endif // SWF_OBJECT_DEPTH_RENUMBER
 
+
+#ifdef SWF_OBJECT_UNUSED_CID_PURGE
+
 /*
  * 参照側の全 cid 値を取得する
  */
@@ -932,6 +935,9 @@ trans_table_reserve_refcid_recursive(swf_tag_t *tag, trans_table_t *trans_table)
         }
     }
 }
+
+#endif // SWF_OBJECT_UNUSED_CID_PURGE
+
 /*
  * 参照側の cid 値を入れ替える
  */
@@ -977,7 +983,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     trans_table_t *orig_sprite_refcid_trans_table;
 #ifdef SWF_OBJECT_DEPTH_RENUMBER
     trans_table_t *depth_trans_table;
-#endif SWF_OBJECT_DEPTH_RENUMBER
+#endif // SWF_OBJECT_DEPTH_RENUMBER
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
