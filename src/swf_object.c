@@ -22,6 +22,9 @@
 #include "bitmap_util.h"
 #include "trans_table.h"
 
+#undef SWF_OBJECT_DEPTH_RENUMBER // depth の並び替えを行うか否か
+#undef SWF_OBJECT_UNUSED_CID_PURGE // 不要な CID の削除
+
 swf_object_t *
 swf_object_open(void) {
     swf_object_t *swf;
@@ -845,6 +848,8 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
 /*
  * 利用している全 depth 値を取得する。
  */
@@ -902,6 +907,8 @@ trans_table_replace_place_depth_recursive(swf_tag_t *tag, trans_table_t *depth_t
     }
 }
 
+#endif // SWF_OBJECT_DEPTH_RENUMBER
+
 /*
  * 参照側の全 cid 値を取得する
  */
@@ -956,7 +963,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len) {
     int cid = 0, sprite_cid = 0, ret = 0;
-    swf_tag_t *tag = NULL, *prev_tag = NULL;
+    swf_tag_t *tag = NULL;
+#ifdef SWF_OBJECT_UNUSED_CID_PURGE
+    swf_tag_t *prev_tag = NULL;
+#endif // SWF_OBJECT_UNUSED_CID_PURGE
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
@@ -965,7 +975,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table;
     trans_table_t *orig_sprite_refcid_trans_table;
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
     trans_table_t *depth_trans_table;
+#endif SWF_OBJECT_DEPTH_RENUMBER
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -1006,7 +1018,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     // 既存の CID
     cid_trans_table = trans_table_open();
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
     depth_trans_table = trans_table_open();
+#endif // SWF_OBJECT_DEPTH_RENUMBER
     orig_sprite_refcid_trans_table = trans_table_open();
     for (tag=swf->tag ; tag ; tag=tag->next) {
         int cid;
@@ -1015,7 +1029,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
             trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
         }
     }
-#if 0
+#ifdef SWF_OBJECT_UNUSED_CID_PURGE
     // Sprite タグから参照するコンテンツを削除する
     swf_tag_sprite = swf_tag_create_input_detail(sprite_tag, NULL);
     trans_table_reserve_refcid_recursive(swf_tag_sprite->tag, orig_sprite_refcid_trans_table);
@@ -1030,7 +1044,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
             prev_tag = tag;
         }
     }
-#endif 
+#endif // SWF_OBJECT_UNUSED_CID_PURGE
     
     // Sprite タグの中を綺麗にする
     tag_info = get_swf_tag_info(sprite_tag->tag);
@@ -1045,9 +1059,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_sprite = sprite_tag->detail;
     swf_tag_sprite->sprite_id = sprite_cid;
 
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
     // 既存の DEPTH をチェックする
     trans_table_reserve_place_depth_recursive(swf->tag, depth_trans_table);
-
+#endif // SWF_OBJECT_DEPTH_RENUMBER
     // SWF 中のタグを種類に応じて展開する
     for (tag=swf4sprite->tag ; tag ; tag=tag->next) {
         int tag_no = tag->tag;
@@ -1173,12 +1188,14 @@ swf_object_replace_movieclip(swf_object_t *swf,
             break;
         }
     }
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
     // Sprite の depth 値入れ替え
     trans_table_replace_place_depth_recursive(swf_tag_sprite->tag, depth_trans_table);
-    swf_object_close(swf4sprite);
-    trans_table_close(cid_trans_table);
     trans_table_close(depth_trans_table);
+#endif // SWF_OBJECT_DEPTH_RENUMBER
+    trans_table_close(cid_trans_table);
     trans_table_close(orig_sprite_refcid_trans_table);
+    swf_object_close(swf4sprite);
     return 0;
 }
 
