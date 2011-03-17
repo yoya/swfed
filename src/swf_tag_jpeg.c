@@ -304,8 +304,8 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
     old_size = swf_tag_jpeg->alpha_data_len;
-    compsize = old_size;
-    new_buff = malloc(compsize); // too enough memory
+    compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
+    new_buff = malloc(compsize);
     result = compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
     if (result != Z_OK) {
         if (result == Z_MEM_ERROR) {

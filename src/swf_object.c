@@ -163,7 +163,7 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
         old_size = bs->data_len - SWF_HEADER_SIZE;
-        compsize = old_size;
+        compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
         new_buff = malloc(compsize);
         result = compress(new_buff, &compsize, old_buff_ref, old_size);
         if (result != Z_OK) {
