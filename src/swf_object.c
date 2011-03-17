@@ -22,8 +22,8 @@
 #include "bitmap_util.h"
 #include "trans_table.h"
 
-#undef SWF_OBJECT_DEPTH_RENUMBER // depth の並び替えを行うか否か
-#undef SWF_OBJECT_UNUSED_CID_PURGE // 不要な CID の削除
+// #define SWF_OBJECT_DEPTH_RENUMBER // depth の並び替えを行うか否か
+// #define SWF_OBJECT_UNUSED_CID_PURGE // 不要な CID の削除
 
 swf_object_t *
 swf_object_open(void) {
