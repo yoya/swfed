@@ -968,6 +968,7 @@ swf_tag_move(swf_tag_t *from_tag) {
     to_tag->length_longformat = from_tag->length_longformat;
     to_tag->data = from_tag->data;
     from_tag->data = NULL;
+    from_tag->length = 0;
     to_tag->detail = from_tag->detail;
     from_tag->detail = NULL;
     return to_tag;
