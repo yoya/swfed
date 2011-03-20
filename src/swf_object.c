@@ -1018,7 +1018,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table;
+#ifdef SWF_OBJECT_UNUSED_CID_PURGE
     trans_table_t *orig_sprite_refcid_trans_table;
+#endif // SWF_OBJECT_UNUSED_CID_PURGE
 #ifdef SWF_OBJECT_DEPTH_RENUMBER
     trans_table_t *depth_trans_table;
 #endif // SWF_OBJECT_DEPTH_RENUMBER
@@ -1026,6 +1028,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
     }
+    // インスタンス名から PlaceObject を探し、参照している CID を取得する
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (tag->tag == 26) { // PlaceObject2
             cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
@@ -1039,6 +1042,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 "swf_object_replace_movieclip: place cid(%d) <= 0\n", cid);
         return 1; // not found instance name;
     }
+
+    // CID で DefineSprite を探す
     for (tag=swf->tag ; tag ; tag=tag->next) {
         if (isSpriteTag(tag->tag)) {
             if (swf_tag_get_cid(tag) ==  cid) {
@@ -1054,31 +1059,40 @@ swf_object_replace_movieclip(swf_object_t *swf,
         return 1; // not found instance name;
     }
 
+    // MC に差し替える SWF データ
     swf4sprite = swf_object_open();
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
-    // 既存の CID
-    cid_trans_table = trans_table_open();
-#ifdef SWF_OBJECT_DEPTH_RENUMBER
-    depth_trans_table = trans_table_open();
-#endif // SWF_OBJECT_DEPTH_RENUMBER
-    orig_sprite_refcid_trans_table = trans_table_open();
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        int cid;
-        cid = swf_tag_get_cid(tag);
-        if (cid > 0) {
-            trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
-        }
-    }
+
 #ifdef SWF_OBJECT_UNUSED_CID_PURGE
+    orig_sprite_refcid_trans_table = trans_table_open();
     // Sprite タグから参照するコンテンツを削除する
     swf_tag_sprite = swf_tag_create_input_detail(sprite_tag, NULL);
     trans_table_reserve_refcid_recursive(swf_tag_sprite->tag, orig_sprite_refcid_trans_table);
+//    trans_table_print(orig_sprite_refcid_trans_table);
     for (tag=swf->tag ; tag ; tag=tag->next) {
         int cid;
+        cid = swf_tag_get_cid(tag);
+        if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
+            // Shape が参照するビットマップも後で削除
+            if (isShapeTag(tag->tag)) {
+                int bitmap_id;
+                bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
+                trans_table_set(orig_sprite_refcid_trans_table, bitmap_id, TRANS_TABLE_RESERVE_ID);
+            }
+            // タグ削除処理
+            prev_tag->next = tag->next;
+            swf_tag_destroy(tag);
+            tag = prev_tag;
+        } else {
+            prev_tag = tag;
+        }
+    }
+    // Shape が参照するビットマップを削除
+    for (tag=swf->tag ; tag ; tag=tag->next) {
         cid = swf_tag_get_cid(tag);
         if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
             prev_tag->next = tag->next;
@@ -1088,7 +1102,33 @@ swf_object_replace_movieclip(swf_object_t *swf,
             prev_tag = tag;
         }
     }
+
+    // prev_sprite_tag を取り直す。(PURGE される事があるので)
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        if (isSpriteTag(tag->tag)) {
+            if (swf_tag_get_cid(tag) == sprite_cid) {
+                break;
+            }
+        }
+        prev_sprite_tag = tag;
+    }
+    // 
 #endif // SWF_OBJECT_UNUSED_CID_PURGE
+    
+#ifdef SWF_OBJECT_DEPTH_RENUMBER
+    depth_trans_table = trans_table_open();
+#endif // SWF_OBJECT_DEPTH_RENUMBER
+    
+    // 既存の CID
+    cid_trans_table = trans_table_open();
+    for (tag=swf->tag ; tag ; tag=tag->next) {
+        int cid;
+        cid = swf_tag_get_cid(tag);
+        if (cid > 0) {
+            trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
+        }
+    }
+//    trans_table_print(cid_trans_table);
     
     // Sprite タグの中を綺麗にする
     tag_info = get_swf_tag_info(sprite_tag->tag);
@@ -1119,13 +1159,13 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 56: // Export
           case 69: // FileAttributes
           case 74: // CSMTextSettings
+          case 8: // JPEGTables // XXX
               ;
             break;
             // Character Tag
           case 2: // DefineShape
           case 6: // DefineBitsJPEG
           case 7: // DefineButton
-          case 8: // JPEGTables
           case 10: // DefineFont
           case 11: // DefineText
           case 13: // DefineFontInfo
@@ -1184,9 +1224,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
               }
-              // TODO depth が被らないように。
-              ;
-              // Sprite の前に CID が被らないように展開
+              // Sprite の前に展開
               prev_sprite_tag->next = swf_tag_move(tag);
               prev_sprite_tag = prev_sprite_tag->next;
               prev_sprite_tag->next = sprite_tag;
@@ -1238,7 +1276,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
     trans_table_close(depth_trans_table);
 #endif // SWF_OBJECT_DEPTH_RENUMBER
     trans_table_close(cid_trans_table);
+#ifdef SWF_OBJECT_UNUSED_CID_PURGE
     trans_table_close(orig_sprite_refcid_trans_table);
+#endif// SWF_OBJECT_UNUSED_CID_PURGE
     swf_object_close(swf4sprite);
     return 0;
 }
