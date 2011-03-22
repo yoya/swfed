@@ -828,7 +828,7 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
     if (swf_tag_get_cid(tag) != shape_id) {
         return 1;
     }
-    if (swf_tag_create_input_detail(tag, swf)) {
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
         fprintf(stderr, "swf_tag_apply_shape_matrix_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
