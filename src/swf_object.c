@@ -1017,12 +1017,12 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_object_t *swf4sprite = NULL;
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
-    trans_table_t *cid_trans_table;
+    trans_table_t *cid_trans_table = NULL;
 #ifdef SWF_OBJECT_UNUSED_CID_PURGE
-    trans_table_t *orig_sprite_refcid_trans_table;
+    trans_table_t *orig_sprite_refcid_trans_table = NULL;
 #endif // SWF_OBJECT_UNUSED_CID_PURGE
 #ifdef SWF_OBJECT_DEPTH_RENUMBER
-    trans_table_t *depth_trans_table;
+    trans_table_t *depth_trans_table = NULL;
 #endif // SWF_OBJECT_DEPTH_RENUMBER
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
