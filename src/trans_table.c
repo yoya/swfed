@@ -42,6 +42,9 @@ trans_table_realloc(trans_table_t *trans_table, int offset) {
 }
 int
 trans_table_get(trans_table_t  *trans_table, int offset) {
+    if (offset < 0) {
+        return 0;
+    }
     if (trans_table->table_num <= offset) {
         return 0;
     }
@@ -49,9 +52,9 @@ trans_table_get(trans_table_t  *trans_table, int offset) {
 }
 int
 trans_table_set(trans_table_t  *trans_table, int offset, int cid) {
-     if (offset < 0) {
-       return -1;
-     }
+    if (offset < 0) {
+        return 1; // failed
+    }
     if (trans_table->table_num <= offset) {
       if (trans_table_realloc(trans_table, offset)) {
 	return 1; // failed
