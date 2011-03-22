@@ -24,14 +24,19 @@ trans_table_close(trans_table_t *trans_table) {
 int
 trans_table_realloc(trans_table_t *trans_table, int offset) {
     int new_table_num = trans_table->table_num;
+    int *table;
     int i;
     while (new_table_num <= offset) {
         new_table_num *= 2;
     }
-    trans_table->table = realloc(trans_table->table, new_table_num * sizeof(int));
-    for (i = trans_table->table_num ; i < new_table_num ; i++) {
-        trans_table->table[i] = 0;
+    table = realloc(trans_table->table, new_table_num * sizeof(int));
+    if (table == NULL) {
+        return 1; // failed
     }
+    for (i = trans_table->table_num ; i < new_table_num ; i++) {
+        table[i] = 0;
+    }
+    trans_table->table = table;
     trans_table->table_num = new_table_num;
     return 0;
 }
@@ -45,7 +50,9 @@ trans_table_get(trans_table_t  *trans_table, int offset) {
 int
 trans_table_set(trans_table_t  *trans_table, int offset, int cid) {
     if (trans_table->table_num <= offset) {
-        trans_table_realloc(trans_table, offset);
+      if (trans_table_realloc(trans_table, offset)) {
+	return 1; // failed
+      }
     }
     trans_table->table[offset] = cid;
     return 0;
