@@ -1216,19 +1216,22 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
                       swf_tag_shape_bitmap_replace_refcid(tag, to_bitmap_id);
                   }
-              } else if (isSpriteTag(tag_no)) {
+              }
+              if (isSpriteTag(tag_no)){
                   swf_tag_sprite_detail_t *s;
                   s = swf_tag_create_input_detail(tag, swf);
                   if (s == NULL) {
                       fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
                   }
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
-              }
+                  // no break; // Sprite タグの中に入れる。
+              } else {
               // Sprite の前に展開
-              prev_sprite_tag->next = swf_tag_move(tag);
-              prev_sprite_tag = prev_sprite_tag->next;
-              prev_sprite_tag->next = sprite_tag;
-            break;
+                  prev_sprite_tag->next = swf_tag_move(tag);
+                  prev_sprite_tag = prev_sprite_tag->next;
+                  prev_sprite_tag->next = sprite_tag;
+                  break;
+              }
             // Control Tag
           case 0: // End
           case 1: // ShowFrame
