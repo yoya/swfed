@@ -1,5 +1,5 @@
 --TEST--
-replaceJpegData test;
+replaceGIFData test;
 --FILE--
 <?php
 
