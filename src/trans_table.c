@@ -15,6 +15,7 @@ trans_table_close(trans_table_t *trans_table) {
     if (trans_table) {
         if (trans_table->table) {
             free(trans_table->table);
+            trans_table->table = NULL;
         }
         free(trans_table);
     }
