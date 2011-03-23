@@ -82,6 +82,7 @@ PHP_METHOD(swfed, disasmActionData);
 PHP_METHOD(swfed, setActionVariables);
 PHP_METHOD(swfed, replaceMovieClip);
 PHP_METHOD(swfed, swfInfo);
+PHP_METHOD(swfed, setCompressLevel);
 
 /* 
   	Declare any global variables you may need between the BEGIN

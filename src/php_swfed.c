@@ -65,9 +65,9 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  replaceTagData, NULL, 0)
     PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
     PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
+
     PHP_ME(swfed,  getShapeData, NULL, 0)
     PHP_ME(swfed,  replaceShapeData, NULL, 0)
-    
     PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
     PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
     PHP_ME(swfed,  getBitmapSize, NULL, 0)
@@ -87,6 +87,8 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  disasmActionData, NULL, 0)
     PHP_ME(swfed,  setActionVariables, NULL, 0)
     PHP_ME(swfed,  replaceMovieClip, NULL, 0)
+
+    PHP_ME(swfed,  setCompressLevel, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
@@ -1155,6 +1157,17 @@ PHP_METHOD(swfed, replaceMovieClip) {
 PHP_METHOD(swfed, swfInfo) {
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
     swf_object_print(swf);
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, setCompressLevel) {
+    unsigned long compress_level = 6 ; // Z_DEFAULT_COMPRESSION
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "l", &compress_level) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf->compress_level = compress_level;
     RETURN_TRUE;
 }
 
