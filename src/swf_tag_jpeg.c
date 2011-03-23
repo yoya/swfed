@@ -310,7 +310,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
     new_buff = malloc(compsize);
     //    result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
-    result = compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
+    result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
     if (result != Z_OK) {
         if (result == Z_MEM_ERROR) {
             fprintf(stderr, "swf_tag_jpeg_output_detail: compress Z_MEM_ERROR: can't malloc\n");

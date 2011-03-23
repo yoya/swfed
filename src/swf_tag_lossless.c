@@ -309,7 +309,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         old_size = bitstream_length(bs2);
         compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
         tmp_buff = malloc(compsize);
-        result = compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
                 fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_MEM_ERROR: can't malloc\n");
