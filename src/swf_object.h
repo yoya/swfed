@@ -17,6 +17,7 @@ typedef struct swf_object_ {
     swf_header_movie_t header_movie;
     swf_tag_t *tag;
     unsigned shape_adjust_mode;
+    unsigned compress_level;
 } swf_object_t;
 
 #define SWFED_SHAPE_BITMAP_NONE           0

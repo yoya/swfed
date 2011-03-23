@@ -11,6 +11,7 @@
 #include "bitstream.h"
 #include "swf_define.h"
 #include "swf_tag_lossless.h"
+#include "swf_object.h"
 #include "swf_png.h"
 #include "swf_gif.h"
 
@@ -230,9 +231,12 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
     unsigned char *tmp_buff = NULL, *old_buff_ref = NULL;
     unsigned long compsize, old_size;
     int result;
-    (void) swf;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_lossless_output_detail: tag == NULL\n");
+        return NULL;
+    }
+    if (swf == NULL) {
+        fprintf(stderr, "swf_tag_lossless_output_detail: swf == NULL\n");
         return NULL;
     }
     if (length == NULL) {
@@ -268,7 +272,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         old_size = bitstream_length(bs2);
         compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
         tmp_buff = malloc(compsize);
-        result = compress(tmp_buff, &compsize, old_buff_ref, old_size);
+        result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
                 fprintf(stderr, "swf_tag_lossless_output_detail: compress Z_MEM_ERROR: can't malloc\n");

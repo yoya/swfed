@@ -11,6 +11,7 @@
 #include "bitstream.h"
 #include "swf_define.h"
 #include "swf_tag_jpeg.h"
+#include "swf_object.h"
 // #include "swf_tag.h"
 #include "swf_jpeg.h"
 #include "jpeg_segment.h"
@@ -289,9 +290,11 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     unsigned long offset_to_alpha;
     unsigned long compsize, old_size;
     int result;
-    (void) swf;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_jpeg3_output_detail: tag == NULL\n");
+    }
+    if (swf == NULL) {
+        fprintf(stderr, "swf_tag_jpeg3_output_detail: swf == NULL\n");
     }
     if (length == NULL) {
         fprintf(stderr, "swf_tag_jpeg3_output_detail: length == NULL\n");
@@ -306,6 +309,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     old_size = swf_tag_jpeg->alpha_data_len;
     compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
     new_buff = malloc(compsize);
+    //    result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
     result = compress(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size);
     if (result != Z_OK) {
         if (result == Z_MEM_ERROR) {

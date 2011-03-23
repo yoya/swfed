@@ -31,6 +31,7 @@ swf_object_open(void) {
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
     //
     swf->shape_adjust_mode = 0;
+    swf->compress_level = Z_DEFAULT_COMPRESSION;
     return swf;
 }
 
@@ -174,7 +175,7 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         old_size = bs->data_len - SWF_HEADER_SIZE;
         compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
         new_buff = malloc(compsize);
-        result = compress(new_buff, &compsize, old_buff_ref, old_size);
+        result = compress2(new_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
                 fprintf(stderr, "swf_object_output: compress Z_MEM_ERROR: can't malloc\n");
