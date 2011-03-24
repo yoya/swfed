@@ -30,6 +30,7 @@
  - http://diary.awm.jp/~yoya/?20101027#201010270 adjust bitmap
  - http://diary.awm.jp/~yoya/?20101130#201011300 action bytecode
  - http://diary.awm.jp/~yoya/?20110203#201102030 replace shape
+ - http://diary.awm.jp/~yoya/?20110319#201103190 replace movieclip
 
 * download
 
