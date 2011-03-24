@@ -26,5 +26,3 @@ for ($i=2 ; $i < $argc ; $i+=2) {
 }
 
 echo $obj->output();
-
-$obj->_destroy_and_exit();
