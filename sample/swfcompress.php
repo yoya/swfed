@@ -25,7 +25,13 @@ if ($swf->input($swf_data) == false) {
     exit(1);
 }
 
-$info = array('compress' => $compress);
+$info = $swf->getHeaderInfo();
+
+$info['compress'] =  $compress;
+if ($info['compress'] && $info['version'] < 6) {
+	$info['version'] = 6;
+}
+
 $swf->setHeaderInfo($info);
 
 echo $swf->output();
