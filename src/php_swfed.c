@@ -345,6 +345,8 @@ PHP_METHOD(swfed, setHeaderInfo) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     header_table = Z_ARRVAL_P(header_info);
+
+    // FWS or CWS
     if (zend_hash_find(header_table, "compress", sizeof("compress"), (void**)&tmp) == SUCCESS) {
         convert_to_boolean_ex(tmp);
         if (Z_LVAL_PP(tmp) != 0) {
@@ -354,9 +356,28 @@ PHP_METHOD(swfed, setHeaderInfo) {
         }
     }
 
+    // Version
     if (zend_hash_find(header_table, "version", sizeof("version"), (void**)&tmp) == SUCCESS) {
         convert_to_long_ex(tmp);
         swf->header.version = Z_LVAL_PP(tmp);
+    }
+
+    // FrameRect
+    if (zend_hash_find(header_table, "x_min", sizeof("x_min"), (void**)&tmp) == SUCCESS) {
+        convert_to_long_ex(tmp);
+        swf->header_movie.frame_size.x_min = Z_LVAL_PP(tmp) * SWF_TWIPS;
+    }
+    if (zend_hash_find(header_table, "y_min", sizeof("y_min"), (void**)&tmp) == SUCCESS) {
+        convert_to_long_ex(tmp);
+        swf->header_movie.frame_size.y_min = Z_LVAL_PP(tmp) * SWF_TWIPS;
+    }
+    if (zend_hash_find(header_table, "x_max", sizeof("x_max"), (void**)&tmp) == SUCCESS) {
+        convert_to_long_ex(tmp);
+        swf->header_movie.frame_size.x_max = Z_LVAL_PP(tmp) * SWF_TWIPS;
+    }
+    if (zend_hash_find(header_table, "y_max", sizeof("y_max"), (void**)&tmp) == SUCCESS) {
+        convert_to_long_ex(tmp);
+        swf->header_movie.frame_size.y_max = Z_LVAL_PP(tmp) * SWF_TWIPS;
     }
     RETURN_TRUE;
 }
