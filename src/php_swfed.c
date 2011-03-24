@@ -90,6 +90,7 @@ zend_function_entry swfed_functions[] = {
 
     PHP_ME(swfed,  setCompressLevel, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
+//    PHP_ME(swfed,  rebuild, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
 /* }}} */
@@ -1201,6 +1202,12 @@ PHP_METHOD(swfed, replaceMovieClip) {
 PHP_METHOD(swfed, swfInfo) {
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
     swf_object_print(swf);
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, rebuild) {
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_rebuild(swf);
     RETURN_TRUE;
 }
 

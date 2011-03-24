@@ -46,6 +46,7 @@ extern swf_tag_info_t *get_swf_tag_info(int tag_id);
 extern swf_tag_t *swf_tag_create(bitstream_t *bs);
 extern void swf_tag_destroy(swf_tag_t *tag);
 extern int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf);
+extern int swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf);
 extern void swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth);
 extern void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern void swf_tag_destroy_detail(swf_tag_t *tag);

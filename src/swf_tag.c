@@ -208,6 +208,33 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     return 0;
 }
 
+int
+swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
+    swf_tag_info_t *tag_info = NULL;
+    swf_tag_detail_handler_t * detail_handler = NULL;
+    int ret;
+    tag_info = get_swf_tag_info(tag->tag);
+    if (tag_info == NULL) {
+        return 1; // no info
+    }
+    detail_handler = tag_info->detail_handler();
+    if (detail_handler == NULL) {
+        return 1; // no detail handler
+    }
+    if ((detail_handler->input == NULL) || (detail_handler->output == NULL)) {
+        return 1; // no input or output handler
+    }
+    ret = detail_handler->input(tag, swf);
+    if (ret) {
+        fprintf(stderr, "swf_tag_rebuild: detail_hander->input failed tag_no=%d\n", tag->tag);
+        return 1;
+    }
+    free(tag->data);
+    tag->data = NULL;
+    return 0;
+}
+
+
 void
 swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     swf_tag_info_t *tag_info = NULL;
