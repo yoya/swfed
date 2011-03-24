@@ -1159,16 +1159,32 @@ PHP_METHOD(swfed, replaceMovieClip) {
     char *instance_name = NULL, *swf_data = NULL;
     int  instance_name_len = 0, swf_data_len = 0;
     swf_object_t *swf = NULL;
+    int unused_cid_purge = 1; // デフォルト on
     int result = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
-                              &instance_name, &instance_name_len,
-                              &swf_data, &swf_data_len) == FAILURE) {
-        RETURN_FALSE;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+				  &instance_name, &instance_name_len,
+				  &swf_data, &swf_data_len) == FAILURE) {
+	  RETURN_FALSE;
+	}
+      break;
+      case 3:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssb",
+				  &instance_name, &instance_name_len,
+				  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
+	  RETURN_FALSE;
+	}
+	break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);    
     result = swf_object_replace_movieclip(swf, instance_name,
                                           instance_name_len,
-                                          swf_data, swf_data_len);
+                                          swf_data, swf_data_len,
+                                          unused_cid_purge);
     if (result) {
         RETURN_FALSE;
     }

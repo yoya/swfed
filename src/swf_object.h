@@ -102,8 +102,8 @@ extern int swf_object_replace_movieclip(swf_object_t *swf,
                                         unsigned char *instance_name,
                                         int instancee_name_len,
                                         unsigned char *swf_data,
-                                        int swf_data_len);
-
+                                        int swf_data_len,
+                                        int unused_cid_purge);
 
 extern int swf_object_apply_shapematrix_factor(swf_object_t *swf,int shape_id,
                                                double scale_x, double scale_y,

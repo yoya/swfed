@@ -943,7 +943,8 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
 int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
-                             unsigned char *swf_data, int swf_data_len) {
+                             unsigned char *swf_data, int swf_data_len,
+                             int unused_cid_purge) {
     int cid = 0, sprite_cid = 0, ret = 0;
     swf_tag_t *tag = NULL;
 #ifdef SWF_OBJECT_UNUSED_CID_PURGE
