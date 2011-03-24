@@ -22,8 +22,6 @@
 #include "bitmap_util.h"
 #include "trans_table.h"
 
-// #define SWF_OBJECT_UNUSED_CID_PURGE // 不要な CID の削除
-
 swf_object_t *
 swf_object_open(void) {
     swf_object_t *swf;
@@ -886,8 +884,6 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
-#ifdef SWF_OBJECT_UNUSED_CID_PURGE
-
 /*
  * 参照側の全 cid 値を取得する
  */
@@ -911,8 +907,6 @@ trans_table_reserve_refcid_recursive(swf_tag_t *tag, trans_table_t *trans_table)
         }
     }
 }
-
-#endif // SWF_OBJECT_UNUSED_CID_PURGE
 
 /*
  * 参照側の cid 値を入れ替える
@@ -944,12 +938,10 @@ int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
                              unsigned char *swf_data, int swf_data_len,
-                             int unused_cid_purge) {
+			     int unused_cid_purge) {
     int cid = 0, sprite_cid = 0, ret = 0;
     swf_tag_t *tag = NULL;
-#ifdef SWF_OBJECT_UNUSED_CID_PURGE
     swf_tag_t *prev_tag = NULL;
-#endif // SWF_OBJECT_UNUSED_CID_PURGE
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
     swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
@@ -957,9 +949,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table = NULL;
-#ifdef SWF_OBJECT_UNUSED_CID_PURGE
     trans_table_t *orig_sprite_refcid_trans_table = NULL;
-#endif // SWF_OBJECT_UNUSED_CID_PURGE
+
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
@@ -1002,54 +993,56 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
+    
 
-#ifdef SWF_OBJECT_UNUSED_CID_PURGE
-    orig_sprite_refcid_trans_table = trans_table_open();
-    // Sprite タグから参照するコンテンツを削除する
-    swf_tag_sprite = swf_tag_create_input_detail(sprite_tag, NULL);
-    trans_table_reserve_refcid_recursive(swf_tag_sprite->tag, orig_sprite_refcid_trans_table);
-//    trans_table_print(orig_sprite_refcid_trans_table);
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        int cid;
-        cid = swf_tag_get_cid(tag);
-        if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
-            // Shape が参照するビットマップも後で削除
-            if (isShapeTag(tag->tag)) {
-                int bitmap_id;
-                bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
-                trans_table_set(orig_sprite_refcid_trans_table, bitmap_id, TRANS_TABLE_RESERVE_ID);
-            }
-            // タグ削除処理
-            prev_tag->next = tag->next;
-            swf_tag_destroy(tag);
-            tag = prev_tag;
-        } else {
-            prev_tag = tag;
-        }
-    }
-    // Shape が参照するビットマップを削除
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        cid = swf_tag_get_cid(tag);
-        if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
-            prev_tag->next = tag->next;
-            swf_tag_destroy(tag);
-            tag = prev_tag;
-        } else {
-            prev_tag = tag;
-        }
-    }
-
-    // prev_sprite_tag を取り直す。(PURGE される事があるので)
-    for (tag=swf->tag ; tag ; tag=tag->next) {
-        if (isSpriteTag(tag->tag)) {
-            if (swf_tag_get_cid(tag) == sprite_cid) {
-                break;
+    if (unused_cid_purge) {
+        orig_sprite_refcid_trans_table = trans_table_open();
+        // Sprite タグから参照するコンテンツを削除する
+        swf_tag_sprite = swf_tag_create_input_detail(sprite_tag, NULL);
+        trans_table_reserve_refcid_recursive(swf_tag_sprite->tag, orig_sprite_refcid_trans_table);
+        //    trans_table_print(orig_sprite_refcid_trans_table);
+        for (tag=swf->tag ; tag ; tag=tag->next) {
+            int cid;
+            cid = swf_tag_get_cid(tag);
+            if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
+                // Shape が参照するビットマップも後で削除
+                if (isShapeTag(tag->tag)) {
+                    int bitmap_id;
+                    bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
+                    trans_table_set(orig_sprite_refcid_trans_table, bitmap_id, TRANS_TABLE_RESERVE_ID);
+                }
+                // タグ削除処理
+                prev_tag->next = tag->next;
+                swf_tag_destroy(tag);
+                tag = prev_tag;
+            } else {
+                prev_tag = tag;
             }
         }
-        prev_sprite_tag = tag;
+        // Shape が参照するビットマップを削除
+        for (tag=swf->tag ; tag ; tag=tag->next) {
+            cid = swf_tag_get_cid(tag);
+            if ((cid > 0) && (trans_table_get(orig_sprite_refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID)) {
+                prev_tag->next = tag->next;
+                swf_tag_destroy(tag);
+                tag = prev_tag;
+            } else {
+                prev_tag = tag;
+            }
+        }
+        
+        // prev_sprite_tag を取り直す。(PURGE される事があるので)
+        for (tag=swf->tag ; tag ; tag=tag->next) {
+            if (isSpriteTag(tag->tag)) {
+                if (swf_tag_get_cid(tag) == sprite_cid) {
+                    break;
+                }
+            }
+            prev_sprite_tag = tag;
+        }
+    } else { // orig_sprite_refcid_trans_table : false
+        orig_sprite_refcid_trans_table = NULL;
     }
-    // 
-#endif // SWF_OBJECT_UNUSED_CID_PURGE
     
     // 既存の CID
     cid_trans_table = trans_table_open();
@@ -1201,9 +1194,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
         }
     }
     trans_table_close(cid_trans_table);
-#ifdef SWF_OBJECT_UNUSED_CID_PURGE
-    trans_table_close(orig_sprite_refcid_trans_table);
-#endif// SWF_OBJECT_UNUSED_CID_PURGE
+    if (orig_sprite_refcid_trans_table) { // orig_sprite_refcid_trans_table
+      trans_table_close(orig_sprite_refcid_trans_table);
+    }
     swf_object_close(swf4sprite);
     return 0;
 }
