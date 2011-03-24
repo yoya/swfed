@@ -331,6 +331,13 @@ PHP_METHOD(swfed, getHeaderInfo) {
         add_assoc_bool(return_value, "compress", 0);
     }
     add_assoc_long(return_value, "version", swf->header.version);
+
+    add_assoc_long(return_value, "x_min", swf->header_movie.frame_size.x_min / SWF_TWIPS);
+    add_assoc_long(return_value, "y_min", swf->header_movie.frame_size.y_min / SWF_TWIPS);
+    add_assoc_long(return_value, "x_max", swf->header_movie.frame_size.x_max / SWF_TWIPS);
+    add_assoc_long(return_value, "y_max", swf->header_movie.frame_size.y_max / SWF_TWIPS);
+    
+    
 }
 
 PHP_METHOD(swfed, setHeaderInfo) {
