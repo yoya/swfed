@@ -61,8 +61,8 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 73, "DefineFontAlignZones", NULL },
     { 74, "CSMTextSettings", NULL },
     { 75, "DefineFont3", NULL } ,
-    { 83, "DefineShape4", NULL /*swf_tag_shape_detail_handler*/ },
-    { 84, "DefineMorphShape2", NULL /*swf_tag_shape_detail_handler*/ },
+    { 83, "DefineShape4",  swf_tag_shape_cid_handler },
+    { 84, "DefineMorphShape2", swf_tag_shape_cid_handler },
     { 88, "DefineFontName", NULL } ,
     { 777,"Reflex", NULL } ,
 };

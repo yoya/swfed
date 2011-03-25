@@ -25,6 +25,18 @@ swf_tag_shape_detail_handler(void) {
     return &shape_detail_handler;
 }
 
+swf_tag_detail_handler_t *
+swf_tag_shape_cid_handler(void) {
+    shape_detail_handler.create   = NULL;
+    shape_detail_handler.input    = NULL;
+    shape_detail_handler.get_cid     = swf_tag_shape_get_cid_detail;
+    shape_detail_handler.replace_cid = swf_tag_shape_replace_cid_detail;
+    shape_detail_handler.output   = NULL;
+    shape_detail_handler.print    = NULL;
+    shape_detail_handler.destroy  = NULL;
+    return &shape_detail_handler;
+}
+
 void *
 swf_tag_shape_create_detail(void) {
     swf_tag_shape_detail_t *swf_tag_shape;
