@@ -401,9 +401,8 @@ PHP_METHOD(swfed, getTagList) {
         RETURN_FALSE; /* XXX */
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    tag = swf->tag;
     array_init(return_value);
-    for (tag=swf->tag ; tag ; tag=tag->next) {
+    for (tag=swf->tag_head ; tag ; tag=tag->next) {
         ALLOC_INIT_ZVAL(data);
         array_init(data);
         add_assoc_long(data, "tag", tag->tag);
@@ -434,7 +433,7 @@ PHP_METHOD(swfed, getTagDetail) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     i = 0;
-    for (tag=swf->tag ; tag ; tag=tag->next) {
+    for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (i == tag_seqno) {
             break;
         }
@@ -711,7 +710,7 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     array_init(return_value);
     i = 0;
-    for (tag = swf->tag ; tag ; tag=tag->next) {
+    for (tag = swf->tag_head ; tag ; tag=tag->next) {
         register int tag_code = tag->tag;
         if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
             swf_tag_shape_detail_t *swf_tag_shape = tag->detail;

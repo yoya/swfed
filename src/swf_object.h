@@ -15,7 +15,7 @@
 typedef struct swf_object_ {
     swf_header_t header;
     swf_header_movie_t header_movie;
-    swf_tag_t *tag;
+    swf_tag_t *tag_head, *tag_tail;
     unsigned shape_adjust_mode;
     unsigned compress_level;
 } swf_object_t;

@@ -20,7 +20,7 @@ typedef struct swf_tag_ {
     unsigned char *data;
     void *detail;
     //
-    struct swf_tag_ *next;
+    struct swf_tag_ *prev, *next;
 } swf_tag_t;
 
 typedef struct swf_tag_detail_handler_ {
