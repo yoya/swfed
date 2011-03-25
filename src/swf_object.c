@@ -201,11 +201,10 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
 
 void
 swf_object_rebuild(swf_object_t *swf) {
-    int i;
     swf_tag_t *tag;
     for (tag = swf->tag; tag ; tag = tag->next) {
         if (isShapeTag(tag->tag)) {
-            continue; // skip まだ動作怪しいので
+            continue; // skip Shape はまだ動作が怪しいので
         }
         swf_tag_rebuild(tag, swf);
     }
