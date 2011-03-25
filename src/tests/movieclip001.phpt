@@ -3,7 +3,7 @@ replaceGIFData test;
 --FILE--
 <?php
 
-$swf_filename = 'tests/negi.swf';
+$swf_filename = 'tests/negimiku.swf';
 $swf_filename2 = 'tests/saitama3.swf';
 
 $swfdata = file_get_contents($swf_filename);
