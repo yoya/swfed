@@ -978,7 +978,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     if (cid <= 0) {
         fprintf(stderr,
-                "swf_object_replace_movieclip: place cid(%d) <= 0\n", cid);
+                "swf_object_replace_movieclip: not found place instance_name=%s (cid=%d)\n",
+                instance_name, cid);
         return 1; // not found instance name;
     }
 
