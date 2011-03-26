@@ -832,7 +832,7 @@ int
 swf_object_insert_action_setvariables(swf_object_t *swf,
                                       y_keyvalue_t *kv) {
     swf_tag_t *tag, *prev = NULL;
-    swf_tag_t *action_tag = NULL, *prev_tag = NULL, *next_tag = NULL;
+    swf_tag_t *action_tag = NULL, *prev_tag = NULL;
     int ret, done = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_insert_action_setvariables: swf == NULL\n");
@@ -841,24 +841,26 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         switch (tag->tag) {
         case 1: // ShowFrame
-            if (next_tag == NULL) {
+            if (prev_tag == NULL) {
+                // ShowFrame までに候補が見つからなければ、ShowFrame の直前
                 prev_tag = prev;
-                next_tag = tag;
             }
             done = 1;
             break;
         case 12: // DoAction
+            // DoAction が見つかれば、そこに ActionByteCode を混ぜる。
             action_tag = tag;
             done = 1;
             break;
         case 69: // FileAttributs
         case  9: // SetBackgroundColor
         case 24: // Protect
+            // これらのタグより後ろにイメージを置く
+            prev_tag = tag;
             break;
         default:
-            if (next_tag == NULL) {
+            if (prev_tag == NULL) {
                 prev_tag = prev;
-                next_tag = tag;
             }
             break;
         }
@@ -866,10 +868,6 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
             break;
         }
         prev = tag;
-    }
-    if ((action_tag == NULL) && (next_tag == NULL)) {
-        fprintf(stderr, "swf_object_insert_action_setvariables: action_tag == NULL && next_tag == NULL\n");
-        return 1; // NG
     }
     if (action_tag) { // DoAction の頭に変数代入イメージを挿入
         ret = swf_tag_put_action_setvariables(action_tag,
@@ -885,15 +883,16 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
             fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_create_action_setvariables failed\n");
             return 1; // NG
         }
-        if (prev_tag == NULL) {
+        if (prev_tag == NULL) { // 普通ないけど、念の為。
+            tag->next = swf->tag_head;
+            tag->next->prev = tag;
             swf->tag_head = tag;
-            tag->next = next_tag;
-            next_tag->prev = tag;
+            tag->prev = NULL;
         } else {
+            tag->next = prev_tag->next;
+            tag->next->prev = tag;
             prev_tag->next = tag;
             tag->prev = prev_tag;
-            tag->next = next_tag;
-            next_tag->prev = tag;
         }
     }
     return 0; // SUCCESS
