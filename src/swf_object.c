@@ -201,19 +201,6 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
     return data;
 }
 
-/* --- */
-
-void
-swf_object_rebuild(swf_object_t *swf) {
-    swf_tag_t *tag;
-    for (tag = swf->tag_head; tag ; tag = tag->next) {
-        if (isShapeTag(tag->tag)) {
-            continue; // skip Shape はまだ動作が怪しいので
-        }
-        swf_tag_rebuild(tag, swf);
-    }
-}
-
 void
 swf_object_print(swf_object_t *swf) {
     int i;
@@ -231,6 +218,21 @@ swf_object_print(swf_object_t *swf) {
         i++;
     }
 }
+
+/* --- */
+
+void
+swf_object_rebuild(swf_object_t *swf) {
+    swf_tag_t *tag;
+    for (tag = swf->tag_head; tag ; tag = tag->next) {
+        if (isShapeTag(tag->tag)) {
+            continue; // skip Shape はまだ動作が怪しいので
+        }
+        swf_tag_rebuild(tag, swf);
+    }
+}
+
+/* --- */
 
 unsigned char *
 swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
