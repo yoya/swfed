@@ -1009,11 +1009,23 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
     // インスタンス名から PlaceObject を探し、参照している CID を取得する
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
+        cid = 0;
         if (tag->tag == 26) { // PlaceObject2
             cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
-            if (cid > 0) {
-                break; // found
+        } if (isSpriteTag(tag->tag)) {
+            swf_tag_t *t;
+            swf_tag_sprite_detail_t *tag_sprite;
+            tag_sprite = swf_tag_create_input_detail(tag, swf);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "swf_object_replace_movieclip: tag_sprite swf_tag_create_input_detail failed\n");
+                continue;
             }
+            for (t = tag_sprite->tag ; t ; t = t->next) {
+                cid = swf_tag_place_get_cid_by_instance_name(t, instance_name, instance_name_len, swf);
+            }
+        }
+        if (cid > 0) {
+            break; // found
         }
     }
     if (cid <= 0) {
