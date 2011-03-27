@@ -1190,10 +1190,12 @@ PHP_METHOD(swfed, replaceMovieClip) {
     swf = get_swf_object(getThis() TSRMLS_CC);    
     result = swf_object_replace_movieclip(swf, instance_name,
                                           instance_name_len,
-                                          swf_data, swf_data_len,
-                                          unused_cid_purge);
+                                          swf_data, swf_data_len);
     if (result) {
         RETURN_FALSE;
+    }
+    if (unused_cid_purge) {
+        swf_object_purge_useless_cid(swf);
     }
     RETURN_TRUE;
 }
