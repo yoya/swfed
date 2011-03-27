@@ -91,6 +91,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  setCompressLevel, NULL, 0)
     PHP_ME(swfed,  swfInfo, NULL, 0)
 //    PHP_ME(swfed,  rebuild, NULL, 0)
+    PHP_ME(swfed,  purgeUselessContents, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
 /* }}} */
@@ -1183,6 +1184,7 @@ PHP_METHOD(swfed, replaceMovieClip) {
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssb",
 				  &instance_name, &instance_name_len,
 				  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
+            // unused_cid_purge は無視します。
 	  RETURN_FALSE;
 	}
 	break;
@@ -1193,9 +1195,6 @@ PHP_METHOD(swfed, replaceMovieClip) {
                                           swf_data, swf_data_len);
     if (result) {
         RETURN_FALSE;
-    }
-    if (unused_cid_purge) {
-        swf_object_purge_useless_cid(swf);
     }
     RETURN_TRUE;
 }
@@ -1209,6 +1208,12 @@ PHP_METHOD(swfed, swfInfo) {
 PHP_METHOD(swfed, rebuild) {
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
     swf_object_rebuild(swf);
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, purgeUselessContents) {
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_purge_contents(swf);
     RETURN_TRUE;
 }
 

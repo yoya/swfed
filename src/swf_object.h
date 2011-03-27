@@ -34,8 +34,7 @@ extern void swf_object_print(swf_object_t *swf);
 /* --- */
 
 extern void swf_object_rebuild(swf_object_t *swf);
-extern void swf_object_purge_cid(swf_object_t *swf);
-
+extern void swf_object_purge_contents(swf_object_t *swf);
 /* --- */
 
 extern unsigned char *swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,

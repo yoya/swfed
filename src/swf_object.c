@@ -233,16 +233,16 @@ swf_object_rebuild(swf_object_t *swf) {
 }
 
 void
-swf_object_purge_useless_cid(swf_object_t *swf) {
+swf_object_purge_contents(swf_object_t *swf) {
     swf_tag_t *tag;
     trans_table_t *refcid_trans_table;
     if (swf == NULL) {
-        fprintf(stderr, "swf_object_purge_useless_cid: swf == NULL\n");
+        fprintf(stderr, "swf_object_purge_contents: swf == NULL\n");
         return ;
     }
     refcid_trans_table = trans_table_open();
     if (refcid_trans_table == NULL) {
-        fprintf(stderr, "swf_object_purge_useless_cid: trans_table_open failed\n");
+        fprintf(stderr, "swf_object_purge_contents: trans_table_open failed\n");
         return ;
     }
     // 後ろから走査
@@ -271,7 +271,7 @@ swf_object_purge_useless_cid(swf_object_t *swf) {
                 swf_tag_sprite_detail_t *tag_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
                 if (tag_sprite == NULL) {
-                    fprintf(stderr, "swf_object_purge_useless_cid: tag_sprite == NULL\n");
+                    fprintf(stderr, "swf_object_purge_contents: tag_sprite == NULL\n");
                 } else {
                     for (t = tag_sprite->tag ; t ; t = t->next) {
                         int rid = swf_tag_get_refcid(t);
@@ -1021,7 +1021,12 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 continue;
             }
             for (t = tag_sprite->tag ; t ; t = t->next) {
-                cid = swf_tag_place_get_cid_by_instance_name(t, instance_name, instance_name_len, swf);
+                if (tag->tag == 26) { // PlaceObject2
+                    cid = swf_tag_place_get_cid_by_instance_name(t, instance_name, instance_name_len, swf);
+                }
+                if (cid > 0) {
+                    break; // found
+                }
             }
         }
         if (cid > 0) {
