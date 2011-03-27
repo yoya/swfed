@@ -1,5 +1,5 @@
 --TEST--
-replaceGIFData test;
+replaceMovieClip
 --FILE--
 <?php
 
@@ -17,5 +17,5 @@ echo md5($obj->output())."\n";
 ?>
 ===DONE===
 --EXPECTF--
-967f0de27ae9f02cf658000a0b802fc6
+9ecdd9f333c36b03f76dacb272efd0b7
 ===DONE===
