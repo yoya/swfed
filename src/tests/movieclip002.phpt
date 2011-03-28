@@ -1,5 +1,5 @@
 --TEST--
-replaceGIFData and Purge
+replaceMovieClip and Purge
 --FILE--
 <?php
 
