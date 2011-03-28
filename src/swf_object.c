@@ -1054,11 +1054,11 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 continue;
             }
             for (t = tag_sprite->tag ; t ; t = t->next) {
-                if (tag->tag == 26) { // PlaceObject2
+                if (t->tag == 26) { // PlaceObject2
                     cid = swf_tag_place_get_cid_by_instance_name(t, instance_name, instance_name_len, swf);
-                }
-                if (cid > 0) {
-                    break; // found
+                    if (cid > 0) {
+                        break; // found
+                    }
                 }
             }
         }
