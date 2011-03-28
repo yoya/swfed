@@ -575,7 +575,6 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
 		if (bitmap_id_list) {
 		    int i;
 		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
-		      fprintf(stderr, "adjust_shape_bitmap: i=%d/%d bimap_id_list[i]=%d\n", i, bitmap_id_list_num, bitmap_id_list[i]);
 		        if (bitmap_id_list[i] == bitmap_id) {
 			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
 			    swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);

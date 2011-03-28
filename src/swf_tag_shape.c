@@ -498,8 +498,6 @@ int
 swf_tag_shape_apply_type_tilled(void *detail, int shape_id) {
     int i, count;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
-    fprintf(stderr, "swf_tag_shape_apply_type_tilled(detail, shape_id=%d)\n",
-	    shape_id);
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_type_tilled: detail == NULL\n");
         return 1;
