@@ -149,57 +149,99 @@ int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id) {
     return 0; // always 0
 }
 
-int swf_tag_shape_bitmap_get_refcid(swf_tag_t *tag) {
+int *
+swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     swf_tag_shape_detail_t *swf_tag_shape;
     int i, ret;
+    int *cid_list, cid_list_alloc;
+    swf_styles_t *styles = NULL;
+    swf_shape_record_t *shape_records = NULL;
+
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: tag == NULL\n");
-        return -1;
+        return NULL;
     }
     if (! isShapeTag(tag->tag)) {
         fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: ! isShapeTag(%d)\n",
                 tag->tag);
-        return -1;
+        return NULL;
     }
     if (tag->detail == NULL) {
         tag->detail = swf_tag_shape_create_detail();
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
+	//        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
         ret = swf_tag_shape_input_detail(tag, NULL);
         if (ret) {
             swf_tag_shape_destroy_detail(tag);
-            return -1; // no shape bitmap
+            return NULL; // no shape bitmap
         }
     } else {
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
     //
-    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
-        swf_fill_style_t *fill_style;
-        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
-        if (fill_style == NULL) {
-            fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
-            return -1; // Illegal!!!
-        }
-        switch (fill_style->type) {
-          case 0x40: // tilled  bitmap fill with smoothed edges
-          case 0x41: // clipped bitmap fill with smoothed edges
-          case 0x42: // tilled  bitmap fill with hard edges
-          case 0x43: // clipped bitmap fill with hard edges
-            if (fill_style->bitmap.bitmap_ref != 0xffff) {
-                return fill_style->bitmap.bitmap_ref;
-            }
-            break;
-          default:
-            break;
-        }
+    *cid_list_num = 0;
+    cid_list_alloc = 10;
+    cid_list = malloc(sizeof(int) * cid_list_alloc);
+
+    styles = &(swf_tag_shape->shape_with_style.styles);
+    shape_records = &(swf_tag_shape->shape_with_style.shape_records);
+    while (1) {
+        for (i = 0 ; i < styles->fill_styles.count ; i++) {
+	    swf_fill_style_t *fill_style;
+	    fill_style = &(styles->fill_styles.fill_style[i]);
+	    if (fill_style == NULL) {
+              fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
+	        free(cid_list);
+		return NULL; // Illegal!!!
+	    }
+	    switch (fill_style->type) {
+              case 0x40: // tilled  bitmap fill with smoothed edges
+              case 0x41: // clipped bitmap fill with smoothed edges
+              case 0x42: // tilled  bitmap fill with hard edges
+              case 0x43: // clipped bitmap fill with hard edges
+		if (fill_style->bitmap.bitmap_ref != 0xffff) {
+	          if (cid_list_alloc <= *cid_list_num) {
+		    cid_list_alloc *= 2;
+		    realloc(cid_list, cid_list_alloc);
+		  }
+		  cid_list[*cid_list_num] = fill_style->bitmap.bitmap_ref;
+		  *cid_list_num  = (*cid_list_num)  + 1;
+		}
+		break;
+              default:
+		break;
+	    }
+	}
+	// new style を探す
+	for ( ; shape_records ; shape_records = shape_records->next) {
+	    if ((shape_records->first_6bits) && 
+		((shape_records->first_6bits & 0x20) == 0)) {
+		if (shape_records->shape.shape_setup.shape_has_new_styles) {
+		    styles = &(shape_records->shape.shape_setup.styles);
+		    break;
+		}
+	    }
+	}
+	if (shape_records) {
+	    shape_records = shape_records->next; // next
+	} else {
+	    break; // finish
+	}
     }
-    return -1; // not found
+
+    if (*cid_list_num == 0) {
+        free(cid_list);
+	return NULL;
+    }
+    return cid_list; // not found
 }
 
-int swf_tag_shape_bitmap_replace_refcid(swf_tag_t *tag, int cid) {
+int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid) {
     swf_tag_shape_detail_t *swf_tag_shape;
     int i, ret;
+    swf_styles_t *styles = NULL;
+    swf_shape_record_t *shape_records = NULL;
+
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: tag == NULL\n");
         return 1;
@@ -221,32 +263,52 @@ int swf_tag_shape_bitmap_replace_refcid(swf_tag_t *tag, int cid) {
     } else {
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
-    //
-    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
-        swf_fill_style_t *fill_style;
-        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
-        if (fill_style == NULL) {
-            fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
-            return 1; // Illegal!!!
-        }
-        switch (fill_style->type) {
-          case 0x40: // tilled  bitmap fill with smoothed edges
-          case 0x41: // clipped bitmap fill with smoothed edges
-          case 0x42: // tilled  bitmap fill with hard edges
-          case 0x43: // clipped bitmap fill with hard edges
-            if (fill_style->bitmap.bitmap_ref != 0xffff) {
-                fill_style->bitmap.bitmap_ref = cid;
-                if (tag->data) {
-                    // 内容が変わったので元データは削除
-                    free(tag->data);
-                    tag->data = NULL;
-                }
-                return 0; // success!
-            }
-            break;
-          default:
-            break;
-        }
+
+    styles = &(swf_tag_shape->shape_with_style.styles);
+    shape_records = &(swf_tag_shape->shape_with_style.shape_records);
+
+    while (1) {
+        for (i = 0 ; i < styles->fill_styles.count ; i++) {
+	    swf_fill_style_t *fill_style;
+	    fill_style = &(styles->fill_styles.fill_style[i]);
+	    if (fill_style == NULL) {
+	        fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
+		return 1; // Illegal!!!
+	    }
+	    switch (fill_style->type) {
+	      case 0x40: // tilled  bitmap fill with smoothed edges
+	      case 0x41: // clipped bitmap fill with smoothed edges
+	      case 0x42: // tilled  bitmap fill with hard edges
+	      case 0x43: // clipped bitmap fill with hard edges
+		if (fill_style->bitmap.bitmap_ref == from_cid) {
+		    fill_style->bitmap.bitmap_ref = to_cid;
+		    if (tag->data) {
+		        // 内容が変わったので元データは削除
+		        free(tag->data);
+			tag->data = NULL;
+		    }
+		    return 0; // success!
+		}
+		break;
+	    default:
+	      break;
+	    }
+	}
+	// new style を探す
+	for ( ; shape_records ; shape_records = shape_records->next) {
+	    if ((shape_records->first_6bits) && 
+		((shape_records->first_6bits & 0x20) == 0)) {
+		if (shape_records->shape.shape_setup.shape_has_new_styles) {
+		    styles = &(shape_records->shape.shape_setup.styles);
+		    break;
+		}
+	    }
+	}
+	if (shape_records) {
+	    shape_records = shape_records->next; // next
+	} else {
+	    break; // finish
+	}
     }
     return 1; // not found
 }
@@ -436,11 +498,15 @@ int
 swf_tag_shape_apply_type_tilled(void *detail, int shape_id) {
     int i, count;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    fprintf(stderr, "swf_tag_shape_apply_type_tilled(detail, shape_id=%d)\n",
+	    shape_id);
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_type_tilled: detail == NULL\n");
         return 1;
     }
     if (shape_id != swf_tag_shape->shape_id) {
+        fprintf(stderr, "swf_tag_shape_apply_type_tilled: shape_id(%d) != shape->shape_id(%d)\n",
+	      shape_id, swf_tag_shape->shape_id);
         return 1;
     }
     count = swf_tag_shape->shape_with_style.styles.fill_styles.count;

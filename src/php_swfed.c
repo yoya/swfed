@@ -700,7 +700,8 @@ PHP_METHOD(swfed, setShapeAdjustMode) {
 }
 
 PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
-    long bitmap_id;
+    int bitmap_id;
+    int *bitmap_id_list, bitmap_id_list_num;
     swf_object_t *swf = NULL;
     swf_tag_t *tag = NULL;
     int i;
@@ -713,10 +714,20 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     i = 0;
     for (tag = swf->tag_head ; tag ; tag=tag->next) {
         register int tag_code = tag->tag;
-        if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
-            swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-            add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
-            i++;
+        if (isShapeTag(tag_code)) {
+	    bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+	    if (bitmap_id_list) {
+	        int j;
+		for (j=0 ; j < bitmap_id_list_num ; j++) {
+		    if (bitmap_id_list[j] == bitmap_id) {
+		        swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+			add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
+			i++;
+			break;
+		    }
+		}
+		free(bitmap_id_list);
+	    }
         }
     }
 }

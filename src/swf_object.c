@@ -261,12 +261,16 @@ swf_object_purge_contents(swf_object_t *swf) {
         if (trans_table_get(refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID) {
             // no purge
             if (isShapeTag(tag->tag)) {
-                int bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
-                if (bitmap_id > 0) {
-                    trans_table_set(refcid_trans_table, bitmap_id, TRANS_TABLE_RESERVE_ID);
-                }
-            }
-            if (isSpriteTag(tag->tag)) {
+	        int *bitmap_id_list, bitmap_id_list_num;
+		bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+		if (bitmap_id_list) {
+		    int i;
+		    for (i = 0 ; i < bitmap_id_list_num; i++) {
+                        trans_table_set(refcid_trans_table, bitmap_id_list[i], TRANS_TABLE_RESERVE_ID);
+		    }
+		    free(bitmap_id_list);
+		}
+            } else if (isSpriteTag(tag->tag)) {
                 swf_tag_t *t;
                 swf_tag_sprite_detail_t *tag_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
@@ -515,41 +519,71 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
                               int new_width, int new_height) {
     swf_tag_t *tag = NULL;
     double width_scale = 0, height_scale = 0;
+    int *bitmap_id_list, bitmap_id_list_num;
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
-                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-
-                swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
-                                                  width_scale, height_scale,
-                                                  0, 0, 0, swf);
+            if (isShapeTag(tag_code)) {
+	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+		if (bitmap_id_list) {
+		    int i;
+		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+		        if (bitmap_id_list[i] == bitmap_id) {
+			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+			    swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
+							      width_scale, height_scale,
+							      0, 0, 0, swf);
+			    break;
+			}
+		    }
+		    free(bitmap_id_list);
+		}
             }
-        }
+	}
     }
     
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
-            register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
-                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-                swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
-                                                width_scale, height_scale,
-                                                0, 0, swf);
-            }
-        }
+	    register int tag_code = tag->tag;
+            if (isShapeTag(tag_code)) {
+	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+		if (bitmap_id_list) {
+		    int i;
+		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+		        if (bitmap_id_list[i] == bitmap_id) {
+			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+			    swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
+							    width_scale, height_scale,
+							    0, 0, swf);
+			    break;
+			}
+		    }
+		    free(bitmap_id_list);
+		}
+	    }
+	}
     }
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
             register int tag_code = tag->tag;
-            if (isShapeTag(tag_code) && (swf_tag_shape_bitmap_get_refcid(tag) == bitmap_id)) {
-                swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-                swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
-            }
+            if (isShapeTag(tag_code)) {
+	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+		if (bitmap_id_list) {
+		    int i;
+		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+		      fprintf(stderr, "adjust_shape_bitmap: i=%d/%d bimap_id_list[i]=%d\n", i, bitmap_id_list_num, bitmap_id_list[i]);
+		        if (bitmap_id_list[i] == bitmap_id) {
+			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+			    swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
+			}
+		    }
+		    free(bitmap_id_list);
+		}
+	    }
         }
     }
     return 0;
@@ -1152,11 +1186,19 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
               }
               if (isShapeTag(tag_no)) {
-                  int  bitmap_id = swf_tag_shape_bitmap_get_refcid(tag);
-                  if (bitmap_id > 0) {
-                      int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
-                      swf_tag_shape_bitmap_replace_refcid(tag, to_bitmap_id);
-                  }
+		  int *bitmap_id_list, bitmap_id_list_num;
+		  bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+		  if (bitmap_id_list) {
+		      int i;
+		      for (i = 0 ; i < bitmap_id_list_num; i++) {
+		          int bitmap_id = bitmap_id_list[i];
+			  int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
+			  if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
+			      swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
+			  }
+		      }
+		      free(bitmap_id_list);
+		  }
               } else if (isSpriteTag(tag_no)){
                   swf_tag_sprite_detail_t *s;
                   s = swf_tag_create_input_detail(tag, swf);
