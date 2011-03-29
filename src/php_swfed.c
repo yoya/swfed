@@ -459,6 +459,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_sprite_detail_t   *tag_sprite;
         swf_tag_shape_detail_t    *tag_shape;
         swf_tag_place_detail_t    *tag_place;
+	zval *data = NULL;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
@@ -536,6 +537,18 @@ PHP_METHOD(swfed, getTagDetail) {
         add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
         add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
 //        tag_shape->shape_with_style.shape_records
+	int *bitmap_id_list, bitmap_id_list_num;
+	bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+	if (bitmap_id_list) {
+	    int i;
+	    ALLOC_INIT_ZVAL(data);
+	    array_init(data);
+	    for (i = 0 ; i < bitmap_id_list_num ; i++) {
+	        add_index_long(data, i , bitmap_id_list[i]);
+	    }
+	    add_assoc_zval(return_value, "bitmap_ref", data);
+	    free(bitmap_id_list);
+	}
         break;
       case 4: // PlaceObject
       case 26: // PlaceObject2
