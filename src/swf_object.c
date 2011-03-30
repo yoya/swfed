@@ -221,15 +221,17 @@ swf_object_print(swf_object_t *swf) {
 
 /* --- */
 
-void
+int
 swf_object_rebuild(swf_object_t *swf) {
     swf_tag_t *tag;
+    int ret;
     for (tag = swf->tag_head; tag ; tag = tag->next) {
-        if (isShapeTag(tag->tag)) {
-            continue; // skip Shape はまだ動作が怪しいので
-        }
-        swf_tag_rebuild(tag, swf);
+        ret = swf_tag_rebuild(tag, swf);
+	if (ret) {
+	    return ret;
+	}
     }
+    return 0;
 }
 
 void

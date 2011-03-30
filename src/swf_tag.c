@@ -214,7 +214,7 @@ swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_detail_handler_t * detail_handler = NULL;
     int ret;
     tag_info = get_swf_tag_info(tag->tag);
-    if (tag_info == NULL) {
+    if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
         return 1; // no info
     }
     detail_handler = tag_info->detail_handler();

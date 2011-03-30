@@ -33,7 +33,7 @@ extern void swf_object_print(swf_object_t *swf);
 
 /* --- */
 
-extern void swf_object_rebuild(swf_object_t *swf);
+extern int swf_object_rebuild(swf_object_t *swf);
 extern void swf_object_purge_contents(swf_object_t *swf);
 /* --- */
 
