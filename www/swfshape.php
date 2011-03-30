@@ -16,4 +16,8 @@ $swf->input($swf_data);
 $swf->replaceShapeData(1, $shape_data);
 
 header("Content-type: application/x-shockwave-flash");
+$header_info = array(
+	'x_min' => -100, 'y_min' => -100
+);
+$swf->setHeaderInfo($header_info);
 echo $swf->output();
