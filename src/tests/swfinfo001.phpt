@@ -39,12 +39,12 @@ frame_rate=8.0  frame_count=40
     [1] type=0x41
             fill_style_bitmap
             bitmap_ref=65535
-            scale=(19.935,20.075):bits=22  (has_rotate=no)
+            scale=(0.997,1.004):bits=22  (has_rotate=no)
             translate=(0.00,0.00):bits=0
     [2] type=0x41
             fill_style_bitmap
             bitmap_ref=1
-            scale=(19.935,20.075):bits=22  (has_rotate=no)
+            scale=(0.997,1.004):bits=22  (has_rotate=no)
             translate=(-49.00,-28.00):bits=11
     line_style_array->count=0
     fill_bits_count=2  line_bits_count=0
