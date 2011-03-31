@@ -1187,7 +1187,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
               }
               if (isShapeTag(tag_no)) {
-		fprintf(stderr, "XXX: isShapeTag: cid=%d\n", cid);
 		  int *bitmap_id_list, bitmap_id_list_num;
 		  bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 		  if (bitmap_id_list) {
@@ -1195,7 +1194,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
 		      for (i = 0 ; i < bitmap_id_list_num; i++) {
 		          int bitmap_id = bitmap_id_list[i];
 			  int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
-			fprintf(stderr, "   : (%d) bitmap_id=%d => %d\n", i,  bitmap_id, to_bitmap_id);
 			  if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
 			      swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
 			  }
