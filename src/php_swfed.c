@@ -65,6 +65,8 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getTagDetail, NULL, 0)
     PHP_ME(swfed,  getTagData, NULL, 0)
     PHP_ME(swfed,  replaceTagData, NULL, 0)
+    PHP_ME(swfed,  getTagDataByCID, NULL, 0)
+    PHP_ME(swfed,  replaceTagDataByCID, NULL, 0)
     PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
     PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
 
@@ -617,6 +619,49 @@ PHP_METHOD(swfed, replaceTagData) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_tagdata(swf, tag_seqno,
                                         (unsigned char *)data, data_len);
+    if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, getTagDataByCID) {
+    long cid = 0;
+    swf_object_t *swf = NULL;
+    unsigned char *data_ref = NULL;
+    unsigned long data_len = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    data_ref = swf_object_get_tagdata_bycid(swf, cid, &data_len);
+    if (data_ref == NULL) {
+        fprintf(stderr, "getTagDataByCID: Can't get_tagdata_bycid\n");
+        RETURN_FALSE;
+    }
+    RETURN_STRINGL(data_ref, data_len, 1);
+}
+
+PHP_METHOD(swfed, replaceTagDataByCID) {
+    char *data = NULL;
+    unsigned long data_len = 0;
+    long cid = 0;
+    swf_object_t *swf = NULL;
+    int result = 0;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &cid, &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    result = swf_object_replace_tagdata_bycid(swf, cid,
+					      (unsigned char *)data,
+					      data_len);
     if (result) {
         RETURN_FALSE;
     }

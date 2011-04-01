@@ -339,8 +339,8 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
 }
 
 unsigned char *
-swf_object_get_tag_bycid(swf_object_t *swf, int cid,
-                       unsigned long *length) {
+swf_object_get_tagdata_bycid(swf_object_t *swf, int cid,
+			     unsigned long *length) {
     swf_tag_t *tag;
     unsigned char *data = NULL;
     tag = swf_object_search_tag_bycid(swf, cid);
@@ -354,7 +354,7 @@ swf_object_get_tag_bycid(swf_object_t *swf, int cid,
 }
 
 int
-swf_object_replace_tag_bycid(swf_object_t *swf, int cid,
+swf_object_replace_tagdata_bycid(swf_object_t *swf, int cid,
 			      unsigned char *data, unsigned long length) {
     swf_tag_t *old_tag, *new_tag;
     old_tag = swf_object_search_tag_bycid(swf, cid);

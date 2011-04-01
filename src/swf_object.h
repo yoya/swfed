@@ -43,13 +43,13 @@ extern unsigned char *swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
 extern int swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
                                       unsigned char *data,
                                       unsigned long length);
-extern unsigned char *swf_object_get_tag_bycid(swf_object_t *swf,
+extern unsigned char *swf_object_get_tagdata_bycid(swf_object_t *swf,
 						   int cid,
 						   unsigned long *length);
-extern int swf_object_replace_tag_bycid(swf_object_t *swf,
-					int cid,
-					unsigned char *data,
-					unsigned long length);
+extern int swf_object_replace_tagdata_bycid(swf_object_t *swf,
+					    int cid,
+					    unsigned char *data,
+					    unsigned long length);
 extern unsigned char *swf_object_get_tagcontents_bycid(swf_object_t *swf,
                                                        int cid,
                                                        unsigned long *length);
