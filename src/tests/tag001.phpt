@@ -11,7 +11,6 @@ $tagdata = file_get_contents($tag_filename);
 
 $obj = new SWFEditor();
 $obj->input($swfdata);
-$image_id = 1;
 $tag_seqno = 2;
 $obj->replaceTagData($tag_seqno, $tagdata);
 echo md5($obj->output())."\n";
