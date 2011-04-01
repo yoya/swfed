@@ -475,6 +475,9 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
             free(tag->data);
             tag->data = NULL;
         }
+	//    if (tag->tag == 2) { // DefineShape
+	//        tag->tag = 22;   // => DefineShape2
+	//    }
         tag->length = length + 2;
         tag->data = malloc(length + 2);
         PutUShortLE(tag->data, cid);
