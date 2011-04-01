@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> // memcmp
+#include <string.h> // memcmp, strchr
 #include <zlib.h>
 #include "bitstream.h"
 #include "swf_define.h"
@@ -1027,6 +1027,67 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
     }
 }
 
+
+// ターゲットパスに対応する Sprite タグを返す
+static swf_tag_t *
+swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
+					unsigned char *target_path,
+					int target_path_len,
+					swf_object_t *swf) {
+    swf_tag_t *tag, *sprite_tag = NULL;
+    unsigned char *instance_name, *next_instance_name;
+    int instance_name_len;
+    int cid = 0;
+
+    next_instance_name = (unsigned char *) strchr((char *) target_path, '/');
+    if (next_instance_name != NULL) {
+      next_instance_name[0] = '\0'; // null terminate
+      next_instance_name++;
+    }
+
+    instance_name = target_path;
+    instance_name_len = strlen((char *) instance_name);
+    
+    // インスタンス名から PlaceObject を探し、参照している CID を取得する
+    for (tag = tag_head ; tag ; tag=tag->next) {
+        cid = 0;
+        if (tag->tag == 26) { // PlaceObject2
+            cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
+        }
+        if (cid > 0) {
+            break; // found
+        }
+    }
+    if (cid <= 0) {
+        fprintf(stderr,
+                "swf_object_replace_movieclip: not found place target_path=%s (cid=%d)\n",
+                target_path, cid);
+        return NULL; // not found instance name;
+    }
+
+    // CID で DefineSprite を探す
+    for (tag=swf->tag_head ; tag ; tag=tag->next) {
+        if (isSpriteTag(tag->tag)) {
+            if (swf_tag_get_cid(tag) ==  cid) {
+                sprite_tag = tag;
+                break;
+            }
+        }
+    }
+    if (next_instance_name) { // 入れ子になっている場合
+       if (sprite_tag) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            tag_sprite = swf_tag_create_input_detail(sprite_tag, swf);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "swf_object_replace_movieclip: tag_sprite swf_tag_create_input_detail failed\n");
+            } else {
+	      sprite_tag = swf_object_saerch_sprite_by_target_path(tag_sprite->tag, next_instance_name, target_path_len - instance_name_len - 1, swf);
+	    }
+       }
+    }
+    return sprite_tag;
+}
+
 int
 swf_object_replace_movieclip(swf_object_t *swf,
                              unsigned char *instance_name, int instance_name_len,
@@ -1045,54 +1106,19 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
     }
-    // インスタンス名から PlaceObject を探し、参照している CID を取得する
-    for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        cid = 0;
-        if (tag->tag == 26) { // PlaceObject2
-            cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
-        } if (isSpriteTag(tag->tag)) {
-            swf_tag_t *t;
-            swf_tag_sprite_detail_t *tag_sprite;
-            tag_sprite = swf_tag_create_input_detail(tag, swf);
-            if (tag_sprite == NULL) {
-                fprintf(stderr, "swf_object_replace_movieclip: tag_sprite swf_tag_create_input_detail failed\n");
-                continue;
-            }
-            for (t = tag_sprite->tag ; t ; t = t->next) {
-                if (t->tag == 26) { // PlaceObject2
-                    cid = swf_tag_place_get_cid_by_instance_name(t, instance_name, instance_name_len, swf);
-                    if (cid > 0) {
-                        break; // found
-                    }
-                }
-            }
-        }
-        if (cid > 0) {
-            break; // found
-        }
-    }
-    if (cid <= 0) {
-        fprintf(stderr,
-                "swf_object_replace_movieclip: not found place instance_name=%s (cid=%d)\n",
-                instance_name, cid);
-        return 1; // not found instance name;
-    }
 
-    // CID で DefineSprite を探す
-    for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isSpriteTag(tag->tag)) {
-            if (swf_tag_get_cid(tag) ==  cid) {
-                sprite_tag = tag;
-                sprite_cid = cid;
-                break;
-            }
-        }
-        prev_sprite_tag = tag;
-    }
+    // インスタンス名(ターゲットパス)に対応するシンボル(Spriteタグ)を探す
+    sprite_tag = swf_object_saerch_sprite_by_target_path(tag=swf->tag_head,
+							 instance_name,
+							 instance_name_len,
+							 swf);
+
     if (sprite_tag == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
         return 1; // not found instance name;
     }
+    prev_sprite_tag = sprite_tag->prev;
+    sprite_cid = swf_tag_get_cid(sprite_tag);
 
     // MC に差し替える SWF データ
     swf4sprite = swf_object_open();

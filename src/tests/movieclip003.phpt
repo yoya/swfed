@@ -12,7 +12,7 @@ $obj = new SWFEditor();
 
 $obj->input($swfdata);
 
-$obj->replaceMovieClip('negi', $swfdata2);
+$obj->replaceMovieClip('miku/negi', $swfdata2);
 echo md5($obj->output())."\n";
 ?>
 ===DONE===
