@@ -81,7 +81,15 @@ foreach ($swf->getTagList() as $tag_seqno => $tagblock) {
         $detail_str = '';
         if (is_array($detail_info)) {
             foreach ($detail_info as $key => $value) {
-                $detail_str .= "$key($value) ";
+		if (is_array($value)) {
+ 	            $detail_str .= " $key( ";
+	            foreach ($value as $key2 => $value2) {
+	                $detail_str .= "$key2 => $value2 ";
+		    }
+ 	            $detail_str .= ") ";
+	        } else {
+		    $detail_str .= "$key($value) ";
+		}
             }
         } else {
             $detail_str .= var_export($detail_info, true);
