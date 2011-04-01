@@ -1352,3 +1352,39 @@ swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id) {
     }
     return result;
 }
+
+int
+swf_object_is_shape_tagdata(unsigned char *data, int data_len) {
+  bitstream_t *bs;
+  swf_tag_t *tag;
+  int ret = 0; // default FALSE;
+
+  bs = bitstream_open();
+  bitstream_input(bs, data, data_len);
+  tag = swf_tag_create(bs);
+  if (tag) {
+      if (isShapeTag(tag->tag)) {
+          ret = 1; // TRUE
+      }
+  }
+  bitstream_close(bs);
+  return ret;
+}
+
+int
+swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
+  bitstream_t *bs;
+  swf_tag_t *tag;
+  int ret = 0; // default FALSE;
+
+  bs = bitstream_open();
+  bitstream_input(bs, data, data_len);
+  tag = swf_tag_create(bs);
+  if (tag) {
+      if (isBitmapTag(tag->tag)) {
+          ret = 1; // TRUE
+      }
+  }
+  bitstream_close(bs);
+  return ret;
+}

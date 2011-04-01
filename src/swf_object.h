@@ -119,4 +119,11 @@ extern int swf_object_apply_shaperect_factor(swf_object_t *swf,int shape_id,
                                              signed int trans_y);
 extern int swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id);
 
+
+/* --- */
+
+extern int swf_object_is_shape_tagdata(unsigned char *data, int data_len);
+
+extern int swf_object_is_bitmap_tagdata(unsigned char *data, int data_len);
+
 #endif /* __SWF_OBJECT_H__ */
