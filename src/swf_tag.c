@@ -983,6 +983,7 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
     return 0;
 }
 
+// タグの中味を移し替える
 swf_tag_t *
 swf_tag_move(swf_tag_t *from_tag) {
     swf_tag_t *to_tag = NULL;
