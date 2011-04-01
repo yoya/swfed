@@ -35,6 +35,7 @@ extern void swf_object_print(swf_object_t *swf);
 
 extern int swf_object_rebuild(swf_object_t *swf);
 extern void swf_object_purge_contents(swf_object_t *swf);
+
 /* --- */
 
 extern unsigned char *swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
@@ -42,6 +43,13 @@ extern unsigned char *swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
 extern int swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
                                       unsigned char *data,
                                       unsigned long length);
+extern unsigned char *swf_object_get_tag_bycid(swf_object_t *swf,
+						   int cid,
+						   unsigned long *length);
+extern int swf_object_replace_tag_bycid(swf_object_t *swf,
+					int cid,
+					unsigned char *data,
+					unsigned long length);
 extern unsigned char *swf_object_get_tagcontents_bycid(swf_object_t *swf,
                                                        int cid,
                                                        unsigned long *length);
@@ -50,6 +58,13 @@ extern int swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
                                                 unsigned long length);
 
 /* --- */
+
+extern swf_tag_t *swf_object_search_tag_byseqno(swf_object_t *swf,
+						int tag_seqno);
+extern swf_tag_t *swf_object_search_tag_bycid(swf_object_t *swf,
+						int cid);
+extern swf_tag_t *swf_object_search_shape_tag(swf_object_t *swf,
+                                               int shape_id);
 
 extern swf_tag_t *swf_object_search_bitmap_tag(swf_object_t *swf,
                                                int bitmap_id);
@@ -125,5 +140,8 @@ extern int swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id);
 extern int swf_object_is_shape_tagdata(unsigned char *data, int data_len);
 
 extern int swf_object_is_bitmap_tagdata(unsigned char *data, int data_len);
+extern int swf_object_replace_tag(struct swf_object_ *swf, 
+				  swf_tag_t *old_tag, swf_tag_t *new_tag);
+
 
 #endif /* __SWF_OBJECT_H__ */

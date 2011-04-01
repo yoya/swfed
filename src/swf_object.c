@@ -306,60 +306,70 @@ swf_object_purge_contents(swf_object_t *swf) {
 unsigned char *
 swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
                        unsigned long *length) {
-    int i;
     swf_tag_t *tag;
-    i=0;
-    for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        if (i >= tag_seqno) {
-            break;
-        }
-        i++;
-    }
+    unsigned char *data = NULL;
+    tag = swf_object_search_tag_byseqno(swf, tag_seqno);
     if (tag) {
-        if (tag->detail) {
-            bitstream_t *bs;
-            if (tag->data) {
-                free(tag->data);
-                tag->data = NULL;
-            }
-            bs = bitstream_open();
-            swf_tag_build(bs, tag, swf);
-            tag->data = bitstream_steal(bs, &(tag->length));
-            bitstream_close(bs);
-        }
-        if (tag->data) {
-            *length = tag->length;
-            return tag->data;
-        }
+        bitstream_t *bs = bitstream_open();
+        swf_tag_build(bs, tag, swf);
+	data = bitstream_steal(bs, length);
+	bitstream_close(bs);
     }
-    return NULL;
+    return data;
 }
 
 int
 swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
                            unsigned char *data, unsigned long length) {
-    int i;
-    swf_tag_t *tag;
-    i = 0;
-    for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        if (i >= tag_seqno) {
-            break;
-        }
-        i++;
+    swf_tag_t *old_tag, *new_tag;
+    old_tag = swf_object_search_tag_byseqno(swf, tag_seqno);
+    if (old_tag) {
+        bitstream_t *bs = bitstream_open();
+	bitstream_input(bs, data,length);
+	new_tag = swf_tag_create(bs);
+	bitstream_close(bs);
+	if (new_tag) {
+	    // 新しいタグに繋ぎかえる
+	    swf_object_replace_tag(swf, old_tag, new_tag);
+	    swf_tag_destroy(old_tag); // 前のは消す
+	    return 0;
+	}
     }
+    return 1;
+}
+
+unsigned char *
+swf_object_get_tag_bycid(swf_object_t *swf, int cid,
+                       unsigned long *length) {
+    swf_tag_t *tag;
+    unsigned char *data = NULL;
+    tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
-        if (tag->data) {
-            free(tag->data);
-            tag->data = NULL;
-        }
-        if (tag->detail) {
-            swf_tag_destroy_detail(tag);
-	    tag->detail = NULL;
-        }
-        tag->length = length;
-        tag->data = malloc(length);
-        memcpy(tag->data, data, length);
-        return 0;
+        bitstream_t *bs = bitstream_open();
+        swf_tag_build(bs, tag, swf);
+	data = bitstream_steal(bs, length);
+	bitstream_close(bs);
+    }
+    return data;
+}
+
+int
+swf_object_replace_tag_bycid(swf_object_t *swf, int cid,
+			      unsigned char *data, unsigned long length) {
+    swf_tag_t *old_tag, *new_tag;
+    old_tag = swf_object_search_tag_bycid(swf, cid);
+    if (old_tag) {
+        bitstream_t *bs = bitstream_open();
+	bitstream_input(bs, data,length);
+	new_tag = swf_tag_create(bs);
+	bitstream_close(bs);
+	swf_tag_replace_cid(new_tag, cid); // SWF 中の cid は維持する
+	if (new_tag) {
+	    // 新しいタグに繋ぎかえる
+	    swf_object_replace_tag(swf, old_tag, new_tag);
+	    swf_tag_destroy(old_tag); // 前のは消す
+	    return 0;
+	}
     }
     return 1;
 }
@@ -368,11 +378,7 @@ unsigned char *
 swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
                                   unsigned long *length) {
     swf_tag_t *tag;
-    for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        if (swf_tag_get_cid(tag) == cid) {
-            break; // match
-        }
-    }
+    tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
         // 編集されている場合は detail を data に戻す
         if ((tag->data == NULL) && tag->detail) {
@@ -396,12 +402,7 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
                                      unsigned char *data,
                                      unsigned long length) {
     swf_tag_t *tag;
-    
-    for (tag = swf->tag_head; tag ; tag = tag->next) {
-        if (swf_tag_get_cid(tag) == cid) {
-            break; // match
-        }
-    }
+    tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
         if (tag->detail) {
             swf_tag_destroy(tag);
@@ -488,6 +489,39 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
 }
 
 /* --- */
+
+swf_tag_t *
+swf_object_search_tag_byseqno(swf_object_t *swf, int tag_seqno) {
+    int i;
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_search_tag_by_seqno: swf == NULL\n");
+        return NULL;
+    }
+    i=0;
+    for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        if (i >= tag_seqno) {
+            break;
+        }
+        i++;
+    }
+    return tag;
+}
+
+swf_tag_t *
+swf_object_search_tag_bycid(swf_object_t *swf, int cid) {
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_search_tag_bycid: swf == NULL\n");
+        return NULL;
+    }
+    for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        if (swf_tag_get_cid(tag) == cid) {
+            break; // match
+        }
+    }
+    return tag;
+}
 
 swf_tag_t *
 swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
@@ -1387,4 +1421,19 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
   }
   bitstream_close(bs);
   return ret;
+}
+
+// 新しいタグに繋ぎかえる
+int
+swf_object_replace_tag(swf_object_t *swf, 
+		       swf_tag_t *old_tag, swf_tag_t *new_tag) {
+    new_tag->prev = old_tag->prev;
+    new_tag->next = old_tag->next;
+    if (new_tag->prev == NULL) {
+        swf->tag_head = new_tag;
+    }
+    if (new_tag->next == NULL) {
+        swf->tag_tail = new_tag;
+    }
+    return 0;
 }
