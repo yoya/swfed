@@ -331,7 +331,7 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
 	if (new_tag) {
 	    // 新しいタグに繋ぎかえる
 	    swf_object_replace_tag(swf, old_tag, new_tag);
-	    swf_tag_destroy(old_tag); // 前のは消す
+	    swf_tag_destroy(old_tag); // 古いのは消す
 	    return 0;
 	}
     }
@@ -1427,6 +1427,8 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
 int
 swf_object_replace_tag(swf_object_t *swf, 
 		       swf_tag_t *old_tag, swf_tag_t *new_tag) {
+    old_tag->prev->next = new_tag;
+    old_tag->next->prev = new_tag;
     new_tag->prev = old_tag->prev;
     new_tag->next = old_tag->next;
     if (new_tag->prev == NULL) {
@@ -1435,5 +1437,7 @@ swf_object_replace_tag(swf_object_t *swf,
     if (new_tag->next == NULL) {
         swf->tag_tail = new_tag;
     }
+    old_tag->prev = NULL;
+    old_tag->next = NULL;
     return 0;
 }
