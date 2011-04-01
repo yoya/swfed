@@ -82,10 +82,13 @@ PHP_METHOD(swfed, getActionData);
 PHP_METHOD(swfed, disasmActionData);
 PHP_METHOD(swfed, setActionVariables);
 PHP_METHOD(swfed, replaceMovieClip);
+
 PHP_METHOD(swfed, setCompressLevel);
 PHP_METHOD(swfed, rebuild);
 PHP_METHOD(swfed, purgeUselessContents);
 
+PHP_METHOD(swfed, isShapeTagData);
+PHP_METHOD(swfed, isBitmapTagData);
 /* 
   	Declare any global variables you may need between the BEGIN
 	and END macros here:     

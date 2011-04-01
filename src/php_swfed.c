@@ -93,6 +93,9 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  setCompressLevel, NULL, 0)
     PHP_ME(swfed,  rebuild, NULL, 0)
     PHP_ME(swfed,  purgeUselessContents, NULL, 0)
+
+    PHP_ME(swfed,  isShapeTagData, NULL, 0)
+    PHP_ME(swfed,  isBitmapTagData, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
 /* }}} */
@@ -1254,6 +1257,35 @@ PHP_METHOD(swfed, setCompressLevel) {
     swf->compress_level = compress_level;
     RETURN_TRUE;
 }
+
+PHP_METHOD(swfed, isShapeTagData) {
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    char *data = NULL;
+    int data_len = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "s", &data, &data_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if (swf_object_is_shape_tagdata(data, data_len) == 0) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;      
+}
+
+PHP_METHOD(swfed, isBitmapTagData) {
+    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    char *data = NULL;
+    int data_len = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+                              "s", &data, &data_len) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if (swf_object_is_bitmap_tagdata(data, data_len) == 0) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;      
+}
+
 
 static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
 //    zval *data, **tmp;
