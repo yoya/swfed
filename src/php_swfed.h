@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 5                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2006 The PHP Group                                |
+  | Copyright (c) 1997-2008 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -12,11 +12,11 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author: yoya@awm.jp                                                  |
+  | Author: Yoshihiro Yamazaki <yoya@awm.jp>                             |
   +----------------------------------------------------------------------+
 */
 
-/* $Id: header,v 1.16.2.1 2006/01/01 12:50:00 sniper Exp $ */
+/* $Id:$ */
 
 #ifndef PHP_SWFED_H
 #define PHP_SWFED_H
