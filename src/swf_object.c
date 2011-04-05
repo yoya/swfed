@@ -23,6 +23,8 @@
 #include "trans_table.h"
 
 static int _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag);
+static int _swf_object_replace_tag(swf_object_t *swf,
+                                   swf_tag_t *old_tag, swf_tag_t *new_tag);
 
 swf_object_t *
 swf_object_open(void) {
@@ -332,7 +334,7 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
 	bitstream_close(bs);
 	if (new_tag) {
 	    // 新しいタグに繋ぎかえる
-	    swf_object_replace_tag(swf, old_tag, new_tag);
+	    _swf_object_replace_tag(swf, old_tag, new_tag);
 	    swf_tag_destroy(old_tag); // 古いのは消す
 	    return 0;
 	}
@@ -368,7 +370,7 @@ swf_object_replace_tagdata_bycid(swf_object_t *swf, int cid,
 	swf_tag_replace_cid(new_tag, cid); // SWF 中の cid は維持する
 	if (new_tag) {
 	    // 新しいタグに繋ぎかえる
-	    swf_object_replace_tag(swf, old_tag, new_tag);
+	    _swf_object_replace_tag(swf, old_tag, new_tag);
 	    swf_tag_destroy(old_tag); // 前のは消す
 	    return 0;
 	}
@@ -1462,9 +1464,9 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
 }
 
 // 新しいタグに繋ぎかえる
-int
-swf_object_replace_tag(swf_object_t *swf, 
-		       swf_tag_t *old_tag, swf_tag_t *new_tag) {
+static int
+_swf_object_replace_tag(swf_object_t *swf, 
+                        swf_tag_t *old_tag, swf_tag_t *new_tag) {
     old_tag->prev->next = new_tag;
     old_tag->next->prev = new_tag;
     new_tag->prev = old_tag->prev;
