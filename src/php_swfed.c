@@ -714,13 +714,24 @@ PHP_METHOD(swfed, replaceTagContentsByCID) {
 
 PHP_METHOD(swfed, removeTag) {
     long tag_seqno = 0;
+    long tag_seqno_in_sprite = -1;
     swf_object_t *swf = NULL;
     int ret;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
-        RETURN_FALSE;
+
+    switch (ZEND_NUM_ARGS()) {
+      case 1:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &tag_seqno, &tag_seqno_in_sprite) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    ret = swf_object_remove_tag(swf, tag_seqno);
+    ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);
     if (ret) {
         RETURN_FALSE;
     }

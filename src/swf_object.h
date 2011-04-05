@@ -56,12 +56,15 @@ extern unsigned char *swf_object_get_tagcontents_bycid(swf_object_t *swf,
 extern int swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
                                                 unsigned char *data,
                                                 unsigned long length);
-extern int swf_object_remove_tag(swf_object_t *swf, int tag_seqno);
+extern int swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
+                                 int tag_seqno_in_sprite);
 
 /* --- */
 
 extern swf_tag_t *swf_object_search_tag_byseqno(swf_object_t *swf,
 						int tag_seqno);
+extern swf_tag_t *swf_object_search_tag_in_sprite_byseqno(swf_tag_sprite_detail_t *sprite, int tag_seqno);
+
 extern swf_tag_t *swf_object_search_tag_bycid(swf_object_t *swf,
 						int cid);
 extern swf_tag_t *swf_object_search_shape_tag(swf_object_t *swf,

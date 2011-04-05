@@ -68,12 +68,11 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         if (prev_tag == NULL) {
             swf_tag_sprite->tag = tag_in_sprite;
             tag_in_sprite->prev = NULL;
-            tag_in_sprite->next = NULL;
         } else {
             prev_tag->next = tag_in_sprite;
             tag_in_sprite->prev = prev_tag;
-            tag_in_sprite->next = NULL;
         }
+        tag_in_sprite->next = NULL;
         prev_tag = tag_in_sprite;
     }
     bitstream_close(bs);

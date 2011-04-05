@@ -23,6 +23,7 @@
 #include "trans_table.h"
 
 static int _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag);
+static int _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite, swf_tag_t *tag);
 static int _swf_object_replace_tag(swf_object_t *swf,
                                    swf_tag_t *old_tag, swf_tag_t *new_tag);
 
@@ -426,12 +427,31 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
 }
 
 int
-swf_object_remove_tag(swf_object_t *swf, int tag_seqno) {
+swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
+                      int tag_seqno_in_sprite) {
     swf_tag_t *tag;
     int ret = 1;
+
     tag = swf_object_search_tag_byseqno(swf, tag_seqno);
     if (tag) {
-        ret = _swf_object_remove_tag(swf, tag);
+        if (tag_seqno_in_sprite >= 0) {
+            if (isSpriteTag(tag->tag)) {
+                swf_tag_sprite_detail_t   *tag_sprite;
+                swf_tag_t *tag_in_sprite;
+                tag_sprite = swf_tag_create_input_detail(tag, swf);
+
+                tag_in_sprite = swf_object_search_tag_in_sprite_byseqno(tag_sprite, tag_seqno_in_sprite);
+                if (tag_in_sprite) {
+                    ret = _swf_object_remove_tag_in_sprite(tag_sprite, tag_in_sprite);
+                } else {
+                    ;
+                }
+            } else {
+                fprintf(stderr, "swf_object_remove_tag: not SpriteTag seqno=%d\n", tag_seqno);
+            }
+        } else {
+            ret = _swf_object_remove_tag(swf, tag);
+        }
     }
     return ret;
 }
@@ -453,6 +473,33 @@ _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag) {
         } else {         // prev:X next:X
             swf->tag_head = NULL;
             swf->tag_tail = NULL;
+        }
+    }
+    swf_tag_destroy(tag);
+    return 0;
+}
+
+static int
+_swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite_tag, swf_tag_t *tag) {
+
+    fprintf(stderr, "_swf_object_remove_tag_in_sprite: sprite_id=%d tag->prev=%p tag->next=%p\n", sprite_tag->sprite_id, tag->prev, tag->next);
+    if (tag->prev) {
+        if (tag->next) { // prev:O next:O
+            tag->prev->next = tag->next;
+            tag->next->prev = tag->prev;
+        } else {         // prev:O next:X
+            tag->prev->next = NULL;
+            // swf->tag_tail = tag->prev;
+        }
+    } else {
+        if (tag->next) { // prev:X next:O
+            tag->next->prev = NULL;
+            sprite_tag->tag = tag->next;
+            // swf->tag_heat = tag->next;
+        } else {         // prev:X next:X
+            sprite_tag->tag = NULL;
+            // swf->tag_head = NULL;
+            // swf->tag_tail = NULL;
         }
     }
     swf_tag_destroy(tag);
@@ -540,6 +587,24 @@ swf_object_search_tag_byseqno(swf_object_t *swf, int tag_seqno) {
     }
     i=0;
     for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        if (i >= tag_seqno) {
+            break;
+        }
+        i++;
+    }
+    return tag;
+}
+
+swf_tag_t *
+swf_object_search_tag_in_sprite_byseqno(swf_tag_sprite_detail_t *sprite, int tag_seqno) {
+    int i;
+    swf_tag_t *tag;
+    if (sprite == NULL) {
+        fprintf(stderr, "swf_object_search_tag_by_seqno: sprite == NULL\n");
+        return NULL;
+    }
+    i=0;
+    for (tag = sprite->tag ; tag ; tag = tag->next) {
         if (i >= tag_seqno) {
             break;
         }
