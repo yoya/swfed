@@ -22,6 +22,8 @@
 #include "bitmap_util.h"
 #include "trans_table.h"
 
+static int _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag);
+
 swf_object_t *
 swf_object_open(void) {
     swf_object_t *swf;
@@ -420,6 +422,42 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
     }
     return 1; // failure
 }
+
+int
+swf_object_remove_tag(swf_object_t *swf, int tag_seqno) {
+    swf_tag_t *tag;
+    int ret = 1;
+    tag = swf_object_search_tag_byseqno(swf, tag_seqno);
+    if (tag) {
+        ret = _swf_object_remove_tag(swf, tag);
+    }
+    return ret;
+}
+
+static int
+_swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag) {
+    if (tag->prev) {
+        if (tag->next) { // prev:O next:O
+            tag->prev->next = tag->next;
+            tag->next->prev = tag->prev;
+        } else {         // prev:O next:X
+            tag->prev->next = NULL;
+            swf->tag_tail = tag->prev;
+        }
+    } else {
+        if (tag->next) { // prev:X next:O
+            tag->next->prev = NULL;
+            swf->tag_head = tag->next;
+        } else {         // prev:X next:X
+            swf->tag_head = NULL;
+            swf->tag_tail = NULL;
+        }
+    }
+    swf_tag_destroy(tag);
+    return 0;
+}
+
+/* --- */
 
 unsigned char *
 swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {

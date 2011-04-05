@@ -61,6 +61,7 @@ PHP_METHOD(swfed, getTagDataByCID);
 PHP_METHOD(swfed, replaceTagDataByCID);
 PHP_METHOD(swfed, getTagContentsByCID);
 PHP_METHOD(swfed, replaceTagContentsByCID);
+PHP_METHOD(swfed, removeTag);
 //
 PHP_METHOD(swfed, getShapeData);
 PHP_METHOD(swfed, replaceShapeData);

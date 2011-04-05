@@ -69,6 +69,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  replaceTagDataByCID, NULL, 0)
     PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
     PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
+    PHP_ME(swfed,  removeTag, NULL, 0)
 
     PHP_ME(swfed,  getShapeData, NULL, 0)
     PHP_ME(swfed,  replaceShapeData, NULL, 0)
@@ -711,6 +712,20 @@ PHP_METHOD(swfed, replaceTagContentsByCID) {
     RETURN_TRUE;
 }
 
+PHP_METHOD(swfed, removeTag) {
+    long tag_seqno = 0;
+    swf_object_t *swf = NULL;
+    int ret;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+        RETURN_FALSE;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    ret = swf_object_remove_tag(swf, tag_seqno);
+    if (ret) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
 
 PHP_METHOD(swfed, getShapeData) {
     long cid = 0;
@@ -1355,3 +1370,4 @@ static void free_swfed_resource(zend_rsrc_list_entry *resource TSRMLS_DC)
 //    printf("SWFEditor->destory\n");
     swf_object_close((swf_object_t *) resource->ptr);
 }
+

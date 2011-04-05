@@ -56,6 +56,7 @@ extern unsigned char *swf_object_get_tagcontents_bycid(swf_object_t *swf,
 extern int swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
                                                 unsigned char *data,
                                                 unsigned long length);
+extern int swf_object_remove_tag(swf_object_t *swf, int tag_seqno);
 
 /* --- */
 
