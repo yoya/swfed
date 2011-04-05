@@ -41,7 +41,7 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned char *data  = tag->data;
     unsigned long length = tag->length;
     bitstream_t *bs;
-    swf_tag_t **_tag;
+    swf_tag_t *tag_in_sprite, *prev_tag;
     (void) swf;
     if (swf_tag_sprite == NULL) {
         fprintf(stderr, "ERROR: swf_tag_sprite_input_detail: swf_tag_sprite == NULL\n");
@@ -52,18 +52,29 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_sprite->sprite_id = bitstream_getbytesLE(bs, 2);
     swf_tag_sprite->frame_count = bitstream_getbytesLE(bs, 2);
     //
-    _tag = &swf_tag_sprite->tag;
+
+    prev_tag = NULL;
     while(1) {
         long pos;
         pos = bitstream_getbytepos(bs);
         if ((pos == -1) || ((long) length <= pos)) {
             break;
         }
-        *_tag = swf_tag_create(bs);
-        if (_tag == NULL) {
+        tag_in_sprite = swf_tag_create(bs);
+        if (tag_in_sprite == NULL) {
             fprintf(stderr, "swf_object_input: swf_tag_create failed\n");
+            break;
         }
-        _tag = &((*_tag)->next);
+        if (prev_tag == NULL) {
+            swf_tag_sprite->tag = tag_in_sprite;
+            tag_in_sprite->prev = NULL;
+            tag_in_sprite->next = NULL;
+        } else {
+            prev_tag->next = tag_in_sprite;
+            tag_in_sprite->prev = prev_tag;
+            tag_in_sprite->next = NULL;
+        }
+        prev_tag = tag_in_sprite;
     }
     bitstream_close(bs);
     return 0;
