@@ -443,6 +443,10 @@ swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
                 tag_in_sprite = swf_object_search_tag_in_sprite_byseqno(tag_sprite, tag_seqno_in_sprite);
                 if (tag_in_sprite) {
                     ret = _swf_object_remove_tag_in_sprite(tag_sprite, tag_in_sprite);
+                    if (ret == 0) {
+                        free(tag->data);
+                        tag->data = NULL;
+                    }
                 } else {
                     ;
                 }
@@ -481,8 +485,6 @@ _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag) {
 
 static int
 _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite_tag, swf_tag_t *tag) {
-
-    fprintf(stderr, "_swf_object_remove_tag_in_sprite: sprite_id=%d tag->prev=%p tag->next=%p\n", sprite_tag->sprite_id, tag->prev, tag->next);
     if (tag->prev) {
         if (tag->next) { // prev:O next:O
             tag->prev->next = tag->next;
@@ -493,8 +495,8 @@ _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite_tag, swf_tag_t 
         }
     } else {
         if (tag->next) { // prev:X next:O
-            tag->next->prev = NULL;
             sprite_tag->tag = tag->next;
+            tag->next->prev = NULL;
             // swf->tag_heat = tag->next;
         } else {         // prev:X next:X
             sprite_tag->tag = NULL;
