@@ -46,12 +46,13 @@ swf_line_style_array_parse(bitstream_t *bs,
 int
 swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *line_style_array, swf_tag_t *tag) {
     int i;
-    if ((tag->tag != 2) || // ! DefineShape
-        (255 <= line_style_array->count)) {
+    if ((tag->tag == 2) || // DefineShape
+        ((tag->tag > 2) && (line_style_array->count < 255))) {
+        // tag->tag == 2 の時は count == 255 でもここに来るように
+        bitstream_putbyte(bs, line_style_array->count);
+    } else {
         bitstream_putbyte(bs, 255);
         bitstream_putbytesLE(bs, line_style_array->count, 2);
-    } else {
-        bitstream_putbyte(bs, line_style_array->count);
     }
     for (i = 0 ; i < line_style_array->count ; i++) {
         swf_line_style_build(bs, &(line_style_array->line_style[i]), tag);
