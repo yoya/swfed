@@ -19,7 +19,7 @@ foreach ($obj->getTagList() as $seqno => $tagInfo) {
 --EXPECTF--
 seqno=3
 array (
-  'tag' => 6,
+  'code' => 6,
   'tagName' => 'DefineBitsJPEG',
   'length' => 2133,
   'detail' => true,

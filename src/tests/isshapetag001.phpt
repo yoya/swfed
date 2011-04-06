@@ -19,7 +19,7 @@ foreach ($obj->getTagList() as $seqno => $tagInfo) {
 --EXPECTF--
 seqno=4
 array (
-  'tag' => 2,
+  'code' => 2,
   'tagName' => 'DefineShape',
   'length' => 51,
   'detail' => true,

@@ -20,7 +20,7 @@ swf_fill_style_array_parse(bitstream_t *bs,
         }
     }
     
-    if ((tag->tag != 2) && // ! DefineShape
+    if ((tag->code != 2) && // ! DefineShape
         (fill_style_array->count == 255)) {
         fill_style_array->count = bitstream_getbytesLE(bs, 2);
     }
@@ -42,9 +42,9 @@ swf_fill_style_array_build(bitstream_t *bs,
                            swf_tag_t *tag) {
     int i;
     int ret;
-    if ((tag->tag == 2) || // DefineShape
-        ((tag->tag > 2) && (fill_style_array->count < 255))) {
-        // tag->tag == 2 の時は count == 255 でもここに来るように
+    if ((tag->code == 2) || // DefineShape
+        ((tag->code > 2) && (fill_style_array->count < 255))) {
+        // tag->code == 2 の時は count == 255 でもここに来るように
         bitstream_putbyte(bs, fill_style_array->count);
     } else {
         bitstream_putbyte(bs, 255);

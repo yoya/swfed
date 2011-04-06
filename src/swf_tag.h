@@ -13,7 +13,7 @@
 struct swf_object_; // swf_object.h
 
 typedef struct swf_tag_ {
-    int tag;
+    int code;
     unsigned long length;
     int length_longformat;
     //

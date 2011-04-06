@@ -54,7 +54,7 @@ swf_tag_action_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     bs = bitstream_open();
     bitstream_input(bs, data, length);
 
-    if (tag->tag == 59) { // DoInitAction
+    if (tag->code == 59) { // DoInitAction
         swf_tag_action->action_sprite = bitstream_getbytesLE(bs, 2);
     } else {              // DoAction
         swf_tag_action->action_sprite = 0; // fail safe
@@ -77,7 +77,7 @@ swf_tag_action_output_detail(swf_tag_t *tag, unsigned long *length,
 
     (void) swf;
     bs = bitstream_open();
-    if (tag->tag == 59) { // DoInitAction
+    if (tag->code == 59) { // DoInitAction
         bitstream_putbytesLE(bs, swf_tag_action->action_sprite, 2);
     } else {              // DoAction
         ; // nothing
@@ -97,7 +97,7 @@ swf_tag_action_print_detail(swf_tag_t *tag,
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     (void) swf;
     print_indent(indent_depth);
-    if (tag->tag == 59) { // DoInitAction
+    if (tag->code == 59) { // DoInitAction
         printf("action_sprite=%d  ", swf_tag_action->action_sprite);
     }
     printf("action_record =\n");

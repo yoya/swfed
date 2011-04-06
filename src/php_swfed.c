@@ -419,8 +419,8 @@ PHP_METHOD(swfed, getTagList) {
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         ALLOC_INIT_ZVAL(data);
         array_init(data);
-        add_assoc_long(data, "tag", tag->tag);
-        tag_info = get_swf_tag_info(tag->tag);
+        add_assoc_long(data, "code", tag->code);
+        tag_info = get_swf_tag_info(tag->code);
         if (tag_info && tag_info->name) {
             add_assoc_string_ex(data,
                                 "tagName", sizeof("tagName"),
@@ -456,14 +456,14 @@ PHP_METHOD(swfed, getTagDetail) {
     if (tag == NULL) {
         RETURN_FALSE;
     }
-    tag_info = get_swf_tag_info(tag->tag);
+    tag_info = get_swf_tag_info(tag->code);
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
         RETURN_FALSE;
     }
     if (swf_tag_create_input_detail(tag, swf) == NULL) {
         RETURN_FALSE; // can't create detail
     }
-    switch (tag->tag) {
+    switch (tag->code) {
         swf_tag_jpeg_detail_t     *tag_jpeg;
         swf_tag_lossless_detail_t *tag_lossless;
         swf_tag_edit_detail_t     *tag_edit;
@@ -512,7 +512,7 @@ PHP_METHOD(swfed, getTagDetail) {
     case 59: // DoInitAction
         tag_action = tag->detail;
         array_init(return_value);
-        if (tag->tag == 59) { // DoInitAction
+        if (tag->code == 59) { // DoInitAction
             add_assoc_long(return_value, "action_sprite", tag_action->action_sprite);
         }
         if (tag_action->action_record && tag_action->action_record_len) {
@@ -567,7 +567,7 @@ PHP_METHOD(swfed, getTagDetail) {
       case 26: // PlaceObject2
         tag_place = tag->detail;
         array_init(return_value);
-        if ((tag->tag == 4) || tag_place->flag_has_character) {
+        if ((tag->code == 4) || tag_place->flag_has_character) {
             add_assoc_long(return_value, "character_id", tag_place->character_id);
         }
         add_assoc_long(return_value, "depth", tag_place->depth);
@@ -807,7 +807,7 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     array_init(return_value);
     i = 0;
     for (tag = swf->tag_head ; tag ; tag=tag->next) {
-        register int tag_code = tag->tag;
+        register int tag_code = tag->code;
         if (isShapeTag(tag_code)) {
 	    bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 	    if (bitmap_id_list) {

@@ -472,7 +472,7 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
         return 1;
     }
     swf_tag_jpeg->image_id = image_id;
-    if (tag->tag == 6) { // DefineBitsJPEG
+    if (tag->code == 6) { // DefineBitsJPEG
         if (jpeg_data && jpeg_data_len) { // fail safe
             free(swf_tag_jpeg->jpeg_data);
             swf_tag_jpeg->jpeg_data = malloc(jpeg_data_len);

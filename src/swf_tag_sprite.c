@@ -139,7 +139,7 @@ swf_tag_sprite_print_detail(swf_tag_t *tag,
         print_indent(indent_depth);
         printf("  [%d] ", i);
         swf_tag_print(_tag, swf, indent_depth + 1);
-        if (_tag->tag == 0) { // END Tag
+        if (_tag->code == 0) { // END Tag
             break;
         }
         _tag = _tag->next;

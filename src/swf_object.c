@@ -129,7 +129,7 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
             tag->next = NULL;
         }
         swf->tag_tail = tag;
-	if (tag->tag == 0) { // END Tag
+	if (tag->code == 0) { // END Tag
             break; // SUCCESS
 	}
         prev_tag = tag;
@@ -217,7 +217,7 @@ swf_object_print(swf_object_t *swf) {
     for (tag = swf->tag_head; tag ; tag = tag->next) {
         printf("[%d] ", i);
         swf_tag_print(tag, swf, 0);
-        if (tag->tag == 0) { // END Tag
+        if (tag->code == 0) { // END Tag
             break;
         }
         i++;
@@ -267,7 +267,7 @@ swf_object_purge_contents(swf_object_t *swf) {
         // 以下コンテンツ系のタグ
         if (trans_table_get(refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID) {
             // no purge
-            if (isShapeTag(tag->tag)) {
+            if (isShapeTag(tag->code)) {
 	        int *bitmap_id_list, bitmap_id_list_num;
 		bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 		if (bitmap_id_list) {
@@ -277,7 +277,7 @@ swf_object_purge_contents(swf_object_t *swf) {
 		    }
 		    free(bitmap_id_list);
 		}
-            } else if (isSpriteTag(tag->tag)) {
+            } else if (isSpriteTag(tag->code)) {
                 swf_tag_t *t;
                 swf_tag_sprite_detail_t *tag_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
@@ -293,7 +293,7 @@ swf_object_purge_contents(swf_object_t *swf) {
                 }
             }
         } else { // Purge!
-            if (isShapeTag(tag->tag) || isBitmapTag(tag->tag)) {
+            if (isShapeTag(tag->code) || isBitmapTag(tag->code)) {
                 // TODO:  tag == head ? tag == tail ? OK?
                 swf_tag_t *next_tag = tag->next;
                 tag->prev->next = tag->next;
@@ -435,7 +435,7 @@ swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
     tag = swf_object_search_tag_byseqno(swf, tag_seqno);
     if (tag) {
         if (tag_seqno_in_sprite >= 0) {
-            if (isSpriteTag(tag->tag)) {
+            if (isSpriteTag(tag->code)) {
                 swf_tag_sprite_detail_t   *tag_sprite;
                 swf_tag_t *tag_in_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
@@ -519,8 +519,8 @@ swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
         }
     }
     if (tag) {
-        if (! isShapeTag(tag->tag)) {
-            fprintf(stderr, "swf_object_get_shapedata: not isShapeTag(%d)\n", tag->tag);
+        if (! isShapeTag(tag->code)) {
+            fprintf(stderr, "swf_object_get_shapedata: not isShapeTag(%d)\n", tag->code);
             return NULL;
         }
         if ((tag->data == NULL ) && tag->detail) {
@@ -554,7 +554,7 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         }
     }
     if (tag) {
-        if (! isShapeTag(tag->tag)) {
+        if (! isShapeTag(tag->code)) {
             return 1; // failure
         }
         if (tag->detail) {
@@ -565,8 +565,8 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
             free(tag->data);
             tag->data = NULL;
         }
-	//    if (tag->tag == 2) { // DefineShape
-	//        tag->tag = 22;   // => DefineShape2
+	//    if (tag->code == 2) { // DefineShape
+	//        tag->code = 22;   // => DefineShape2
 	//    }
         tag->length = length + 2;
         tag->data = malloc(length + 2);
@@ -638,7 +638,7 @@ swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
         return NULL;
     }
     for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        register int tag_code = tag->tag;
+        register int tag_code = tag->code;
         if (isBitmapTag(tag_code)) {
             if (swf_tag_get_cid(tag) == bitmap_id) {
                 return tag; // match
@@ -670,7 +670,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
-            register int tag_code = tag->tag;
+            register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
 	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 		if (bitmap_id_list) {
@@ -694,7 +694,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
-	    register int tag_code = tag->tag;
+	    register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
 	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 		if (bitmap_id_list) {
@@ -715,7 +715,7 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
     }
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
-            register int tag_code = tag->tag;
+            register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
 	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 		if (bitmap_id_list) {
@@ -759,12 +759,12 @@ swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id) 
         return NULL;
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (tag->tag == 8) { // JPEGTables
+        if (tag->code == 8) { // JPEGTables
             tag_jpegtables = tag;
             continue;
         }
         // ! DefineBitsJPEG(1),2,3
-        if ((tag->tag != 6) && (tag->tag != 21) && (tag->tag != 35)) {
+        if ((tag->code != 6) && (tag->code != 21) && (tag->code != 35)) {
             continue;
         }
         data = swf_tag_get_jpeg_data(tag, length, image_id, tag_jpegtables);
@@ -785,7 +785,7 @@ swf_object_get_alphadata(swf_object_t *swf, unsigned long *length, int image_id)
         return NULL;
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (tag->tag != 35) { // ! DefineBitsJPEG3
+        if (tag->code != 35) { // ! DefineBitsJPEG3
             continue;
         }
         data = swf_tag_get_alpha_data(tag, length, image_id);
@@ -850,7 +850,7 @@ swf_object_get_pngdata(swf_object_t *swf, unsigned long *length, int image_id) {
     *length = 0;
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         // DefineBitsLossless(1),2
-        if ((tag->tag != 20) && (tag->tag != 36)) {
+        if ((tag->code != 20) && (tag->code != 36)) {
             continue;
         }
         data = swf_tag_get_png_data(tag, length, image_id);
@@ -958,7 +958,7 @@ swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id)
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         // DefineSound
-        if (tag->tag != 14) {
+        if (tag->code != 14) {
             continue;
         }
         data = swf_tag_get_sound_data(tag, length, sound_id);
@@ -1060,7 +1060,7 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
     if (tag == NULL) {
         return NULL;
     }
-    if ((tag->tag != 12) &&  (tag->tag != 59)) { //  DoAction, DoInitAction
+    if ((tag->code != 12) &&  (tag->code != 59)) { //  DoAction, DoInitAction
         return NULL;
     }
     swf_tag_action = (swf_tag_action_detail_t *) swf_tag_create_input_detail(tag, swf);
@@ -1083,7 +1083,7 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        switch (tag->tag) {
+        switch (tag->code) {
         case 1: // ShowFrame
             if (prev_tag == NULL) {
                 // ShowFrame までに候補が見つからなければ、ShowFrame の直前
@@ -1148,7 +1148,7 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
 static void
 trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_table) {
     for ( ; tag ; tag=tag->next) {
-        int tag_no = tag->tag;
+        int tag_no = tag->code;
         if (isSpriteTag(tag_no)) {
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(tag, NULL);
@@ -1192,7 +1192,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
     // インスタンス名から PlaceObject を探し、参照している CID を取得する
     for (tag = tag_head ; tag ; tag=tag->next) {
         cid = 0;
-        if (tag->tag == 26) { // PlaceObject2
+        if (tag->code == 26) { // PlaceObject2
             cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
         }
         if (cid > 0) {
@@ -1208,7 +1208,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
 
     // CID で DefineSprite を探す
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isSpriteTag(tag->tag)) {
+        if (isSpriteTag(tag->code)) {
             if (swf_tag_get_cid(tag) ==  cid) {
                 sprite_tag = tag;
                 break;
@@ -1281,7 +1281,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
 //    trans_table_print(cid_trans_table);
     
     // Sprite タグの中を綺麗にする
-    tag_info = get_swf_tag_info(sprite_tag->tag);
+    tag_info = get_swf_tag_info(sprite_tag->code);
     detail_handler = tag_info->detail_handler();
     free(sprite_tag->data);
     sprite_tag->data = NULL;
@@ -1295,7 +1295,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
 
     // SWF 中のタグを種類に応じて展開する
     for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
-        int tag_no = tag->tag;
+        int tag_no = tag->code;
         switch (tag_no) {
             // tag skip
           default: // misc
@@ -1504,7 +1504,7 @@ swf_object_is_shape_tagdata(unsigned char *data, int data_len) {
   bitstream_input(bs, data, data_len);
   tag = swf_tag_create(bs);
   if (tag) {
-      if (isShapeTag(tag->tag)) {
+      if (isShapeTag(tag->code)) {
           ret = 1; // TRUE
       }
   }
@@ -1522,7 +1522,7 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
   bitstream_input(bs, data, data_len);
   tag = swf_tag_create(bs);
   if (tag) {
-      if (isBitmapTag(tag->tag)) {
+      if (isBitmapTag(tag->code)) {
           ret = 1; // TRUE
       }
   }

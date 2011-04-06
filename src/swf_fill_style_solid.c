@@ -6,10 +6,10 @@ int
 swf_fill_style_solid_parse(bitstream_t *bs,
                            swf_fill_style_solid_t *fill_style_solid,
                            swf_tag_t *tag) {
-    if (tag->tag == 46 || tag->tag == 84) { // DefineMorphShape, DefineMorphShape2
+    if (tag->code == 46 || tag->code == 84) { // DefineMorphShape, DefineMorphShape2
         swf_rgba_parse(bs, &(fill_style_solid->rgba));
         swf_rgba_parse(bs, &(fill_style_solid->rgba_morph));
-    } else if (tag->tag == 32) { // DefineShape3
+    } else if (tag->code == 32) { // DefineShape3
         swf_rgba_parse(bs, &(fill_style_solid->rgba));
     } else {
         swf_rgb_parse(bs, &(fill_style_solid->rgb));
@@ -21,10 +21,10 @@ int
 swf_fill_style_solid_build(bitstream_t *bs,
                            swf_fill_style_solid_t *fill_style_solid,
                            swf_tag_t *tag) {
-    if (tag->tag == 46 || tag->tag == 84) { // DefineMorphShape, DefineMorphShape2
+    if (tag->code == 46 || tag->code == 84) { // DefineMorphShape, DefineMorphShape2
         swf_rgba_build(bs, &(fill_style_solid->rgba));
         swf_rgba_build(bs, &(fill_style_solid->rgba_morph));
-    } else if (tag->tag == 32) { // DefineShape3
+    } else if (tag->code == 32) { // DefineShape3
         swf_rgba_build(bs, &(fill_style_solid->rgba));
     } else {
         swf_rgb_build(bs, &(fill_style_solid->rgb));
@@ -38,7 +38,7 @@ swf_fill_style_solid_print(swf_fill_style_solid_t *fill_style_solid,
 ) {
     print_indent(indent_depth);
     printf("fill_style_solid");
-    if (tag->tag == 46 || tag->tag == 84) { // DefineMorphShape, DefineMorphShape2
+    if (tag->code == 46 || tag->code == 84) { // DefineMorphShape, DefineMorphShape2
         printf("  #%02x%02x%02x(%02x)  morph:#%02x%02x%02x(%02x)",
                fill_style_solid->rgba.red,
                fill_style_solid->rgba.green,
@@ -48,7 +48,7 @@ swf_fill_style_solid_print(swf_fill_style_solid_t *fill_style_solid,
                fill_style_solid->rgba_morph.green,
                fill_style_solid->rgba_morph.blue,
                fill_style_solid->rgba_morph.alpha);
-    } else if (tag->tag == 32) { // DefineShape3
+    } else if (tag->code == 32) { // DefineShape3
         printf("  #%02x%02x%02x(%02x)",
                fill_style_solid->rgba.red,
                fill_style_solid->rgba.green,

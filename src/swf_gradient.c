@@ -7,7 +7,7 @@ swf_gradient_parse(bitstream_t *bs, swf_gradient_t *gradient,
                    swf_tag_t *tag, int type) {
     int i;
     bitstream_align(bs);
-    if (tag->tag == 83) { // DefineShape4
+    if (tag->code == 83) { // DefineShape4
         gradient->spread_mode = bitstream_getbits(bs, 2);
         gradient->interpolation_mode = bitstream_getbits(bs, 2);
         gradient->count = bitstream_getbits(bs, 4);
@@ -35,7 +35,7 @@ swf_gradient_build(bitstream_t *bs, swf_gradient_t *gradient,
                    swf_tag_t *tag, int type) {
     int i;
     bitstream_align(bs);
-    if (tag->tag == 83) { // DefineShape4
+    if (tag->code == 83) { // DefineShape4
         bitstream_putbits(bs, gradient->spread_mode, 2);
         bitstream_putbits(bs, gradient->interpolation_mode, 2);
         bitstream_putbits(bs, gradient->count, 4);
@@ -56,7 +56,7 @@ int
 swf_gradient_print(swf_gradient_t *gradient, int indent_depth,
                    swf_tag_t *tag, int type) {
     int i;
-    if (tag->tag == 83) { // DefineShape4
+    if (tag->code == 83) { // DefineShape4
         print_indent(indent_depth);
         printf("spread_mode=%d  interpolation_mode=%d  count=%d\n",
                gradient->spread_mode, gradient->interpolation_mode,

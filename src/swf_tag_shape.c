@@ -77,9 +77,9 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     }
 
     // DefineMorphShape, DefineMorphShape2
-    swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
+    swf_tag_shape->is_morph = (tag->code == 46) || (tag->code == 84);
     // DefineShape4, DefineMorphShape2
-    swf_tag_shape->has_strokes = (tag->tag == 83) || (tag->tag == 84);
+    swf_tag_shape->has_strokes = (tag->code == 83) || (tag->code == 84);
 
     if (swf_tag_shape->is_morph) {
         ret = swf_rect_parse(bs, &(swf_tag_shape->rect_morph));
@@ -161,9 +161,9 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
         fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: tag == NULL\n");
         return NULL;
     }
-    if (! isShapeTag(tag->tag)) {
+    if (! isShapeTag(tag->code)) {
         fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: ! isShapeTag(%d)\n",
-                tag->tag);
+                tag->code);
         return NULL;
     }
     if (tag->detail == NULL) {
@@ -246,9 +246,9 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
         fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: tag == NULL\n");
         return 1;
     }
-    if (! isShapeTag(tag->tag)) {
+    if (! isShapeTag(tag->code)) {
         fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: ! isShapeTag(%d)\n",
-                tag->tag);
+                tag->code);
         return 1;
     }
     if (tag->detail == NULL) {
@@ -334,9 +334,9 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_rect_build(bs, &(swf_tag_shape->rect));
 
     // DefineMorphShape, DefineMorphShape2
-    swf_tag_shape->is_morph = (tag->tag == 46) || (tag->tag == 84);
+    swf_tag_shape->is_morph = (tag->code == 46) || (tag->code == 84);
     // DefineShape4, DefineMorphShape2
-    swf_tag_shape->has_strokes = (tag->tag == 83) || (tag->tag == 84);
+    swf_tag_shape->has_strokes = (tag->code == 83) || (tag->code == 84);
 
     if (swf_tag_shape->is_morph) {
         ret = swf_rect_build(bs, &(swf_tag_shape->rect_morph));

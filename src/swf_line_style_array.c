@@ -15,7 +15,7 @@ swf_line_style_array_parse(bitstream_t *bs,
         return 1;
     }
     line_style_array->count = result;
-    if ((tag->tag != 2) && // ! DefineShape
+    if ((tag->code != 2) && // ! DefineShape
          (line_style_array->count == 255)) {
         result = bitstream_getbytesLE(bs, 2);
         if (result == -1) {
@@ -46,9 +46,9 @@ swf_line_style_array_parse(bitstream_t *bs,
 int
 swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *line_style_array, swf_tag_t *tag) {
     int i;
-    if ((tag->tag == 2) || // DefineShape
-        ((tag->tag > 2) && (line_style_array->count < 255))) {
-        // tag->tag == 2 の時は count == 255 でもここに来るように
+    if ((tag->code == 2) || // DefineShape
+        ((tag->code > 2) && (line_style_array->count < 255))) {
+        // tag->code == 2 の時は count == 255 でもここに来るように
         bitstream_putbyte(bs, line_style_array->count);
     } else {
         bitstream_putbyte(bs, 255);
