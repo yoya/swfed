@@ -20,6 +20,7 @@ foreach ($obj->getTagList() as $seqno => $tagInfo) {
 seqno=3
 array (
   'code' => 6,
+  'tag' => 6,
   'tagName' => 'DefineBitsJPEG',
   'length' => 2133,
   'detail' => true,

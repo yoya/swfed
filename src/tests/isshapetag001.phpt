@@ -20,6 +20,7 @@ foreach ($obj->getTagList() as $seqno => $tagInfo) {
 seqno=4
 array (
   'code' => 2,
+  'tag' => 2,
   'tagName' => 'DefineShape',
   'length' => 51,
   'detail' => true,
