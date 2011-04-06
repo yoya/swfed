@@ -11,6 +11,7 @@
 #include "swf_header.h"
 #include "swf_header.h"
 #include "swf_tag.h"
+#include "swf_tag_sprite.h"
 
 typedef struct swf_object_ {
     swf_header_t header;
