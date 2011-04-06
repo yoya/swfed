@@ -420,6 +420,7 @@ PHP_METHOD(swfed, getTagList) {
         ALLOC_INIT_ZVAL(data);
         array_init(data);
         add_assoc_long(data, "code", tag->code);
+        add_assoc_long(data, "tag", tag->code);
         tag_info = get_swf_tag_info(tag->code);
         if (tag_info && tag_info->name) {
             add_assoc_string_ex(data,
