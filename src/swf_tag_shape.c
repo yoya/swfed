@@ -241,7 +241,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     int i, ret;
     swf_styles_t *styles = NULL;
     swf_shape_record_t *shape_records = NULL;
-
+    
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: tag == NULL\n");
         return 1;
@@ -263,52 +263,52 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     } else {
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
-
+    
     styles = &(swf_tag_shape->shape_with_style.styles);
     shape_records = &(swf_tag_shape->shape_with_style.shape_records);
-
+    
     while (1) {
         for (i = 0 ; i < styles->fill_styles.count ; i++) {
-	    swf_fill_style_t *fill_style;
-	    fill_style = &(styles->fill_styles.fill_style[i]);
-	    if (fill_style == NULL) {
-	        fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
-		return 1; // Illegal!!!
-	    }
-	    switch (fill_style->type) {
-	      case 0x40: // tilled  bitmap fill with smoothed edges
-	      case 0x41: // clipped bitmap fill with smoothed edges
-	      case 0x42: // tilled  bitmap fill with hard edges
-	      case 0x43: // clipped bitmap fill with hard edges
-		if (fill_style->bitmap.bitmap_ref == from_cid) {
-		    fill_style->bitmap.bitmap_ref = to_cid;
-		    if (tag->data) {
-		        // 内容が変わったので元データは削除
-		        free(tag->data);
-			tag->data = NULL;
-		    }
-		    return 0; // success!
-		}
-		break;
-	    default:
-	      break;
-	    }
-	}
-	// new style を探す
-	for ( ; shape_records ; shape_records = shape_records->next) {
-	    if ((shape_records->first_6bits) && 
-		((shape_records->first_6bits & 0x20) == 0)) {
-		if (shape_records->shape.shape_setup.shape_has_new_styles) {
-		    styles = &(shape_records->shape.shape_setup.styles);
-		    break;
-		}
-	    }
-	}
-	if (shape_records) {
-	    shape_records = shape_records->next; // next
-	} else {
-	    break; // finish
-	}
+            swf_fill_style_t *fill_style;
+            fill_style = &(styles->fill_styles.fill_style[i]);
+            if (fill_style == NULL) {
+                fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
+                return 1; // Illegal!!!
+            }
+            switch (fill_style->type) {
+              case 0x40: // tilled  bitmap fill with smoothed edges
+              case 0x41: // clipped bitmap fill with smoothed edges
+              case 0x42: // tilled  bitmap fill with hard edges
+              case 0x43: // clipped bitmap fill with hard edges
+                  if (fill_style->bitmap.bitmap_ref == from_cid) {
+                      fill_style->bitmap.bitmap_ref = to_cid;
+                      if (tag->data) {
+                          // 内容が変わったので元データは削除
+                          free(tag->data);
+                          tag->data = NULL;
+                      }
+                      return 0; // success!
+                  }
+                  break;
+            default:
+                break;
+            }
+        }
+        // new style を探す
+        for ( ; shape_records ; shape_records = shape_records->next) {
+            if ((shape_records->first_6bits) && 
+                ((shape_records->first_6bits & 0x20) == 0)) {
+                if (shape_records->shape.shape_setup.shape_has_new_styles) {
+                    styles = &(shape_records->shape.shape_setup.styles);
+                    break;
+                }
+            }
+        }
+        if (shape_records) {
+            shape_records = shape_records->next; // next
+        } else {
+            break; // finish
+        }
     }
     return 1; // not found
 }
@@ -332,12 +332,12 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_shape->shape_id, 2);
     swf_rect_build(bs, &(swf_tag_shape->rect));
-
+    
     // DefineMorphShape, DefineMorphShape2
     swf_tag_shape->is_morph = (tag->code == 46) || (tag->code == 84);
     // DefineShape4, DefineMorphShape2
     swf_tag_shape->has_strokes = (tag->code == 83) || (tag->code == 84);
-
+    
     if (swf_tag_shape->is_morph) {
         ret = swf_rect_build(bs, &(swf_tag_shape->rect_morph));
         if (ret) {
@@ -355,11 +355,11 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
         }
         if (swf_tag_shape->is_morph) {
             ret = swf_rect_build(bs, &(swf_tag_shape->stroke_rect_morph));
-	    if (ret) {
-	        fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph build failed\n");
-	        bitstream_close(bs);
-	        return NULL;
-	    }
+            if (ret) {
+                fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph build failed\n");
+                bitstream_close(bs);
+                return NULL;
+            }
         }
         bitstream_putbits(bs, 6, swf_tag_shape->define_shape_reserved );
         bitstream_putbits(bs, 1, swf_tag_shape->define_shape_non_scaling_strokes );
