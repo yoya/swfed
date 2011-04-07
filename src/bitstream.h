@@ -62,6 +62,7 @@ extern int bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
 extern int bitstream_setpos(bitstream_t *bs, unsigned long byte_offset,
 			    unsigned long bit_offset);
 extern unsigned long bitstream_getbytepos(bitstream_t *bs);
+extern unsigned long bitstream_getbitpos(bitstream_t *bs);
 
 extern int bitstream_realloc(bitstream_t *bs);
 

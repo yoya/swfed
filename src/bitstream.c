@@ -372,6 +372,11 @@ bitstream_getbytepos(bitstream_t *bs) {
     return bs->byte_offset;
 }
 
+unsigned long
+bitstream_getbitpos(bitstream_t *bs) {
+    return bs->bit_offset;
+}
+
 /*
  * stream info
  */
