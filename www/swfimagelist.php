@@ -31,7 +31,8 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
     if (($tag == 20) || ($tag == 36)) {
         $ext = '.png';
     }
-    if (($tag == 2) || ($tag == 22) || ($tag == 32)) {
+//    if (($tag == 2) || ($tag == 22) || ($tag == 32)) {
+    if (($tag == 2) || ($tag == 22) || ($tag == 32) || ($tag == 46)) {
         $ext = '.shape';
     }
     if (empty($ext)) {
