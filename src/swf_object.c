@@ -1263,9 +1263,9 @@ swf_object_replace_movieclip(swf_object_t *swf,
 
     // インスタンス名(ターゲットパス)に対応するシンボル(Spriteタグ)を探す
     sprite_tag = swf_object_saerch_sprite_by_target_path(tag=swf->tag_head,
-							 instance_name,
-							 instance_name_len,
-							 swf);
+                                                         instance_name,
+                                                         instance_name_len,
+                                                         swf);
 
     if (sprite_tag == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
@@ -1370,19 +1370,19 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
               }
               if (isShapeTag(tag_no)) {
-		  int *bitmap_id_list, bitmap_id_list_num;
-		  bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-		  if (bitmap_id_list) {
-		      int i;
-		      for (i = 0 ; i < bitmap_id_list_num; i++) {
-		          int bitmap_id = bitmap_id_list[i];
-			  int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
-			  if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
-			      swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
-			  }
-		      }
-		      free(bitmap_id_list);
-		  }
+                  int *bitmap_id_list, bitmap_id_list_num;
+                  bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                  if (bitmap_id_list) {
+                      int i;
+                      for (i = 0 ; i < bitmap_id_list_num; i++) {
+                          int bitmap_id = bitmap_id_list[i];
+                          int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
+                          if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
+                              swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
+                          }
+                      }
+                      free(bitmap_id_list);
+                  }
               } else if (isSpriteTag(tag_no)){
                   swf_tag_sprite_detail_t *s;
                   s = swf_tag_create_input_detail(tag, swf);
@@ -1390,8 +1390,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
                       fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
                   }
                   trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
-		  free(tag->data);
-		  tag->data = NULL;
+                  free(tag->data);
+                  tag->data = NULL;
               }
               // Sprite の前に展開
               prev_sprite_tag->next = swf_tag_move(tag);
@@ -1412,7 +1412,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
             // Sprite の中に挿入
             // Character ID の変更に追随
               switch (tag_no) {
-                int refcid, to_refcid;
+                  int refcid, to_refcid;
                 case 4:  // PlaceObject
                 case 26: // PlaceObject2
                   refcid = swf_tag_get_refcid(tag);
@@ -1436,7 +1436,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
               if (tag_no == 1) { // ShowFrame
                   swf_tag_sprite->frame_count  += 1;
               }
-            break;
+              break;
         }
     }
     trans_table_close(cid_trans_table);
