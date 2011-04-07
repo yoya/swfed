@@ -109,6 +109,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         swf_tag_shape->define_shape_scaling_strokes = bitstream_getbits(bs, 1);
     }
     if (swf_tag_shape->is_morph) {
+        bitstream_align(bs);
         swf_tag_shape->offset_morph = bitstream_getbytesLE(bs, 4);
         ret = swf_morph_shape_with_style_parse(bs, &swf_tag_shape->morph_shape_with_style, tag);
         if (ret) {
@@ -358,6 +359,9 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     unsigned char *data;
     int ret;
     (void) swf;
+    long offset_of_offset_morph = 0;
+    long tmp_offset_byte = 0;
+    long tmp_offset_bit = 0;
     *length = 0;
     // build context
     swf_tag_shape->_current_fill_style_num = 0;
@@ -403,8 +407,19 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
         bitstream_putbits(bs, 1, swf_tag_shape->define_shape_scaling_strokes);
     }
     if (swf_tag_shape->is_morph) {
-        bitstream_putbytesLE(bs, 4, swf_tag_shape->offset_morph);
+        bitstream_align(bs);
+        // 後で上書きするので、offset を覚えておく
+        offset_of_offset_morph = bitstream_getbytepos(bs);
+        bitstream_putbytesLE(bs, swf_tag_shape->offset_morph, 4);
         swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag);
+        // offset_morph のフィールドに戻って上書きする
+        // offset_morph の後ろからの offset 差なので、- 4 する
+        swf_tag_shape->offset_morph = swf_tag_shape->morph_shape_with_style.offset_of_end_edges - offset_of_offset_morph - 4;
+        tmp_offset_byte = bitstream_getbytepos(bs); // offset を退避
+        tmp_offset_bit = bitstream_getbitpos(bs);
+        bitstream_setpos(bs, offset_of_offset_morph, 0);
+        bitstream_putbytesLE(bs, swf_tag_shape->offset_morph , 4);
+        bitstream_setpos(bs, tmp_offset_byte, tmp_offset_bit); // 元に戻す
     } else {
         ret = swf_shape_with_style_build(bs, &swf_tag_shape->shape_with_style, tag);
         if (ret) {
@@ -427,7 +442,7 @@ swf_tag_shape_print_detail(swf_tag_t *tag,
     print_indent(indent_depth);
     printf("shape_id=%d\n", swf_tag_shape->shape_id);
     swf_rect_print(&(swf_tag_shape->rect), indent_depth);
-    print_indent(indent_depth);
+//    print_indent(indent_depth);
 //    printf("is_morph=%d has_strokes=%d\n",
 //           swf_tag_shape->is_morph, swf_tag_shape->has_strokes);
     if (swf_tag_shape->is_morph) {

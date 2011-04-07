@@ -13,7 +13,7 @@ swf_morph_shape_with_style_parse(bitstream_t *bs,
         fprintf(stderr, "swf_morph_shape_with_style_parse: swf_shape_record_parse shape_records failed\n");
         return ret;
     }
-    
+
     bitstream_align(bs);
     swf_styles_count_parse(bs, &(morph_shape_with_style->styles_count));
     ret = swf_shape_record_parse(bs, &(morph_shape_with_style->shape_records_morph),
@@ -31,7 +31,10 @@ swf_morph_shape_with_style_build(bitstream_t *bs,
                                  swf_tag_t *tag) {
     swf_styles_build(bs, &(morph_shape_with_style->styles), tag);
     swf_shape_record_build(bs, &(morph_shape_with_style->shape_records), tag);
+
     bitstream_align(bs);
+    morph_shape_with_style->offset_of_end_edges = bitstream_getbytepos(bs);
+
     swf_styles_count_build(bs, &(morph_shape_with_style->styles_count));
     swf_shape_record_build(bs, &(morph_shape_with_style->shape_records_morph),
                            tag);
