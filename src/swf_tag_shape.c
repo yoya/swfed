@@ -154,6 +154,19 @@ int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id) {
     return 0; // always 0
 }
 
+static swf_shape_record_t *
+_swf_tag_shape_search_new_style_in_shape_records(swf_shape_record_t *shape_records) {
+    for ( ; shape_records ; shape_records = shape_records->next) {
+        if ((shape_records->first_6bits) && 
+            ((shape_records->first_6bits & 0x20) == 0)) {
+            if (shape_records->shape.shape_setup.shape_has_new_styles) {
+                break;
+            }
+        }
+    }
+    return shape_records;
+}
+
 int *
 swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     swf_tag_shape_detail_t *swf_tag_shape;
@@ -188,8 +201,13 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     cid_list_alloc = 10;
     cid_list = malloc(sizeof(int) * cid_list_alloc);
 
-    styles = &(swf_tag_shape->shape_with_style.styles);
-    shape_records = &(swf_tag_shape->shape_with_style.shape_records);
+    if (tag->code == 46) { // DefineMorphShape
+        styles = &(swf_tag_shape->morph_shape_with_style.styles);
+        shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records);
+    } else {
+        styles = &(swf_tag_shape->shape_with_style.styles);
+        shape_records = &(swf_tag_shape->shape_with_style.shape_records);
+    }
     while (1) {
         for (i = 0 ; i < styles->fill_styles.count ; i++) {
 	    swf_fill_style_t *fill_style;
@@ -218,15 +236,8 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
 	    }
 	}
 	// new style を探す
-	for ( ; shape_records ; shape_records = shape_records->next) {
-	    if ((shape_records->first_6bits) && 
-		((shape_records->first_6bits & 0x20) == 0)) {
-		if (shape_records->shape.shape_setup.shape_has_new_styles) {
-		    styles = &(shape_records->shape.shape_setup.styles);
-		    break;
-		}
-	    }
-	}
+    shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
+
 	if (shape_records) {
 	    shape_records = shape_records->next; // next
 	} else {
@@ -246,7 +257,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     int i, ret;
     swf_styles_t *styles = NULL;
     swf_shape_record_t *shape_records = NULL;
-    
+    int morph_shape_check = 0;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: tag == NULL\n");
         return 1;
@@ -259,7 +270,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     if (tag->detail == NULL) {
         tag->detail = swf_tag_shape_create_detail();
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
+//        swf_tag_shape->_parse_condition = SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP;
         ret = swf_tag_shape_input_detail(tag, NULL);
         if (ret) {
             swf_tag_shape_destroy_detail(tag);
@@ -268,11 +279,18 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     } else {
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
-    
-    styles = &(swf_tag_shape->shape_with_style.styles);
-    shape_records = &(swf_tag_shape->shape_with_style.shape_records);
-    
+
+    if (tag->code == 46) { // DefineMorphShape
+        morph_shape_check = 1;
+        styles = &(swf_tag_shape->morph_shape_with_style.styles);
+        shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records);
+//        shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records_morph);
+    } else {
+        styles = &(swf_tag_shape->shape_with_style.styles);
+        shape_records = &(swf_tag_shape->shape_with_style.shape_records);
+    }
     while (1) {
+        fprintf(stderr, "XXX: morph_shape_check=%d\n", morph_shape_check);
         for (i = 0 ; i < styles->fill_styles.count ; i++) {
             swf_fill_style_t *fill_style;
             fill_style = &(styles->fill_styles.fill_style[i]);
@@ -285,6 +303,8 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
               case 0x41: // clipped bitmap fill with smoothed edges
               case 0x42: // tilled  bitmap fill with hard edges
               case 0x43: // clipped bitmap fill with hard edges
+fprintf(stderr, "0x40-43 fill_style->bitmap.bitmap_ref=%d\n", 
+        fill_style->bitmap.bitmap_ref);
                   if (fill_style->bitmap.bitmap_ref == from_cid) {
                       fill_style->bitmap.bitmap_ref = to_cid;
                       if (tag->data) {
@@ -309,10 +329,25 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
                 }
             }
         }
+        shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
+
         if (shape_records) {
             shape_records = shape_records->next; // next
+            styles = &(shape_records->shape.shape_setup.styles);
         } else {
-            break; // finish
+            morph_shape_check = 0;
+            if (morph_shape_check) {        
+                shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records);
+                shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
+                if (shape_records) {
+                    styles = &(shape_records->shape.shape_setup.styles);
+                    morph_shape_check = 0;
+                } else {
+                    break; // finish
+                }
+            } else {
+                break; // finish
+            }
         }
     }
     return 1; // not found
