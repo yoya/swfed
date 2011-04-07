@@ -50,6 +50,7 @@ _swf_object_tag_close(swf_tag_t *tag_head) {
     }
     return ;
 }
+
 void
 swf_object_close(swf_object_t *swf) {
     if (swf) {
@@ -122,15 +123,15 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
             break;
         }
         tag = swf_tag_create(bs);
-	if (tag == NULL) {
-	    swf_tag_t *next_tag;
-	    for (tag = swf->tag_head ; tag ; tag = next_tag) {
-	        next_tag = tag->next;
-		swf_tag_destroy(tag);
-	    }
-	    bitstream_close(bs);
-	    return 1; // FAILURE
-	}
+        if (tag == NULL) {
+            swf_tag_t *next_tag;
+            for (tag = swf->tag_head ; tag ; tag = next_tag) {
+                next_tag = tag->next;
+                swf_tag_destroy(tag);
+            }
+            bitstream_close(bs);
+            return 1; // FAILURE
+        }
         if (prev_tag == NULL) {
             swf->tag_head = tag;
             tag->prev = tag->next = NULL;
@@ -140,9 +141,9 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
             tag->next = NULL;
         }
         swf->tag_tail = tag;
-	if (tag->code == 0) { // END Tag
+        if (tag->code == 0) { // END Tag
             break; // SUCCESS
-	}
+        }
         prev_tag = tag;
     }
     bitstream_close(bs);
@@ -279,15 +280,15 @@ swf_object_purge_contents(swf_object_t *swf) {
         if (trans_table_get(refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID) {
             // no purge
             if (isShapeTag(tag->code)) {
-	        int *bitmap_id_list, bitmap_id_list_num;
-		bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-		if (bitmap_id_list) {
-		    int i;
-		    for (i = 0 ; i < bitmap_id_list_num; i++) {
+                int *bitmap_id_list, bitmap_id_list_num;
+                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                if (bitmap_id_list) {
+                    int i;
+                    for (i = 0 ; i < bitmap_id_list_num; i++) {
                         trans_table_set(refcid_trans_table, bitmap_id_list[i], TRANS_TABLE_RESERVE_ID);
-		    }
-		    free(bitmap_id_list);
-		}
+                    }
+                    free(bitmap_id_list);
+                }
             } else if (isSpriteTag(tag->code)) {
                 swf_tag_t *t;
                 swf_tag_sprite_detail_t *tag_sprite;
@@ -328,8 +329,8 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
     if (tag) {
         bitstream_t *bs = bitstream_open();
         swf_tag_build(bs, tag, swf);
-	data = bitstream_steal(bs, length);
-	bitstream_close(bs);
+        data = bitstream_steal(bs, length);
+        bitstream_close(bs);
     }
     return data;
 }
@@ -341,15 +342,15 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
     old_tag = swf_object_search_tag_byseqno(swf, tag_seqno);
     if (old_tag) {
         bitstream_t *bs = bitstream_open();
-	bitstream_input(bs, data,length);
-	new_tag = swf_tag_create(bs);
-	bitstream_close(bs);
-	if (new_tag) {
-	    // 新しいタグに繋ぎかえる
-	    _swf_object_replace_tag(swf, old_tag, new_tag);
-	    swf_tag_destroy(old_tag); // 古いのは消す
-	    return 0;
-	}
+        bitstream_input(bs, data,length);
+        new_tag = swf_tag_create(bs);
+        bitstream_close(bs);
+        if (new_tag) {
+            // 新しいタグに繋ぎかえる
+            _swf_object_replace_tag(swf, old_tag, new_tag);
+            swf_tag_destroy(old_tag); // 古いのは消す
+            return 0;
+        }
     }
     return 1;
 }
@@ -363,8 +364,8 @@ swf_object_get_tagdata_bycid(swf_object_t *swf, int cid,
     if (tag) {
         bitstream_t *bs = bitstream_open();
         swf_tag_build(bs, tag, swf);
-	data = bitstream_steal(bs, length);
-	bitstream_close(bs);
+        data = bitstream_steal(bs, length);
+        bitstream_close(bs);
     }
     return data;
 }
@@ -376,16 +377,16 @@ swf_object_replace_tagdata_bycid(swf_object_t *swf, int cid,
     old_tag = swf_object_search_tag_bycid(swf, cid);
     if (old_tag) {
         bitstream_t *bs = bitstream_open();
-	bitstream_input(bs, data,length);
-	new_tag = swf_tag_create(bs);
-	bitstream_close(bs);
-	swf_tag_replace_cid(new_tag, cid); // SWF 中の cid は維持する
-	if (new_tag) {
-	    // 新しいタグに繋ぎかえる
-	    _swf_object_replace_tag(swf, old_tag, new_tag);
-	    swf_tag_destroy(old_tag); // 前のは消す
-	    return 0;
-	}
+        bitstream_input(bs, data,length);
+        new_tag = swf_tag_create(bs);
+        bitstream_close(bs);
+        swf_tag_replace_cid(new_tag, cid); // SWF 中の cid は維持する
+        if (new_tag) {
+            // 新しいタグに繋ぎかえる
+            _swf_object_replace_tag(swf, old_tag, new_tag);
+            swf_tag_destroy(old_tag); // 前のは消す
+            return 0;
+        }
     }
     return 1;
 }
@@ -685,63 +686,63 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
             register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
-	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-		if (bitmap_id_list) {
-		    int i;
-		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
-		        if (bitmap_id_list[i] == bitmap_id) {
-			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-			    swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
-							      width_scale, height_scale,
-							      0, 0, 0, swf);
-			    break;
-			}
-		    }
-		    free(bitmap_id_list);
-		}
+                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                if (bitmap_id_list) {
+                    int i;
+                    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+                        if (bitmap_id_list[i] == bitmap_id) {
+                            swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                            swf_tag_apply_shape_matrix_factor(tag, swf_tag_shape->shape_id,
+                                                              width_scale, height_scale,
+                                                              0, 0, 0, swf);
+                            break;
+                        }
+                    }
+                    free(bitmap_id_list);
+                }
             }
-	}
+        }
     }
     
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_RECT_RESIZE) {
         width_scale  = (double) new_width  / old_width;
         height_scale = (double) new_height / old_height;
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
-	    register int tag_code = tag->code;
+            register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
-	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-		if (bitmap_id_list) {
-		    int i;
-		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
-		        if (bitmap_id_list[i] == bitmap_id) {
-			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-			    swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
-							    width_scale, height_scale,
-							    0, 0, swf);
-			    break;
-			}
-		    }
-		    free(bitmap_id_list);
-		}
-	    }
-	}
+                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                if (bitmap_id_list) {
+                    int i;
+                    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+                        if (bitmap_id_list[i] == bitmap_id) {
+                            swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                            swf_tag_apply_shape_rect_factor(tag, swf_tag_shape->shape_id,
+                                                            width_scale, height_scale,
+                                                            0, 0, swf);
+                            break;
+                        }
+                    }
+                    free(bitmap_id_list);
+                }
+            }
+        }
     }
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_TYPE_TILLED) {
         for (tag = swf->tag_head ; tag ; tag=tag->next) {
             register int tag_code = tag->code;
             if (isShapeTag(tag_code)) {
-	        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-		if (bitmap_id_list) {
-		    int i;
-		    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
-		        if (bitmap_id_list[i] == bitmap_id) {
-			    swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-			    swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
-			}
-		    }
-		    free(bitmap_id_list);
-		}
-	    }
+                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                if (bitmap_id_list) {
+                    int i;
+                    for (i = 0 ; i < bitmap_id_list_num ; i++) { 
+                        if (bitmap_id_list[i] == bitmap_id) {
+                            swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                            swf_tag_apply_shape_type_tilled(tag, swf_tag_shape->shape_id, swf);
+                        }
+                    }
+                    free(bitmap_id_list);
+                }
+            }
         }
     }
     return 0;
@@ -1181,7 +1182,6 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
     }
 }
 
-
 // ターゲットパスに対応する Sprite タグを返す
 static swf_tag_t *
 swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
@@ -1195,8 +1195,8 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
 
     next_instance_name = (unsigned char *) strchr((char *) target_path, '/');
     if (next_instance_name != NULL) {
-      next_instance_name[0] = '\0'; // null terminate
-      next_instance_name++;
+        next_instance_name[0] = '\0'; // null terminate
+        next_instance_name++;
     }
 
     instance_name = target_path;
@@ -1214,7 +1214,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
     }
     if (cid <= 0) {
         fprintf(stderr,
-                "swf_object_replace_movieclip: not found place target_path=%s (cid=%d)\n",
+                "swf_object_saerch_sprite_by_target_path: not found place target_path=%s (cid=%d)\n",
                 target_path, cid);
         return NULL; // not found instance name;
     }
@@ -1233,7 +1233,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(sprite_tag, swf);
             if (tag_sprite == NULL) {
-                fprintf(stderr, "swf_object_replace_movieclip: tag_sprite swf_tag_create_input_detail failed\n");
+                fprintf(stderr, "swf_object_saerch_sprite_by_target_path: tag_sprite swf_tag_create_input_detail failed\n");
             } else {
 	      sprite_tag = swf_object_saerch_sprite_by_target_path(tag_sprite->tag, next_instance_name, target_path_len - instance_name_len - 1, swf);
 	    }
