@@ -343,7 +343,7 @@ swf_tag_get_cid(swf_tag_t *tag) {
           case 17: // DefineButtonSound
           case 33: // DefineText2
           case 34: // DefineButton2
-          case 39: // DefineSprite ///////////////
+          case 39: // DefineSprite
           case 46: // DefineMorphShape
           case 48: // DefineFont2
           case 88: // DefineFontName
@@ -383,8 +383,8 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
           case 17: // DefineButtonSound
           case 33: // DefineText2
           case 34: // DefineButton2
-          case 39: // DefineSprite ///////////////
-          case 46:  // DefineMorphShape
+          case 39: // DefineSprite
+          case 46: // DefineMorphShape
           case 48: // DefineFont2
           case 88: // DefineFontName
             if (tag->data) {
