@@ -98,11 +98,11 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         if (swf_tag_shape->is_morph) {
             ret = swf_rect_parse(bs, &(swf_tag_shape->stroke_rect_morph));
-	    if (ret) {
-	        fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph parse failed. shape_id=%d\n", swf_tag_shape->shape_id);
-	        bitstream_close(bs);
-	        return ret;
-	    }
+            if (ret) {
+                fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_tag_shape->stroke_rect_morph parse failed. shape_id=%d\n", swf_tag_shape->shape_id);
+                bitstream_close(bs);
+                return ret;
+            }
         }
         swf_tag_shape->define_shape_reserved = bitstream_getbits(bs, 6);
         swf_tag_shape->define_shape_non_scaling_strokes = bitstream_getbits(bs, 1);
@@ -121,10 +121,10 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         if (ret) {
             fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_shape_with_style_parse swf_tag_shape->shape_with_style failed. shape_id=%d\n", swf_tag_shape->shape_id);
 	        bitstream_close(bs);
-                return ret;
+            return ret;
         }
     }
-        
+    
     bitstream_close(bs);
     return 0;
 }
