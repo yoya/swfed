@@ -35,7 +35,7 @@ frame_rate=8.0  frame_count=40
 [4] tag=DefineShape(2)  length=51
     shape_id=2
     rect=(-49, -28)-(57, 52) (f_size=12)
-        fill_style_array->count=2
+    fill_style_array->count=2
     [1] type=0x41
             fill_style_bitmap
             bitmap_ref=65535
