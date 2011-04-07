@@ -472,6 +472,26 @@ swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
     return ret;
 }
 
+int
+swf_object_print_tagdata(swf_object_t *swf, unsigned char *data, 
+                         unsigned long length) {
+    bitstream_t *bs;
+    swf_tag_t *tag;
+    bs = bitstream_open();
+    bitstream_input(bs, data, length);
+    tag = swf_tag_create(bs);
+    bitstream_close(bs);
+    if (tag == NULL) {
+        fprintf(stderr, "swf_object_print_tagdata: swf_tag_create failed\n");
+        return 1;
+    }
+    swf_tag_print(tag, swf, 0);
+    swf_tag_destroy(tag);
+    return 0;
+}
+
+
+
 static int
 _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag) {
     if (tag->prev) {

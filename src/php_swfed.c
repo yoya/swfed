@@ -70,6 +70,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
     PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
     PHP_ME(swfed,  removeTag, NULL, 0)
+    PHP_ME(swfed,  printTagData, NULL, 0)
 
     PHP_ME(swfed,  getShapeData, NULL, 0)
     PHP_ME(swfed,  replaceShapeData, NULL, 0)
@@ -733,6 +734,29 @@ PHP_METHOD(swfed, removeTag) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);
+    if (ret) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, printTagData) {
+    char *data = NULL;
+    unsigned long data_len = 0;
+    swf_object_t *swf = NULL;
+    int ret = 0;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 1:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    ret = swf_object_print_tagdata(swf, (unsigned char *)data, data_len);
     if (ret) {
         RETURN_FALSE;
     }
