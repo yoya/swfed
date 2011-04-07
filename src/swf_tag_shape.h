@@ -30,7 +30,7 @@ typedef struct swf_tag_shape_detail_ {
     unsigned char define_shape_scaling_strokes : 1;
     // is_morph
     unsigned long offset_morph;
-     swf_morph_shape_with_style_t  morph_shape_with_style;
+    swf_morph_shape_with_style_t  morph_shape_with_style;
     // else
     swf_shape_with_style_t  shape_with_style;
   /*
