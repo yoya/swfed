@@ -290,7 +290,6 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
         shape_records = &(swf_tag_shape->shape_with_style.shape_records);
     }
     while (1) {
-        fprintf(stderr, "XXX: morph_shape_check=%d\n", morph_shape_check);
         for (i = 0 ; i < styles->fill_styles.count ; i++) {
             swf_fill_style_t *fill_style;
             fill_style = &(styles->fill_styles.fill_style[i]);
