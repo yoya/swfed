@@ -6,13 +6,23 @@ int
 swf_morph_shape_with_style_parse(bitstream_t *bs,
                                  swf_morph_shape_with_style_t *morph_shape_with_style,
                                  swf_tag_t *tag) {
+    int ret;
     swf_styles_parse(bs, &(morph_shape_with_style->styles), tag);
-    swf_shape_record_parse(bs, &(morph_shape_with_style->shape_records), tag);
+    ret = swf_shape_record_parse(bs, &(morph_shape_with_style->shape_records), tag);
+    if (ret) {
+        fprintf(stderr, "swf_morph_shape_with_style_parse: swf_shape_record_parse shape_records failed\n");
+        return ret;
+    }
+    
     bitstream_align(bs);
     swf_styles_count_parse(bs, &(morph_shape_with_style->styles_count));
-    swf_shape_record_parse(bs, &(morph_shape_with_style->shape_records_morph),
-                           tag);
-    return 0;
+    ret = swf_shape_record_parse(bs, &(morph_shape_with_style->shape_records_morph),
+                                 tag);
+    if (ret) {
+        fprintf(stderr, "swf_morph_shape_with_style_parse: swf_shape_record_parse shape_records_morph failed\n");
+        return ret;
+    }
+    return ret;
 }
 
 int

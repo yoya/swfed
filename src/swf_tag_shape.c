@@ -110,7 +110,12 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     }
     if (swf_tag_shape->is_morph) {
         swf_tag_shape->offset_morph = bitstream_getbytesLE(bs, 4);
-        swf_morph_shape_with_style_parse(bs, &swf_tag_shape->morph_shape_with_style, tag);
+        ret = swf_morph_shape_with_style_parse(bs, &swf_tag_shape->morph_shape_with_style, tag);
+        if (ret) {
+            fprintf(stderr, "ERROR: swf_tag_shape_input_detail: swf_shape_with_style_parse swf_tag_shape->morph_shape_with_style failed. shape_id=%d\n", swf_tag_shape->shape_id);
+	        bitstream_close(bs);
+            return ret;
+        }
     } else {
         ret = swf_shape_with_style_parse(bs, &swf_tag_shape->shape_with_style, tag);
         if (ret) {
