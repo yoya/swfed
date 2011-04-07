@@ -244,9 +244,9 @@ swf_object_rebuild(swf_object_t *swf) {
     int ret;
     for (tag = swf->tag_head; tag ; tag = tag->next) {
         ret = swf_tag_rebuild(tag, swf);
-	if (ret) {
-	    return ret;
-	}
+        if (ret) {
+            return ret;
+        }
     }
     return 0;
 }

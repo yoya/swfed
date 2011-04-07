@@ -213,21 +213,21 @@ int
 swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t * detail_handler = NULL;
-    int ret;
+    void *detail;
     tag_info = get_swf_tag_info(tag->code);
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
-        return 1; // no info
+        return 0; // no info
     }
     detail_handler = tag_info->detail_handler();
     if (detail_handler == NULL) {
-        return 1; // no detail handler
+        return 0; // no detail handler
     }
     if ((detail_handler->input == NULL) || (detail_handler->output == NULL)) {
-        return 1; // no input or output handler
+        return 0; // no input or output handler
     }
-    ret = detail_handler->input(tag, swf);
-    if (ret) {
-        fprintf(stderr, "swf_tag_rebuild: detail_hander->input failed tag_no=%d\n", tag->code);
+    detail = swf_tag_create_input_detail(tag, swf);
+    if (detail == NULL) {
+        fprintf(stderr, "swf_tag_rebuild: swf_tag_create_input_detail failed tag->code=%d\n", tag->code);
         return 1;
     }
     free(tag->data);
