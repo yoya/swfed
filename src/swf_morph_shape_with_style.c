@@ -42,13 +42,18 @@ int
 swf_morph_shape_with_style_print(swf_morph_shape_with_style_t *morph_shape_with_style,
                                  int indent_depth,
                                  swf_tag_t *tag) {
-    swf_styles_print(&(morph_shape_with_style->styles), indent_depth, tag);
+    swf_styles_print(&(morph_shape_with_style->styles), indent_depth + 1, tag);
+    print_indent(indent_depth);
+    printf("shape_records:\n");
     swf_shape_record_print(&(morph_shape_with_style->shape_records),
-                           indent_depth, tag);
+                           indent_depth + 1, tag);
     swf_styles_count_print(&(morph_shape_with_style->styles_count),
-                           indent_depth);
+                           indent_depth + 1);
+    print_indent(indent_depth);
+    printf("shape_records_morph:\n");
+    
     swf_shape_record_print(&(morph_shape_with_style->shape_records_morph),
-                           indent_depth, tag);
+                           indent_depth + 1, tag);
     return 0;
 }
 
