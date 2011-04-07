@@ -750,7 +750,7 @@ PHP_METHOD(swfed, getShapeData) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     data_ref = swf_object_get_shapedata(swf, cid, &data_len);
     if (data_ref == NULL) {
-        fprintf(stderr, "getShapeData: Can't get_tagcontents_bycid\n");
+        fprintf(stderr, "getShapeData: Can't swf_object_get_shapedata (cid=%d)\n", cid);
         RETURN_FALSE;
     }
     RETURN_STRINGL(data_ref, data_len, 1);
