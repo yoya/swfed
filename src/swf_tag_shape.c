@@ -210,44 +210,44 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     }
     while (1) {
         for (i = 0 ; i < styles->fill_styles.count ; i++) {
-	    swf_fill_style_t *fill_style;
-	    fill_style = &(styles->fill_styles.fill_style[i]);
-	    if (fill_style == NULL) {
-              fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
-	        free(cid_list);
-		return NULL; // Illegal!!!
-	    }
-	    switch (fill_style->type) {
+            swf_fill_style_t *fill_style;
+            fill_style = &(styles->fill_styles.fill_style[i]);
+            if (fill_style == NULL) {
+                fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
+                free(cid_list);
+                return NULL; // Illegal!!!
+            }
+            switch (fill_style->type) {
               case 0x40: // tilled  bitmap fill with smoothed edges
               case 0x41: // clipped bitmap fill with smoothed edges
               case 0x42: // tilled  bitmap fill with hard edges
               case 0x43: // clipped bitmap fill with hard edges
-		if (fill_style->bitmap.bitmap_ref != 0xffff) {
-	          if (cid_list_alloc <= *cid_list_num) {
-		    cid_list_alloc *= 2;
-		    realloc(cid_list, cid_list_alloc);
-		  }
-		  cid_list[*cid_list_num] = fill_style->bitmap.bitmap_ref;
-		  *cid_list_num  = (*cid_list_num)  + 1;
-		}
-		break;
+                if (fill_style->bitmap.bitmap_ref != 0xffff) {
+                    if (cid_list_alloc <= *cid_list_num) {
+                        cid_list_alloc *= 2;
+                        realloc(cid_list, cid_list_alloc);
+                    }
+                    cid_list[*cid_list_num] = fill_style->bitmap.bitmap_ref;
+                    *cid_list_num  = (*cid_list_num) + 1;
+                }
+                break;
               default:
-		break;
-	    }
-	}
-	// new style を探す
-    shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
-
-	if (shape_records) {
-	    shape_records = shape_records->next; // next
-	} else {
-	    break; // finish
-	}
+                break;
+            }
+        }
+        // new style を探す
+        shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
+        
+        if (shape_records) {
+            shape_records = shape_records->next; // next
+        } else {
+            break; // finish
+        }
     }
-
+    
     if (*cid_list_num == 0) {
         free(cid_list);
-	return NULL;
+        return NULL;
     }
     return cid_list; // not found
 }
@@ -279,7 +279,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     } else {
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
-
+    
     if (tag->code == 46) { // DefineMorphShape
         morph_shape_check = 1;
         styles = &(swf_tag_shape->morph_shape_with_style.styles);
@@ -303,19 +303,17 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
               case 0x41: // clipped bitmap fill with smoothed edges
               case 0x42: // tilled  bitmap fill with hard edges
               case 0x43: // clipped bitmap fill with hard edges
-fprintf(stderr, "0x40-43 fill_style->bitmap.bitmap_ref=%d\n", 
-        fill_style->bitmap.bitmap_ref);
-                  if (fill_style->bitmap.bitmap_ref == from_cid) {
-                      fill_style->bitmap.bitmap_ref = to_cid;
-                      if (tag->data) {
-                          // 内容が変わったので元データは削除
-                          free(tag->data);
-                          tag->data = NULL;
-                      }
-                      return 0; // success!
-                  }
-                  break;
-            default:
+                if (fill_style->bitmap.bitmap_ref == from_cid) {
+                    fill_style->bitmap.bitmap_ref = to_cid;
+                    if (tag->data) {
+                        // 内容が変わったので元データは削除
+                        free(tag->data);
+                        tag->data = NULL;
+                    }
+                    return 0; // success!
+                }
+                break;
+              default:
                 break;
             }
         }
