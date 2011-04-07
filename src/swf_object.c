@@ -513,68 +513,71 @@ _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite_tag, swf_tag_t 
 unsigned char *
 swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
     swf_tag_t *tag;
-    for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        if (swf_tag_get_cid(tag) == cid) {
-            break; // match
-        }
-    }
+    unsigned char *data = NULL;
+
+    tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
+        bitstream_t *bs;
         if (! isShapeTag(tag->code)) {
             fprintf(stderr, "swf_object_get_shapedata: not isShapeTag(%d)\n", tag->code);
+            *length = 0;
             return NULL;
         }
-        if ((tag->data == NULL ) && tag->detail) {
-            bitstream_t *bs;
-            if (tag->data) {
-                free(tag->data);
-                tag->data = NULL;
-            }
-            bs = bitstream_open();
-            swf_tag_build(bs, tag, swf);
-            tag->data = bitstream_steal(bs, &(tag->length));
-            bitstream_close(bs);
-        }
-        if (tag->data) {
-            *length = tag->length - 2;
-            return tag->data + 2; // success
-        }
+        bs = bitstream_open();
+        swf_tag_build(bs, tag, swf);
+        data = bitstream_steal(bs, length);
+        bitstream_close(bs);
     }
-    *length = 0;
-    return NULL; // failed
+    if (data == NULL) {
+        *length = 0;
+    }
+    return data;
 }
 
 int
 swf_object_replace_shapedata(swf_object_t *swf, int cid,
                              unsigned char *data,
                              unsigned long length) {
-    swf_tag_t *tag;
-    for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        if (swf_tag_get_cid(tag) ==  cid) {
-            break; // match
-        }
-    }
-    if (tag) {
-        if (! isShapeTag(tag->code)) {
+    swf_tag_t *old_tag, *new_tag;
+    old_tag = swf_object_search_tag_bycid(swf, cid);
+    if (old_tag) {
+        bitstream_t *bs;
+        if (! isShapeTag(old_tag->code)) {
+            fprintf(stderr, "swf_object_replace_shapedata: ! isShapeTag(%d)", old_tag->code);
             return 1; // failure
         }
-        if (tag->detail) {
-            swf_tag_destroy(tag);
-            tag->detail = NULL;
+        bs = bitstream_open();
+        bitstream_input(bs, data, length);
+        new_tag = swf_tag_create(bs);
+        bitstream_close(bs);
+        if ((new_tag == NULL) || (! isShapeTag(new_tag->code))) {
+            fprintf(stderr, "swf_object_replace_shapedata: fallback to read old shape data\n");
+            // 0.37 以前で作成した shape をなるべく読めるように
+            if (new_tag) {
+                swf_tag_destroy(new_tag);
+            }
+            new_tag = swf_tag_move(old_tag);
+            swf_tag_destroy_detail(new_tag);
+            new_tag->length = length + 2;
+            new_tag->data = malloc(length + 2);
+            PutUShortLE(new_tag->data, cid);
+            memcpy(new_tag->data + 2, data, length);
         }
-        if (tag->data) {
-            free(tag->data);
-            tag->data = NULL;
+        if (new_tag) {
+            if (swf_tag_create_input_detail(new_tag, swf)) {
+                fprintf(stderr, "XXX: new_tag exists\n");
+                // SWF 中の cid を維持する
+                swf_tag_replace_cid(new_tag, cid);
+                // 新しいタグに繋ぎかえる
+                _swf_object_replace_tag(swf, old_tag, new_tag);
+                swf_tag_destroy(old_tag); // 前のは消す
+                free(new_tag->data);
+                new_tag->data = NULL;
+                return 0;
+            }
         }
-	//    if (tag->code == 2) { // DefineShape
-	//        tag->code = 22;   // => DefineShape2
-	//    }
-        tag->length = length + 2;
-        tag->data = malloc(length + 2);
-        PutUShortLE(tag->data, cid);
-        memcpy(tag->data + 2, data, length);
-        return 0; // success
     }
-    return 1; // failure
+    return 1;
 }
 
 /* --- */
