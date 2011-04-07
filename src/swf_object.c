@@ -565,7 +565,6 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         }
         if (new_tag) {
             if (swf_tag_create_input_detail(new_tag, swf)) {
-                fprintf(stderr, "XXX: new_tag exists\n");
                 // SWF 中の cid を維持する
                 swf_tag_replace_cid(new_tag, cid);
                 // 新しいタグに繋ぎかえる
