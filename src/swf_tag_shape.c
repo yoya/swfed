@@ -240,6 +240,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
         shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
         
         if (shape_records) {
+            styles = &(shape_records->shape.shape_setup.styles);
             shape_records = shape_records->next; // next
         } else {
             break; // finish
@@ -330,8 +331,8 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
         shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
 
         if (shape_records) {
-            shape_records = shape_records->next; // next
             styles = &(shape_records->shape.shape_setup.styles);
+            shape_records = shape_records->next; // next
         } else {
             morph_shape_check = 0;
             if (morph_shape_check) {        
