@@ -26,26 +26,34 @@ static int _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag);
 static int _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite, swf_tag_t *tag);
 static int _swf_object_replace_tag(swf_object_t *swf,
                                    swf_tag_t *old_tag, swf_tag_t *new_tag);
+static void _swf_object_tag_close(swf_tag_t *tag_head);
 
 swf_object_t *
 swf_object_open(void) {
     swf_object_t *swf;
     malloc_debug_start(); /* DEBUG XXX */
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
+    swf->tag_head = NULL;
+    swf->tag_tail = NULL;
     //
     swf->shape_adjust_mode = 0;
     swf->compress_level = Z_DEFAULT_COMPRESSION;
     return swf;
 }
 
+static void
+_swf_object_tag_close(swf_tag_t *tag_head) {
+    swf_tag_t *tag, *next_tag;
+    for (tag = tag_head ; tag ; tag = next_tag) {
+        next_tag = tag->next;
+        swf_tag_destroy(tag);
+    }
+    return ;
+}
 void
 swf_object_close(swf_object_t *swf) {
     if (swf) {
-        swf_tag_t *tag, *next_tag;
-        for (tag = swf->tag_head ; tag ; tag = next_tag) {
-            next_tag = tag->next;
-            swf_tag_destroy(tag);
-        }
+        _swf_object_tag_close(swf->tag_head);
         swf->tag_head = NULL;
         swf->tag_tail= NULL;
         free(swf);
@@ -60,6 +68,9 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     int result;
     bitstream_t *bs;
     swf_tag_t *tag, *prev_tag;
+    // 2度呼ばれた時は古い tag を削除
+    _swf_object_tag_close(swf->tag_head);
+    
     bs = bitstream_open();
     bitstream_input(bs, data, data_len);
     result = swf_header_parse(bs, &swf->header);
