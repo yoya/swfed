@@ -54,18 +54,19 @@ void
 png_data_write_func(png_structp png_ptr, png_bytep buf, png_size_t size) {
     my_png_buffer *png_buff = (my_png_buffer *)png_get_io_ptr(png_ptr);
     unsigned long new_data_len;
+    unsigned char *tmp;
     if (png_buff->data_offset + size > png_buff->data_len) {
         new_data_len = 2 * png_buff->data_len;
         if (png_buff->data_offset + size > new_data_len) {
             new_data_len = png_buff->data_offset + size;
         }
-        png_buff->data = realloc(png_buff->data, new_data_len);
-        if (png_buff->data == NULL) {
+        tmp = realloc(png_buff->data, new_data_len);
+        if (tmp == NULL) {
             fprintf(stderr, "png_data_write_func: can't realloc: new_data_len(%lu), data_len(%lu)\n",
                     new_data_len, png_buff->data_len);
             png_error(png_ptr,"png_data_write_func failed");
-
         }
+        png_buff->data = tmp;
         png_buff->data_len = new_data_len;
     }
     memcpy(png_buff->data + png_buff->data_offset, buf, size);

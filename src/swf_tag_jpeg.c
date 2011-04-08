@@ -177,6 +177,12 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     if (result == Z_BUF_ERROR) { // XXX
         origsize *= 2;
         new_buff = realloc(new_buff, origsize); // enough size?
+        if (new_buff == NULL) {
+            free(swf_tag_jpeg);
+            bitstream_close(bs);
+            fprintf(stderr, "swf_tag_jpeg3_create_detail: realloc(%p, %d) failed\n", new_buff, origsize);
+            return 1;
+        }
         result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
     }
     if (result == Z_OK) {
