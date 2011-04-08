@@ -67,6 +67,12 @@ bitstream_input(bitstream_t *bs, unsigned char *data,
     bitstream_clear(bs);
     bs->data_alloc_len = data_len;
     bs->data = malloc(bs->data_alloc_len);
+    if (bs->data == NULL) {
+        fprintf(stderr, "bitstream_input: malloc failed\n");
+        bs->data_alloc_len = 0;
+        bs->data_len = 0;
+        return 1;
+    }
     memcpy(bs->data, data, data_len);
     bs->data_len = data_len;
     return 0;
