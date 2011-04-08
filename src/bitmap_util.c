@@ -41,7 +41,7 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
               break;
           case 0xDA: // SOS
               return 1; // not found
-        default:
+          default:
             if (isJPEG_SOFXX(marker2)) {
                 *width  = 0x100 * data[idx + 7] + data[idx + 8];
                 *height = 0x100 * data[idx + 5] + data[idx + 6];
