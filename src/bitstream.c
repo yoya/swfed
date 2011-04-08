@@ -84,11 +84,12 @@ bitstream_steal(bitstream_t *bs, unsigned long *length) {
     *length = bs->data_len;
     if ((tmp = realloc(data, *length)) == NULL) {
         fprintf(stderr, "bitstream_steal: Can't realloc\n");
+        return NULL;
     }
     bs->data = NULL;
     bs->data_len = 0;
     bs->data_alloc_len = 0;
-    return data;
+    return tmp;
 }
 
 unsigned char *

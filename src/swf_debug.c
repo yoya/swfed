@@ -112,6 +112,9 @@ realloc_debug(void *ptr, size_t size, char *filename, int linenum) {
     int i;
     void *new_ptr;
     new_ptr = realloc(ptr, size);
+    if (new_ptr == ptr) {
+        return new_ptr;
+    }
 //    fprintf(stderr, "realloc_debug: ptr=%p => new_ptr=%p (%s,%d)\n",
 //            ptr, new_ptr, filename, linenum);
     for (i=0 ; i < MALLOC_DEBUG_TABLE_NUM ; i++) {
