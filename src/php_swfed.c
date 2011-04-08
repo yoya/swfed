@@ -588,19 +588,22 @@ PHP_METHOD(swfed, getTagDetail) {
 PHP_METHOD(swfed, getTagData) {
     long tag_seqno = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data_ref = NULL;
+    unsigned char *data = NULL, *new_buff;
     unsigned long data_len = 0;
     
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    data_ref = swf_object_get_tagdata(swf, tag_seqno, &data_len);
-    if (data_ref == NULL) {
+    data = swf_object_get_tagdata(swf, tag_seqno, &data_len);
+    if (data == NULL) {
         fprintf(stderr, "getTagData: Can't get_tagdata\n");
         RETURN_FALSE;
     }
-    RETURN_STRINGL(data_ref, data_len, 1);
+    new_buff = emalloc(data_len);
+    memcpy(new_buff, data, data_len);
+    free(data);
+    RETURN_STRINGL(new_buff, data_len, 0);
 }
 
 PHP_METHOD(swfed, replaceTagData) {
