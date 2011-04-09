@@ -8,7 +8,7 @@ swf_xrgb_parse(bitstream_t *bs, swf_xrgb_t *color) {
     (void) bitstream_getbyte(bs); // pad
     color->red   = bitstream_getbyte(bs);
     color->green = bitstream_getbyte(bs);
-    ret = = bitstream_getbyte(bs);
+    ret = bitstream_getbyte(bs);
     if (ret < 0) {
         return 1;
     }
