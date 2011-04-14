@@ -30,7 +30,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 7, "DefineButton", NULL},
     { 8, "JPEGTables", swf_tag_jpegt_detail_handler },
     { 9, "SetBackgroundColor", NULL },
-    { 10, "DefineFont ", NULL},
+    { 10, "DefineFont", NULL},
     { 11, "DefineText", NULL },
     { 12, "DoAction", swf_tag_action_detail_handler },
     { 13, "DefineFontInfo", NULL },
