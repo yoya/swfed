@@ -2,11 +2,23 @@
 
 require_once('define.php');
 
+function multiply_unit($str) {
+   $str = preg_replace('/(\d+)G/ei', "$1*1024*1024*1024", $str);
+   $str = preg_replace('/(\d+)M/ei', "$1*1024*1024", $str);
+   $str = preg_replace('/(\d+)K/ei', "$1*1024", $str);
+   $str = preg_replace('/(\d+)B/ei', "$1", $str);
+   return $str;
+}
+$upload_max_filesize  = ini_get('upload_max_filesize');
+$upload_max_filesize_bytes = multiply_unit($upload_max_filesize);
+
+
 if (! empty($_FILES['swffile']['tmp_name'])) {
     $filename = $_FILES['swffile']['tmp_name'];
     $swfdata = file_get_contents($filename);
-    if ($swfdata > 67108864) {
-        echo ' 64M Bytes 以内のファイルしか受け付けません。'."\n";
+    $upload_max_filesize  = ini_get('upload_max_filesize');
+    if (strlen($swfdata) > $upload_max_filesize_bytes) {
+        echo "$upload_max_filesize Bytes 以内のファイルしか受け付けません。\n";
         exit(0);
     }
     $tmp_name = sha1($swfdata, false);
@@ -29,7 +41,7 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
 </head>
 <body>
 <form enctype="multipart/form-data" action="" method="POST">
-    <input type="hidden" name="MAX_FILE_SIZE" value="67108864" />
+    <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo $upload_max_filesize_bytes ?>" />
     SWF ファイルをアップロード: <input name="swffile" type="file" />
     <input type="submit" value="ファイルを送信" />
 </form>
@@ -37,14 +49,15 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
 <?php
     
 if (empty($_REQUEST['id']))  {
-     echo "ファイルを指定してください。(64MBytes 以内に限定してます)";
+     echo "ファイルを指定してください。($upload_max_filesize Bytes 以内に限定してます)";
      exit(0);
 }
 $id = $_REQUEST['id'];
 $tmp_filename = "$tmp_prefix$id.swf";
 $swfdata = file_get_contents($tmp_filename);
 
-echo "<a href=\"./swfimagelist.php?id=$id\" target=\"_blank\"> 画像一覧 </a> <br />\n";
+echo "<a href=\"./swfimagelist.php?id=$id&noshape=y\" target=\"_blank\"> ビットマップ画像一覧 </a> - ";
+echo "<a href=\"./swfimagelist.php?id=$id\" target=\"_blank\"> ベクター画像含む(重たいので注意) </a> <br />\n";
 
 $swf = new SWFEditor();
 $swf->input($swfdata);
@@ -81,15 +94,10 @@ foreach ($swf->getTagList() as $tag_seqno => $tagblock) {
         $detail_str = '';
         if (is_array($detail_info)) {
             foreach ($detail_info as $key => $value) {
-		if (is_array($value)) {
- 	            $detail_str .= " $key( ";
-	            foreach ($value as $key2 => $value2) {
-	                $detail_str .= "$key2 => $value2 ";
-		    }
- 	            $detail_str .= ") ";
-	        } else {
-		    $detail_str .= "$key($value) ";
-		}
+                if (is_array($value)) {
+                    $value = implode(',', $value);
+	            }
+	            $detail_str .= "$key($value) ";
             }
         } else {
             $detail_str .= var_export($detail_info, true);
