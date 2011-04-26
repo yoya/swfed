@@ -2,6 +2,16 @@
 
 require_once('define.php');
 
+function multiply_unit($str) {
+   $str = preg_replace('/(\d+)G/ei', "$1*1024*1024*1024", $str);
+   $str = preg_replace('/(\d+)M/ei', "$1*1024*1024", $str);
+   $str = preg_replace('/(\d+)K/ei', "$1*1024", $str);
+   $str = preg_replace('/(\d+)B/ei', "$1", $str);
+   return $str;
+}
+$upload_max_filesize  = ini_get('upload_max_filesize');
+$upload_max_filesize_bytes = multiply_unit($upload_max_filesize);
+
 function detect_image_ext(&$imagedata) {
     $image_sig = substr($imagedata, 0, 0x10);
     if (strpos($image_sig, 'JFIF') === 6) {
@@ -19,8 +29,8 @@ function detect_image_ext(&$imagedata) {
 if (! empty($_FILES['imagefile']['tmp_name'])) {
     $filename = $_FILES['imagefile']['tmp_name'];
     $imagedata = file_get_contents($filename);
-    if ($imagedata > 67108864) {
-        echo ' 64M Bytes 以内のファイルしか受け付けません。'."\n";
+    if ($imagedata > $upload_max_filesize_bytes) {
+        echo " $upload_max_filesize Bytes 以内のファイルしか受け付けません。\n";
         exit(0);
     }
     $tmp_name = sha1($imagedata, false);
@@ -68,13 +78,15 @@ echo <<< FORM
 </head>
 <body>
 <form enctype="multipart/form-data" action="" method="POST">
-    <input type="hidden" name="MAX_FILE_SIZE" value="67108864" />
+    <input type="hidden" name="MAX_FILE_SIZE" value="$upload_max_filesize_bytes;
+
+_bytes" />
     画像ファイルをアップロード: <input name="imagefile" type="file" />
     <input type="hidden" name="id" value="$id" />
     <input type="hidden" name="image_id" value="$image_id" />
     <input type="submit" name="action" value="replace" />
 </form>
-          ファイルを指定してください。(64MBytes 以内に限定してます)
+          ファイルを指定してください。($upload_max_filesize Bytes 以内に限定してます)
 </body>
 </html>
 FORM;
