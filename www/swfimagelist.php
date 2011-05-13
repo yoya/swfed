@@ -31,9 +31,10 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
     if (($tag == 20) || ($tag == 36)) {
         $ext = '.png';
     }
-//    if (($tag == 2) || ($tag == 22) || ($tag == 32)) {
-    if (($tag == 2) || ($tag == 22) || ($tag == 32) || ($tag == 46)) {
-        $ext = '.shape';
+    if (($tag == 2) || ($tag == 22) || ($tag == 32)) {
+        if (empty($_REQUEST['noshape'])) {
+            $ext = '.shape';
+        }
     }
     if (empty($ext)) {
         continue;
@@ -65,7 +66,7 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
 
     if (($ext == '.jpg') || ($ext == '.png')) {
 	echo "<td> <img src=\"./swfimage.php?id=$id&image_id=$cid&ext=$ext\"> </td>";
-    } else { // shape
+    } elseif ($ext == '.shape') { // shape
 	echo "<td>
 <object width='240' height='240'>
 <param name='movie' value='./swfshape.php?id=$id&shape_id=$cid&ext=$ext'>
