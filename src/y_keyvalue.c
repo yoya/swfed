@@ -120,12 +120,26 @@ y_keyvalue_delete(y_keyvalue_t *st, char *key, int key_len) {
 }
 
 /*
- * itelator
+ * itelator reguler/reverse
  */
 void
 y_keyvalue_rewind(y_keyvalue_t *st) {
-    st->get_offset = -1;
+    for (st->get_offset = 0 ; st->get_offset < st->use_len; st->get_offset++) {
+        if (st->table[st->get_offset].use) {
+            break;
+        }
+    }
 }
+
+void
+y_keyvalue_seeklast(y_keyvalue_t *st) {
+    for (st->get_offset = st->use_len - 1 ; st->get_offset >= 0 ; st->get_offset--) {
+        if (st->table[st->get_offset].use) {
+            break;
+        }
+    }
+}
+
 int
 y_keyvalue_next(y_keyvalue_t *st) {
     for (st->get_offset++; st->get_offset < st->use_len; st->get_offset++) {
@@ -133,13 +147,25 @@ y_keyvalue_next(y_keyvalue_t *st) {
             return 1; // found
         }
     } 
-
+    return 0;// false
+    
+}
+int
+y_keyvalue_prev(y_keyvalue_t *st) {
+    for (st->get_offset--; st->get_offset >= 0; st->get_offset--) {
+        if (st->table[st->get_offset].use) {
+            return 1; // found
+        }
+    } 
     return 0;// false
     
 }
 
 char *
 y_keyvalue_get_currentkey(y_keyvalue_t *st, int *key_len) {
+    if (st->get_offset < 0) {
+        return NULL;
+    }
     if (st->get_offset >= st->use_len) {
         return NULL;
     }
@@ -156,6 +182,35 @@ y_keyvalue_get_currentvalue(y_keyvalue_t *st, int *value_len) {
     return st->table[st->get_offset].value;
 }
 
+int
+y_keyvalue_get_maxkeylength(y_keyvalue_t *st) {
+    int i;
+    int maxlen = 0;
+    for (i = 0 ; i < st->use_len ; i++) {
+        if (st->table[i].use) {
+            if (maxlen < st->table[i].key_len) {
+                maxlen = st->table[i].key_len;
+            }
+        }
+    }
+    return maxlen;
+}
+
+int
+y_keyvalue_get_maxvaluelength(y_keyvalue_t *st) {
+    int i;
+    int maxlen = 0;
+    for (i = 0 ; i < st->use_len ; i++) {
+        if (st->table[i].use) {
+            if (maxlen < st->table[i].value_len) {
+                maxlen = st->table[i].value_len;
+            }
+        }
+    }
+    return maxlen;
+}
+
+
 #ifdef __KEYVALUE_DEBUG__
 
 int main(void) {
@@ -165,18 +220,35 @@ int main(void) {
     y_keyvalue_t *st = y_keyvalue_open();
     y_keyvalue_set(st, "foo", 4, "baa", 4);
     y_keyvalue_set(st, "baz", 4, "buz", 4);
+    printf("reguler iterate test\n");
     y_keyvalue_rewind(st);
-    while(y_keyvalue_next(st)) {
-        key = y_keyvalue_get_currentkey(st, &key_len);
+    while (key = y_keyvalue_get_currentkey(st, &key_len)) {
+        
         value = y_keyvalue_get_currentvalue(st, &value_len);
         printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
+        if (y_keyvalue_next(st) == 0) {
+            break;
+        }
     }
+    printf("reverse iterate test\n");
+    y_keyvalue_seeklast(st);
+    while (key = y_keyvalue_get_currentkey(st, &key_len)) {
+        
+        value = y_keyvalue_get_currentvalue(st, &value_len);
+        printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
+        if (y_keyvalue_prev(st) == 0) {
+            break;
+        }
+    }
+    printf("delete test\n");
     y_keyvalue_delete(st, "foo", 4);
     y_keyvalue_rewind(st);
-    while(y_keyvalue_next(st)) {
-        key = y_keyvalue_get_currentkey(st, &key_len);
+    while (key = y_keyvalue_get_currentkey(st, &key_len)) {
         value = y_keyvalue_get_currentvalue(st, &value_len);
         printf("key=%s(%d), value=%s(%d)\n", key, key_len, value, value_len);
+        if (y_keyvalue_next(st) == 0) {
+            break;
+        }
     }
     y_keyvalue_close(st);
     malloc_debug_end();
