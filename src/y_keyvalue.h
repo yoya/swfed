@@ -33,11 +33,11 @@ extern int y_keyvalue_prev(y_keyvalue_t *st);
 extern char * y_keyvalue_get_currentkey(y_keyvalue_t *st, int *key_len);
 extern char * y_keyvalue_get_currentvalue(y_keyvalue_t *st, int *value_len);
 
-extern int y_keyvalue_get_maxkeylength(y_keyvalue_t *st);
-extern int y_keyvalue_get_maxvaluelength(y_keyvalue_t *st);
 
 // info
-
-
+extern int y_keyvalue_get_maxkeylength(y_keyvalue_t *st);
+extern int y_keyvalue_get_maxvaluelength(y_keyvalue_t *st);
+extern int y_keyvalue_get_maxkeyvaluelength(y_keyvalue_t *st);
+extern void y_keyvalue_dump(y_keyvalue_t *st);
 
 #endif /* __Y_KEYVALUE_H__ */
