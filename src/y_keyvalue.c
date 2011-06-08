@@ -228,8 +228,8 @@ y_keyvalue_dump(y_keyvalue_t *st) {
     for (i = 0 ; i < st->use_len ; i++) {
         printf("[%d] ", i);
         if (st->table[i].use) {
-	    printf("key:%*s ", st->table[i].key_len, st->table[i].key);
-	    printf("value:%*s", st->table[i].value_len, st->table[i].value);
+	    printf("key:%.*s", st->table[i].key_len, st->table[i].key);
+	    printf("value:%.*s", st->table[i].value_len, st->table[i].value);
 	    printf("\n");
         } else {
 	    printf("deleted");
