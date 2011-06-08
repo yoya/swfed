@@ -474,6 +474,8 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_sprite_detail_t   *tag_sprite;
         swf_tag_shape_detail_t    *tag_shape;
         swf_tag_place_detail_t    *tag_place;
+        swf_action_t   *action;
+        int action_list_count;
 	zval *data = NULL;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
@@ -517,8 +519,12 @@ PHP_METHOD(swfed, getTagDetail) {
         if (tag->code == 59) { // DoInitAction
             add_assoc_long(return_value, "action_sprite", tag_action->action_sprite);
         }
-        if (tag_action->action_record && tag_action->action_record_len) {
-            add_assoc_long(return_value, "action_record_len", tag_action->action_record_len);
+        action = tag_action->action_list->head;
+        if (action) {
+            for (action_list_count = 0 ; action ; action_list_count++) {
+                action = action->next;
+            }
+            add_assoc_long(return_value, "action_list_count", action_list_count);
         }
         break;
       case 37: // DefineEditText;
@@ -1208,7 +1214,7 @@ PHP_METHOD(swfed, replaceEditString) {
 PHP_METHOD(swfed, getActionData) {
     long tag_seqno = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data_ref = NULL;
+    unsigned char *data = NULL;
     char *new_buff = NULL;
     unsigned long data_len = 0;
     
@@ -1216,17 +1222,19 @@ PHP_METHOD(swfed, getActionData) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    data_ref = swf_object_get_actiondata(swf, &data_len, tag_seqno);
-    if (data_ref == NULL) {
+    data = swf_object_get_actiondata(swf, &data_len, tag_seqno);
+    if (data == NULL) {
         fprintf(stderr, "getActionData: Can't get_actiondata\n");
         RETURN_FALSE;
     }
     new_buff = emalloc(data_len);
     if (new_buff == NULL) {
         fprintf(stderr, "getActionData: Can't emalloc new_buff\n");
+        free(data);
         RETURN_FALSE;
     }
-    memcpy(new_buff, data_ref, data_len);
+    memcpy(new_buff, data, data_len);
+    free(data);
     RETURN_STRINGL(new_buff, data_len, 0);
 }
 
@@ -1242,7 +1250,8 @@ PHP_METHOD(swfed, disasmActionData) {
     array_init(return_value);
     bs = bitstream_open();
     bitstream_input(bs, (unsigned char*) data, data_len);
-    action_list = swf_action_list_create(bs);
+    action_list = swf_action_list_create();
+    swf_action_list_parse(bs, action_list);
     bitstream_close(bs);
     if (action_list) {
         swf_action_t *action = action_list->head;

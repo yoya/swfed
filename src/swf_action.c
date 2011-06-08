@@ -139,11 +139,6 @@ swf_action_parse(bitstream_t *bs, swf_action_t *act) {
     bitstream_align(bs);
     act->action_id = bitstream_getbyte(bs);
     if (act->action_id & 0x80) {
-        act->action_has_length = 1;
-    } else {
-        act->action_has_length = 0;
-    }
-    if (act->action_has_length) {
         act->action_length = bitstream_getbytesLE(bs, 2);
         offset = bitstream_getbytepos(bs);
         act->action_data = malloc(act->action_length);
@@ -159,9 +154,8 @@ swf_action_parse(bitstream_t *bs, swf_action_t *act) {
 int
 swf_action_build(bitstream_t *bs, swf_action_t *act) {
     bitstream_align(bs);
-    /* bitstream_putbits(bs, act->action_has_length, 1);  no need */
     bitstream_putbyte(bs, act->action_id);
-    if (act->action_has_length) {
+    if (act->action_id & 0x80) {
         if (act->action_data == NULL) {
             return 1; // error
         }
@@ -181,7 +175,7 @@ swf_action_print(swf_action_t *act, int indent_depth) {
         print_indent(indent_depth);
         printf("0x%02x", act->action_id);
     }
-    if (act->action_has_length) {
+    if (act->action_id & 0x80) {
         int i, n;
         unsigned char *d;
         switch(act->action_id) {
@@ -214,21 +208,31 @@ swf_action_print(swf_action_t *act, int indent_depth) {
 }
 
 swf_action_list_t *
-swf_action_list_create(bitstream_t *bs) {
+swf_action_list_create(void) {
     swf_action_list_t *action_list;
-    swf_action_t *action;
     action_list = calloc(sizeof(*action_list), 1);
     if (action_list == NULL) {
         fprintf(stderr, "Can't alloc memory for action_list\n");
         return NULL;
     }
-    do {
+    action_list->head = NULL;
+    action_list->tail = NULL;
+    return action_list;
+}
+
+int
+swf_action_list_parse(bitstream_t *bs, swf_action_list_t *action_list) {
+    swf_action_t *action;
+    while (1) {
         action = calloc(sizeof(*action), 1);
         if (action == NULL) {
             fprintf(stderr, "Can't alloc memory for action\n");
             break;
         }
-        swf_action_parse(bs, action);
+        if (swf_action_parse(bs, action)) {
+            fprintf(stderr, "swf_action_list_parse: swf_action_parse failed");
+            return 1; // NG
+        }
         if (action_list->head == NULL) {
             action_list->head = action_list->tail = action;
         } else {
@@ -236,23 +240,26 @@ swf_action_list_create(bitstream_t *bs) {
             action_list->tail = action;
         }
         action->next = NULL;
-    } while(action->action_id != 0); // End Action;
-    return action_list;
-}
-unsigned char *
-swf_action_list_output(swf_action_list_t *list, unsigned long *length) {
-    swf_action_t *action;
-    bitstream_t *bs;
-    unsigned char *data;
-    *length = 0;
-    bs = bitstream_open();
-    for (action=list->head ; action ; action=action->next) {
-        swf_action_build(bs, action);
+        if (action->action_id == 0) { // End Action;
+            break;
+        }
     }
-    data = bitstream_steal(bs, length);
-    bitstream_close(bs);
-    return data;
+    return 0;
 }
+
+int
+swf_action_list_build(bitstream_t *bs, swf_action_list_t *list) {
+    swf_action_t *action;
+    for (action=list->head ; action ; action=action->next) {
+        if (swf_action_build(bs, action) != 0) {
+            fprintf(stderr, "swf_action_list_build: swf_action_build failed\n");
+            bitstream_putbyte(bs, 0);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 void
 swf_action_list_destroy(swf_action_list_t *action_list) {
 
@@ -331,4 +338,26 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
         break;
     }
     return result;
+}
+
+int
+swf_action_list_append_top(swf_action_list_t *list, int action_id,
+                           unsigned char *action_data, int action_data_length) {
+    swf_action_t *action;
+    action = calloc(sizeof(*action), 1);
+    action->action_id = action_id;
+    if (action_id >= 0x80) {
+        action->action_data = malloc(action_data_length);
+        memcpy(action->action_data, action_data, action_data_length);
+        action->action_length = action_data_length;
+    } else {
+        action->action_data = NULL;
+        action->action_length = action_data_length;
+    }
+    action->next = list->head;
+    list->head = action;
+    if (list->tail == NULL) {
+        list->tail = action;
+    }
+    return 0;
 }

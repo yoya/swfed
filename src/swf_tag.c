@@ -938,6 +938,7 @@ swf_tag_t *
 swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     int ret;
     swf_tag_t *tag = NULL;
+    swf_tag_action_detail_t *swf_tag_action;
     if (kv == NULL) {
         fprintf(stderr, "swf_tag_create_action_setvariables: kv == NULL\n");
         return NULL;
@@ -947,7 +948,15 @@ swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
     swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
     tag->detail = detail_handler->create();
-    ret = swf_tag_action_create_setvaribles(tag, kv);
+    swf_tag_action = (swf_tag_action_detail_t*) tag->detail;
+    swf_tag_action->action_list = swf_action_list_create();
+    if (swf_tag_action->action_list == NULL) {
+        fprintf(stderr, "swf_tag_create_action_setvariables: swf_action_list_create failed\n");
+        swf_tag_destroy(tag);
+        return NULL;
+    }
+    swf_action_list_append_top(swf_tag_action->action_list, 0, NULL, 0); // End Action
+    ret = swf_tag_action_top_append_varibles(tag, kv);
     if (ret) {
         swf_tag_destroy(tag);
         return NULL;
@@ -971,7 +980,7 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
         fprintf(stderr, "swf_tag_put_action_setvariables: swf_tag_create_input_detail failed\n");
         return 1;
     }
-    ret = swf_tag_action_put_setvaribles(tag, kv);
+    ret = swf_tag_action_top_append_varibles(tag, kv);
     if (ret) {
         swf_tag_destroy(tag);
         return 1; // NG

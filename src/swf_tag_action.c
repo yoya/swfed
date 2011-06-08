@@ -33,8 +33,7 @@ swf_tag_action_create_detail(void) {
         return NULL;
     }
     swf_tag_action->action_sprite = 0;
-    swf_tag_action->action_record = NULL;
-    swf_tag_action->action_record_len = 0;
+    swf_tag_action->action_list = NULL;
     return swf_tag_action;
 }
 
@@ -44,10 +43,16 @@ swf_tag_action_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned char *data  = tag->data;
     unsigned long length = tag->length;
     bitstream_t *bs;
-    unsigned long pos, len;
     (void) swf;
+    if (tag == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_action_input_detail: tag == NULL\n");
+        return 1;
+    }
+    swf_tag_action = tag->detail;
+    data  = tag->data;
+    length = tag->length;
     if (swf_tag_action == NULL) {
-        fprintf(stderr, "ERROR: swf_tag_action_create_detail: swf_tag_action == NULL\n");
+        fprintf(stderr, "ERROR: swf_tag_action_input_detail: swf_tag_action == NULL\n");
         return 1;
     }
 
@@ -59,10 +64,17 @@ swf_tag_action_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     } else {              // DoAction
         swf_tag_action->action_sprite = 0; // fail safe
     }
-    pos = bitstream_getbytepos(bs);
-    len = bitstream_length(bs) - pos;
-    swf_tag_action->action_record = bitstream_output_sub(bs, pos, len);
-    swf_tag_action->action_record_len = len;
+    swf_tag_action->action_list = swf_action_list_create();
+    if (swf_tag_action->action_list == NULL) {
+        fprintf(stderr, "swf_tag_action_input_detail: swf_action_list_create failed\n");
+        bitstream_close(bs);
+        return 1;
+    }
+    if (swf_action_list_parse(bs, swf_tag_action->action_list)) {
+        fprintf(stderr, "swf_tag_action_input_detail: swf_action_list_parse failed\n");
+        bitstream_close(bs);
+        return 1;
+    }
     bitstream_close(bs);
     return 0;
 }
@@ -82,18 +94,14 @@ swf_tag_action_output_detail(swf_tag_t *tag, unsigned long *length,
     } else {              // DoAction
         ; // nothing
     }
-    bitstream_putstring(bs, swf_tag_action->action_record,
-                        swf_tag_action->action_record_len);
+    swf_action_list_build(bs,swf_tag_action->action_list);
     data = bitstream_steal(bs, length);
-    bitstream_close(bs);
     return data;
 }
 
 void
 swf_tag_action_print_detail(swf_tag_t *tag,
                             struct swf_object_ *swf, int indent_depth) {
-    bitstream_t *bs;
-    swf_action_list_t *action_list;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     (void) swf;
     print_indent(indent_depth);
@@ -101,13 +109,7 @@ swf_tag_action_print_detail(swf_tag_t *tag,
         printf("action_sprite=%d  ", swf_tag_action->action_sprite);
     }
     printf("action_record =\n");
-    bs = bitstream_open();
-    bitstream_input(bs, swf_tag_action->action_record,
-                    swf_tag_action->action_record_len);
-    action_list = swf_action_list_create(bs);
-    bitstream_close(bs);
-    swf_action_list_print(action_list, indent_depth + 1);
-    swf_action_list_destroy(action_list);
+    swf_action_list_print(swf_tag_action->action_list, indent_depth + 1);
     return ;
 }
 
@@ -115,8 +117,8 @@ void
 swf_tag_action_destroy_detail(swf_tag_t *tag) {
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     if (swf_tag_action) {
-        free(swf_tag_action->action_record);
-        swf_tag_action->action_record = NULL;
+        swf_action_list_destroy(swf_tag_action->action_list);
+        swf_tag_action->action_list = NULL;
         free(swf_tag_action);
         tag->detail = NULL;
     }
@@ -124,72 +126,55 @@ swf_tag_action_destroy_detail(swf_tag_t *tag) {
 }
 
 int
-swf_tag_action_create_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
-    bitstream_t *bs;
+swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
     char *key, *value;
     int key_len, value_len;
-    unsigned long data_len;
+    int key_maxlen, value_maxlen, maxlen;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
+    unsigned char *action_data = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_action_top_append_varibles: tag == NULL\n");
+        return 1; // NG
+    }
+    if (! isActionTag(tag->code)) {
+        fprintf(stderr, "swf_tag_action_top_append_varibles: isnot ActionTag code=%d\n", tag->code);
+        return 1; // NG
+    }
+    key_maxlen = y_keyvalue_get_maxkeylength(kv);
+    value_maxlen = y_keyvalue_get_maxvaluelength(kv);
+    maxlen = (key_maxlen>value_maxlen)?key_maxlen:value_maxlen;
+    action_data = malloc(1 + maxlen + 1);
     swf_tag_action->action_sprite = 0;
-    bs = bitstream_open();
-
-    y_keyvalue_rewind(kv);
-    while (y_keyvalue_next(kv)) {
-        key   = y_keyvalue_get_currentkey(kv, &key_len);
+    // Reversible itelator for append top method.
+    y_keyvalue_seeklast(kv);
+    while (1) {
+        key = y_keyvalue_get_currentkey(kv, &key_len);
+        if (key == NULL) {
+            break;
+        }
         value = y_keyvalue_get_currentvalue(kv, &value_len);
-        bitstream_putbyte(bs, 0x96); // Push Data
-        bitstream_putbytesLE(bs, key_len + 2 , 2);
-        bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, (unsigned char*) key, key_len);
-        bitstream_putbyte(bs, 0);
-        bitstream_putbyte(bs, 0x96); // Push Data
-        bitstream_putbytesLE(bs, value_len + 2 , 2);
-        bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, (unsigned char*) value, value_len);
-        bitstream_putbyte(bs, 0);
-        bitstream_putbyte(bs, 0x1d); // Set Variable
-    }
-    bitstream_putbyte(bs, 0); // End
-    if (swf_tag_action->action_record) {
-        free(swf_tag_action->action_record);
-    }
-    swf_tag_action->action_record = bitstream_steal(bs, &data_len);
-    swf_tag_action->action_record_len = data_len;
-    bitstream_close(bs);
-    return 0;
-}
 
-int
-swf_tag_action_put_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv) {
-    bitstream_t *bs;
-    char *key, *value;
-    int key_len, value_len;
-    unsigned long data_len;
-    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
-    swf_tag_action->action_sprite = 0;
-    bs = bitstream_open();
-    y_keyvalue_rewind(kv);
-    while (y_keyvalue_next(kv)) {
-        key   = y_keyvalue_get_currentkey(kv, &key_len);
-        value = y_keyvalue_get_currentvalue(kv, &value_len);
-        bitstream_putbyte(bs, 0x96); // Push Data
-        bitstream_putbytesLE(bs, key_len + 2 , 2);
-        bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, (unsigned char *)key, key_len);
-        bitstream_putbyte(bs, 0);
-        bitstream_putbyte(bs, 0x96); // Push Data
-        bitstream_putbytesLE(bs, value_len + 2 , 2);
-        bitstream_putbyte(bs, 0);
-        bitstream_putstring(bs, (unsigned char *)value, value_len);
-        bitstream_putbyte(bs, 0);
-        bitstream_putbyte(bs, 0x1d); // Set Variable
+        // Push Data(key), Push Data(value), Set Variable.
+        // But reversible order for append top method.
+        //
+        // Set Variable
+        swf_action_list_append_top(swf_tag_action->action_list, 0x1d, NULL, 0);
+        // Push Data (value);
+        action_data[0] = 0; // type string;
+        memcpy(action_data + 1, value, value_len);
+        action_data[value_len + 1] = '\0';
+        swf_action_list_append_top(swf_tag_action->action_list, 0x96,
+                                   action_data, 1 + value_len + 1);
+        // Push Data (key);
+        action_data[0] = 0; // type string;
+        memcpy(action_data + 1, key, key_len);
+        action_data[key_len + 1] = '\0';
+        swf_action_list_append_top(swf_tag_action->action_list, 0x96,
+                                   action_data, 1 + key_len + 1);
+        if (y_keyvalue_prev(kv) == 0) {
+            break;
+        }
     }
-    if (swf_tag_action->action_record) {
-        bitstream_putstring(bs, swf_tag_action->action_record, swf_tag_action->action_record_len);
-        free(swf_tag_action->action_record);
-    }
-    swf_tag_action->action_record = bitstream_steal(bs, &data_len);
-    swf_tag_action->action_record_len = data_len;
-    bitstream_close(bs);
+    free(action_data);
     return 0;
 }

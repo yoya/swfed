@@ -1080,6 +1080,8 @@ unsigned char *
 swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqno) {
     swf_tag_t *tag;
     swf_tag_action_detail_t *swf_tag_action;
+    bitstream_t *bs;
+    unsigned char *data;
     int i = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_get_actiondata: swf == NULL\n");
@@ -1102,8 +1104,11 @@ swf_object_get_actiondata(swf_object_t *swf, unsigned long *length, int tag_seqn
         fprintf(stderr, "swf_object_get_actiondata: swf_tag_create_input_detail failed");
         return NULL;
     }
-    *length = swf_tag_action->action_record_len;
-    return swf_tag_action->action_record;
+    bs = bitstream_open();
+    swf_action_list_build(bs,swf_tag_action->action_list);
+    data = bitstream_steal(bs, length);
+    bitstream_close(bs);
+    return data;
 }
 
 int

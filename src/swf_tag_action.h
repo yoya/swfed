@@ -12,8 +12,7 @@
 
 typedef struct swf_tag_action_detail_ {
     unsigned short  action_sprite;
-    unsigned char  *action_record;
-    unsigned long   action_record_len;
+    swf_action_list_t *action_list;
 } swf_tag_action_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_action_detail_handler(void);
@@ -31,7 +30,6 @@ extern void swf_tag_action_print_detail(swf_tag_t *tag,
                                         int indent_depth);
 extern void swf_tag_action_destroy_detail(swf_tag_t *tag);
 
-extern int swf_tag_action_create_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv);
-extern int swf_tag_action_put_setvaribles(swf_tag_t *tag, y_keyvalue_t *kv);
+extern int swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv);
 
 #endif /* __SWF_TAG_ACTION__H__ */
