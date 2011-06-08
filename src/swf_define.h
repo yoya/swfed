@@ -76,5 +76,7 @@ extern void print_hexbin(unsigned char *data, int data_len);
 // PlaceObject1,2
 #define isPlaceTag(tag) (((tag) == 4) || ((tag) == 26))
 #define isSpriteTag(tag) ((tag) == 39)
+// DoAction,DoInitAction
+#define isActionTag(tag) (((tag) == 12) || ((tag) == 59))
 
 #endif /* __SWF_DEFINE__H__ */
