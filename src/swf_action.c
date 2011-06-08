@@ -362,9 +362,9 @@ swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv)
 	    if (type == 0x00) { // Type: String 
 	        unsigned char *data = action_data + 1;
 		int data_len = action->action_length - 2;
-		unsigned char *value;
+		char *value;
 		int value_len;
-		value = y_keyvalue_get(kv, data, data_len, &value_len);
+		value = y_keyvalue_get(kv, (char *)data, data_len, &value_len);
 		if (value) {
 		    action_data = malloc(1 + value_len + 1);
 		    action_data[0] = 0x00; // Type: String
