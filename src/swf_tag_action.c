@@ -117,8 +117,10 @@ void
 swf_tag_action_destroy_detail(swf_tag_t *tag) {
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     if (swf_tag_action) {
-        swf_action_list_destroy(swf_tag_action->action_list);
-        swf_tag_action->action_list = NULL;
+        if (swf_tag_action->action_list) {
+	    swf_action_list_destroy(swf_tag_action->action_list);
+	    swf_tag_action->action_list = NULL;
+	}
         free(swf_tag_action);
         tag->detail = NULL;
     }
@@ -177,4 +179,17 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
     }
     free(action_data);
     return 0;
+}
+
+
+int
+swf_tag_action_replace_string(swf_tag_t *tag, y_keyvalue_t *kv) {
+    bitstream_t *bs;
+    int ret;
+    swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
+    ret = swf_action_list_replace_string(swf_tag_action->action_list, kv);
+    if (ret) {
+        fprinft(stderr, "swf_tag_action_replace_string: swf_action_list_replace_string failed\n");
+    }
+    return ret;
 }

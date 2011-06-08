@@ -1181,6 +1181,34 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+int
+swf_object_replace_action_string(swf_object_t *swf, y_keyvalue_t *kv) {
+    swf_tag_t *tag;
+    int ret = 0;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_replace_action_string: swf == NULL\n");
+        return 1; // NG
+    }
+    if (kv == NULL) {
+        fprintf(stderr, "swf_object_replace_action_string: kv == NULL\n");
+        return 1; // NG
+    }
+    for (tag=swf->tag_head ; tag ; tag=tag->next) {
+        if (isActionTag(tag->code)) {
+	    ret = swf_tag_replace_action_string(tag, kv, swf);
+	    if (ret) {
+	        fprintf(stderr, "swf_object_replace_action_string: swf_tag_replace_action_string failed");
+		break;
+	    }
+	    if (tag->data) {
+	        free(tag->data);
+		tag->data = NULL;
+	    }
+	}
+    }
+    return ret;
+}
+
 /*
  * 参照側の cid 値を入れ替える
  */

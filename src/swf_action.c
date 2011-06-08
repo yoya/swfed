@@ -341,6 +341,47 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
 }
 
 int
+swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv) {
+    swf_action_t *action;
+    for (action=action_list->head ; action ; action=action->next) {
+        if (action->action_id < 0x80) {
+	    continue; // skip (no string)
+	}
+	switch(action->action_id) {
+	  unsigned char *action_data;
+	  unsigned char type;
+	case 0x83: // Get URL
+	  // todo
+	    break;
+	case 0x88: // ActionConstantPool
+	  // todo
+	    break;
+	case 0x96: // Push Data
+	    action_data = action->action_data;
+	    type = action_data[0] & 0xff;
+	    if (type == 0x00) { // Type: String 
+	        unsigned char *data = action_data + 1;
+		int data_len = action->action_length - 2;
+		unsigned char *value;
+		int value_len;
+		value = y_keyvalue_get(kv, data, data_len, &value_len);
+		if (value) {
+		    action_data = malloc(1 + value_len + 1);
+		    action_data[0] = 0x00; // Type: String
+		    memcpy(action_data + 1, value, value_len);
+		    action_data[1 + value_len] = '\0';
+		    free(action->action_data);
+		    action->action_data = action_data;
+		    action->action_length = 1 + value_len + 1;
+		}
+	    }
+	    break;
+	}
+    }
+    return 0;
+}
+
+int
 swf_action_list_append_top(swf_action_list_t *list, int action_id,
                            unsigned char *action_data, int action_data_length) {
     swf_action_t *action;
@@ -361,3 +402,4 @@ swf_action_list_append_top(swf_action_list_t *list, int action_id,
     }
     return 0;
 }
+

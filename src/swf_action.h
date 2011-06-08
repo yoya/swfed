@@ -7,6 +7,8 @@
 #ifndef __SWF_ACTION_H__
 #define __SWF_ACTION_H__
 
+#include "y_keyvalue.h"
+
 typedef struct swf_action_ {
     unsigned char  action_id;
     unsigned short action_length;
@@ -38,6 +40,8 @@ extern void swf_action_list_print(swf_action_list_t *act_list,
 
 extern int swf_action_data_print(unsigned char *action_data,
                                  unsigned short action_data_len);
+extern int swf_action_replace_string(swf_action_list_t *action_list,
+				     y_keyvalue_t *kv);
 
 extern int swf_action_list_append_top(swf_action_list_t *list,
                                       int action_id,

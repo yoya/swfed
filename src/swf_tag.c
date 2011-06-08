@@ -992,6 +992,34 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
     return 0;
 }
 
+int
+swf_tag_replace_action_string(swf_tag_t *tag, y_keyvalue_t *kv,
+			      struct swf_object_ *swf) {
+    int ret;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_replace_action_string: tag == NULL\n");
+        return 1; // NG
+    }
+    if (kv == NULL) {
+        fprintf(stderr, "swf_tag_replace_action_string: kv == NULL\n");
+        return 1; // NG
+    }
+    if (swf == NULL) {
+        fprintf(stderr, "swf_tag_replace_action_string: swf == NULL\n");
+        return 1; // NG
+    }
+    if (swf_tag_create_input_detail(tag, swf) == NULL) {
+        fprintf(stderr, "swf_tag_replace_action_string: swf_tag_create_input_detail failed\n");
+        return 1; // NG
+    }
+    ret = swf_tag_action_replace_string(tag, kv);
+    if (ret) {
+      fprintf(stderr, "swf_tag_replace_action_string: swf_tag_action_replace_string failed\n");
+    }
+    return ret;
+}
+
+
 // タグの中味を移し替える
 swf_tag_t *
 swf_tag_move(swf_tag_t *from_tag) {
