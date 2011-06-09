@@ -215,16 +215,13 @@ y_keyvalue_get_maxkeyvaluelength(y_keyvalue_t *st) {
     int key_maxlen;
     int value_maxlen;
     key_maxlen = y_keyvalue_get_maxkeylength(st);
-    value_maxlen = py_keyvalue_get_maxvaluelength(st);
+    value_maxlen = y_keyvalue_get_maxvaluelength(st);
     return (key_maxlen>value_maxlen)?key_maxlen:value_maxlen;
 }
 
 void
 y_keyvalue_dump(y_keyvalue_t *st) {
     int i;
-    int maxlen = 0;
-    unsigned char *key, *value;
-    int key_len, value_len;
     for (i = 0 ; i < st->use_len ; i++) {
         printf("[%d] ", i);
         if (st->table[i].use) {
