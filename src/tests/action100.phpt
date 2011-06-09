@@ -7,7 +7,7 @@ $swfdata = file_get_contents('tests/textvar.swf');
 $obj = new SWFEditor();
 $obj->input($swfdata);
 $params = array('dummy' => 'dummydummy', 'inputvar' => 'replacedvar');
-$obj->replaceActionString($params);
+$obj->replaceActionStrings($params);
 echo md5($obj->output())."\n";
 ?>
 ===DONE===
