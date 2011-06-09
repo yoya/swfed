@@ -22,8 +22,8 @@ for ($i=2 ; $i < $argc ; $i+=2) {
     $params[$from_str] = $to_str;
 }
 
-if ($obj->replaceActionString($params) == false) {
-    fprintf(STDERR, "replaceActionString(params) failed\n");
+if ($obj->replaceActionStrings($params) == false) {
+    fprintf(STDERR, "replaceActionStrings(params) failed\n");
     exit(1);
 }
 
