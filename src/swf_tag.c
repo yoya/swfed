@@ -57,7 +57,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 46, "DefineMorphShape", swf_tag_shape_detail_handler },
     { 48, "DefineFont2", NULL } ,
     { 56, "Export", NULL } ,
-    { 59, "DoInitAction", NULL } ,
+    { 59, "DoInitAction", swf_tag_action_detail_handler },
     { 69, "FileAttributes", NULL },
     { 73, "DefineFontAlignZones", NULL },
     { 74, "CSMTextSettings", NULL },
@@ -278,20 +278,25 @@ void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         int result;
         swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
         if (detail_handler->create == NULL) {
-            fprintf(stderr, "detail_handler->create == NULL (tag=%d)\n",
+            fprintf(stderr, "swf_tag_create_input_detail: detail_handler->create == NULL (tag=%d)\n",
                     tag->code);
             return NULL;
         }
         tag->detail = detail_handler->create();
         if (tag->detail == NULL) {
-            fprintf(stderr, "can't create tag detail (tag=%d)\n", tag->code);
+            fprintf(stderr, "swf_tag_create_input_detail: can't create tag detail (tag=%d)\n", tag->code);
             return NULL;
         }
         result = detail_handler->input(tag, swf);
         if (result) {
-            fprintf(stderr, "can't input tag detail (result=%d)\n", result);
+            fprintf(stderr, "swf_tag_create_input_detail: can't input tag detail (result=%d)\n", result);
             return NULL;
         }
+    } else {
+        fprintf(stderr, "swf_tag_create_input_detail: tag_info or detail_handler  == NULL\n");
+    }
+    if (tag->detail == NULL) {
+        fprintf(stderr, "swf_tag_create_input_detail: function tail but tag->detail == NULL (tag->code=%d)\n", tag->code);
     }
     return tag->detail;
 }
@@ -993,8 +998,8 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
 }
 
 int
-swf_tag_replace_action_string(swf_tag_t *tag, y_keyvalue_t *kv,
-			      struct swf_object_ *swf) {
+swf_tag_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                               int *modified, struct swf_object_ *swf) {
     int ret;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_action_string: tag == NULL\n");
@@ -1012,9 +1017,9 @@ swf_tag_replace_action_string(swf_tag_t *tag, y_keyvalue_t *kv,
         fprintf(stderr, "swf_tag_replace_action_string: swf_tag_create_input_detail failed\n");
         return 1; // NG
     }
-    ret = swf_tag_action_replace_string(tag, kv);
+    ret = swf_tag_action_replace_strings(tag, kv, modified);
     if (ret) {
-      fprintf(stderr, "swf_tag_replace_action_string: swf_tag_action_replace_string failed\n");
+      fprintf(stderr, "swf_tag_replace_action_string: swf_tag_action_replace_strings failed\n");
     }
     return ret;
 }

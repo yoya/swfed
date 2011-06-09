@@ -183,13 +183,14 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
 
 
 int
-swf_tag_action_replace_string(swf_tag_t *tag, y_keyvalue_t *kv) {
-    bitstream_t *bs;
+swf_tag_action_replace_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                               int *modified) {
     int ret;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
-    ret = swf_action_list_replace_string(swf_tag_action->action_list, kv);
+    ret = swf_action_list_replace_strings(swf_tag_action->action_list,
+                                          modified, kv);
     if (ret) {
-        fprinft(stderr, "swf_tag_action_replace_string: swf_action_list_replace_string failed\n");
+        fprintf(stderr, "swf_tag_action_replace_strings: swf_action_list_replace_string failed\n");
     }
     return ret;
 }

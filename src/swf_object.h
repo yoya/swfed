@@ -125,8 +125,8 @@ extern unsigned char *swf_object_get_actiondata(swf_object_t *swf, unsigned long
 extern int swf_object_insert_action_setvariables(swf_object_t *swf,
                                                  y_keyvalue_t *kv);
 
-extern int swf_object_replace_action_string(swf_object_t *swf,
-					    y_keyvalue_t *kv);
+extern int swf_object_replace_action_strings(swf_object_t *swf,
+                                             y_keyvalue_t *kv);
 
 extern int swf_object_replace_movieclip(swf_object_t *swf,
                                         unsigned char *instance_name,

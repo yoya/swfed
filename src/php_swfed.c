@@ -92,7 +92,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getActionData, NULL, 0)
     PHP_ME(swfed,  disasmActionData, NULL, 0)
     PHP_ME(swfed,  setActionVariables, NULL, 0)
-    PHP_ME(swfed,  replaceActionString, NULL, 0)
+    PHP_ME(swfed,  replaceActionStrings, NULL, 0)
     PHP_ME(swfed,  replaceMovieClip, NULL, 0)
 
     PHP_ME(swfed,  setCompressLevel, NULL, 0)
@@ -1309,7 +1309,7 @@ PHP_METHOD(swfed, setActionVariables) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, replaceActionString) {
+PHP_METHOD(swfed, replaceActionStrings) {
     zval *zid, *arr, **entry;
     HashTable *arr_hash;
     HashPosition    pos;
@@ -1347,7 +1347,7 @@ PHP_METHOD(swfed, replaceActionString) {
         }
         zend_hash_move_forward_ex(Z_ARRVAL_P(arr), &pos);
     }
-    swf_object_replace_action_string(swf, kv);
+    swf_object_replace_action_strings(swf, kv);
     y_keyvalue_close(kv);
     RETURN_TRUE;
 }

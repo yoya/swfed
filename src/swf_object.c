@@ -1182,29 +1182,59 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
 }
 
 int
-swf_object_replace_action_string(swf_object_t *swf, y_keyvalue_t *kv) {
+swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
     swf_tag_t *tag;
     int ret = 0;
+    int m;
     if (swf == NULL) {
-        fprintf(stderr, "swf_object_replace_action_string: swf == NULL\n");
+        fprintf(stderr, "swf_object_replace_action_strings: swf == NULL\n");
         return 1; // NG
     }
     if (kv == NULL) {
-        fprintf(stderr, "swf_object_replace_action_string: kv == NULL\n");
+        fprintf(stderr, "swf_object_replace_action_strings: kv == NULL\n");
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (isActionTag(tag->code)) {
-	    ret = swf_tag_replace_action_string(tag, kv, swf);
+	    ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
 	    if (ret) {
-	        fprintf(stderr, "swf_object_replace_action_string: swf_tag_replace_action_string failed");
+	        fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
 		break;
 	    }
-	    if (tag->data) {
+	    if (m && tag->data) { // action tag modified
 	        free(tag->data);
 		tag->data = NULL;
 	    }
-	}
+        } else if (isSpriteTag(tag->code)) {
+            swf_tag_sprite_detail_t *tag_sprite;
+            tag_sprite = swf_tag_create_input_detail(tag, swf);
+            if (tag_sprite == NULL) {
+                fprintf(stderr, "swf_object_replace_action_strings: tag_sprite == NULL\n");
+            } else {
+                int modified = 0;
+                swf_tag_t *t;
+                for (t = tag_sprite->tag ; t ; t = t->next) {
+                    if (isActionTag(t->code)) {
+                        ret = swf_tag_replace_action_strings(t, kv, &m, swf);
+                        if (ret) {
+                            fprintf(stderr, "swf_object_replace_action_strings: replace_action_string failed\n");
+                            break;
+                        }
+                        if (t->data) {
+                            free(t->data);
+                            t->data = NULL;
+                        }
+                        modified = 1; // action tag modified
+                    }    
+                }
+                if (modified) { // sprite tag rebuild
+                    if (tag->data) {
+                        free(tag->data);
+                        tag->data = NULL;
+                    }
+                }
+            }
+        }
     }
     return ret;
 }

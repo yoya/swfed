@@ -116,9 +116,10 @@ extern int swf_tag_put_action_setvariables(swf_tag_t *tag,
                                            y_keyvalue_t *kv,
                                            struct swf_object_ *swf);
 
-extern int swf_tag_replace_action_string(swf_tag_t *tag,
-					 y_keyvalue_t *kv,
-					 struct swf_object_ *swf);
+extern int swf_tag_replace_action_strings(swf_tag_t *tag,
+                                          y_keyvalue_t *kv,
+                                          int *modified,
+                                          struct swf_object_ *swf);
 
 extern swf_tag_t * swf_tag_move(swf_tag_t *tag);
 

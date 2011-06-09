@@ -341,8 +341,12 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
 }
 
 int
-swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv) {
+swf_action_list_replace_strings(swf_action_list_t *action_list,
+                                int *modified, y_keyvalue_t *kv) {
     swf_action_t *action;
+    if (modified) {
+        *modified = 0;
+    }
     for (action=action_list->head ; action ; action=action->next) {
         if (action->action_id < 0x80) {
 	    continue; // skip (no string)
@@ -350,11 +354,79 @@ swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv)
 	switch(action->action_id) {
 	  unsigned char *action_data;
 	  unsigned char type;
+          unsigned char *token;
+          int token_len;
+          bitstream_t *bs;
+          char *value;
+          int value_len;
+          int count;
+          int m = 0;
+          int i;
 	case 0x83: // Get URL
-	  // todo
+            m = 0;
+            bs = bitstream_open();
+            token = action->action_data;
+            token_len = strlen((char *) token);
+            value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
+            if (value) {
+                bitstream_putstring(bs, (unsigned char *) value, value_len);
+                bitstream_putbyte(bs, '\0');
+                m = 1;
+            } else {
+                bitstream_putstring(bs, (unsigned char *) token, token_len);
+                bitstream_putbyte(bs, '\0');
+            }
+            token +=  token_len + 1;
+            token_len = strlen((char *) token);
+            value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
+            if (value) {
+                bitstream_putstring(bs, (unsigned char *)value, value_len);
+                bitstream_putbyte(bs, '\0');
+                m = 1;
+            } else {
+                bitstream_putstring(bs, (unsigned char *)token, token_len);
+                bitstream_putbyte(bs, '\0');
+            }
+            if (m) {
+                unsigned long length;
+                free(action->action_data);
+                action->action_data = bitstream_steal(bs, &length);
+                action->action_length = length;
+                if (modified) {
+                    *modified = 1;
+                }
+            }
+            bitstream_close(bs);
 	    break;
 	case 0x88: // ActionConstantPool
-	  // todo
+            m = 0;
+            count = action->action_data[0] + 0x100 * action->action_data[1];
+            token = action->action_data + 2;
+            bs = bitstream_open();
+            bitstream_putbytesLE(bs, count, 2);
+            for (i = 0 ; i < count ; i++) {
+                token_len = strlen((char *) token);
+                value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
+                if (value) {
+                    bitstream_putstring(bs, (unsigned char *)value, value_len);
+                    bitstream_putbyte(bs, '\0');
+                    m = 1;
+                } else {
+                    bitstream_putstring(bs, (unsigned char *)token , token_len);
+                    bitstream_putbyte(bs, '\0');
+                }
+                token +=  token_len + 1;
+            }
+            if (m) {
+                unsigned long length;
+                free(action->action_data);
+                action->action_data = bitstream_steal(bs, &length);
+                action->action_length = length;
+                if (modified) {
+                    *modified = 1;
+                }
+            }
+            bitstream_close(bs);
 	    break;
 	case 0x96: // Push Data
 	    action_data = action->action_data;
@@ -362,8 +434,6 @@ swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv)
 	    if (type == 0x00) { // Type: String 
 	        unsigned char *data = action_data + 1;
 		int data_len = action->action_length - 2;
-		char *value;
-		int value_len;
 		value = y_keyvalue_get(kv, (char *)data, data_len, &value_len);
 		if (value) {
 		    action_data = malloc(1 + value_len + 1);
@@ -373,6 +443,9 @@ swf_action_list_replace_string(swf_action_list_t *action_list, y_keyvalue_t *kv)
 		    free(action->action_data);
 		    action->action_data = action_data;
 		    action->action_length = 1 + value_len + 1;
+                    if (modified) {
+                        *modified = 1;
+                    }
 		}
 	    }
 	    break;

@@ -40,8 +40,8 @@ extern void swf_action_list_print(swf_action_list_t *act_list,
 
 extern int swf_action_data_print(unsigned char *action_data,
                                  unsigned short action_data_len);
-extern int swf_action_replace_string(swf_action_list_t *action_list,
-				     y_keyvalue_t *kv);
+extern int swf_action_list_replace_strings(swf_action_list_t *action_list,
+                                           int *modified, y_keyvalue_t *kv);
 
 extern int swf_action_list_append_top(swf_action_list_t *list,
                                       int action_id,
