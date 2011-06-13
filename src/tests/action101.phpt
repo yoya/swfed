@@ -1,16 +1,16 @@
 --TEST--
-replaceActionString() : ActionPush longer parameter
+replaceActionString() : ActionPush shorten parameter
 --FILE--
 <?php
 
 $swfdata = file_get_contents('tests/textvar.swf');
 $obj = new SWFEditor();
 $obj->input($swfdata);
-$params = array('dummy' => 'dummydummy', 'inputvar' => 'replacedvar');
+$params = array('dummydummy' => 'dummy', 'inputvar' => 'rep');
 $obj->replaceActionStrings($params);
 echo md5($obj->output())."\n";
 ?>
 ===DONE===
 --EXPECTF--
-1a3f85b044e039b4977c38938d21ab4b
+3d27f4ce7242bdced1ad2a3299673ab8
 ===DONE===
