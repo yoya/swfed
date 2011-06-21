@@ -29,6 +29,7 @@
 
 #include "swf_define.h"
 #include "y_keyvalue.h"
+#include "bitmap_util.h"
 
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
@@ -83,6 +84,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  getPNGData, NULL, 0)
     PHP_ME(swfed,  replacePNGData, NULL, 0)
     PHP_ME(swfed,  replaceGIFData, NULL, 0)
+    PHP_ME(swfed,  replaceBitmapData, NULL, 0)
     PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
     PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
     PHP_ME(swfed,  getSoundData, NULL, 0)
@@ -1059,6 +1061,63 @@ PHP_METHOD(swfed, replaceGIFData) {
     }
     RETURN_TRUE;
 #endif /* HAVE_GIF */
+}
+
+
+PHP_METHOD(swfed, replaceBitmapData) {
+    char *data = NULL, *alpha_data = NULL;
+    int data_len = 0 , alpha_data_len = 0;
+    int image_id = 0;
+    swf_object_t *swf = NULL;
+    int result = 0;
+    int bitmap_format;
+    switch (ZEND_NUM_ARGS()) {
+      default:
+        WRONG_PARAM_COUNT;
+        RETURN_FALSE; /* XXX */
+      case 2:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+         break;
+      case 3:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == FAILURE) {
+            RETURN_FALSE;
+        }
+        break;
+    }
+    swf = get_swf_object(getThis() TSRMLS_CC);
+
+    bitmap_format = detect_bitmap_format(data, data_len);
+    switch (bitmap_format) {
+    case BITMAP_UTIL_FORMAT_JPEG:
+        result = swf_object_replace_jpegdata(swf, image_id,
+                                             (unsigned char *)data,
+                                             (unsigned long) data_len,
+                                             (unsigned char *)alpha_data,
+                                             (unsigned long) alpha_data_len);
+        break;
+    case BITMAP_UTIL_FORMAT_PNG:
+        result = swf_object_replace_pngdata(swf, image_id,
+                                            (unsigned char *)data,
+                                            (unsigned long) data_len);
+        
+        break;
+    case BITMAP_UTIL_FORMAT_GIF:
+        result = swf_object_replace_gifdata(swf, image_id,
+                                            (unsigned char *)data,
+                                            (unsigned long) data_len);
+        
+        break;
+    default:
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
+        RETURN_FALSE;
+    }
+    
+    if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, applyShapeMatrixFactor) {
