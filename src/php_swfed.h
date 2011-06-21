@@ -76,6 +76,7 @@ PHP_METHOD(swfed, replaceJpegData);
 PHP_METHOD(swfed, getPNGData);
 PHP_METHOD(swfed, replacePNGData);
 PHP_METHOD(swfed, replaceGIFData);
+PHP_METHOD(swfed, replaceBitmapData);
 PHP_METHOD(swfed, applyShapeMatrixFactor);
 PHP_METHOD(swfed, applyShapeRectFactor);
 PHP_METHOD(swfed, getSoundData);
