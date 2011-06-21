@@ -81,6 +81,21 @@ gif_size(unsigned char *data, unsigned long data_len,
     return 0;
 }
 
+int
+detect_bitmap_format(unsigned char *data, unsigned long data_len) {
+    if (data_len < 4) {
+        return BITMAP_UTIL_FORMAT_UNKNOWN; // too short
+    }
+    if (strncmp((const char*)data, "\xff\xd8\xff", 3) == 0) {
+        return BITMAP_UTIL_FORMAT_JPEG;
+    } else if (strncmp((const char*)data + 1, "PNG", 3) == 0) {
+        return BITMAP_UTIL_FORMAT_PNG;
+    } else if (strncmp((const char*)data, "GIF", 3) == 0) {
+        return BITMAP_UTIL_FORMAT_GIF;
+    }
+    return BITMAP_UTIL_FORMAT_UNKNOWN;
+}
+
 #ifdef __BITMAP_UTIL_DEBUG__  /* for component debug */
 
 #include <sys/stat.h>
@@ -99,6 +114,7 @@ int main(int argc, char **argv) {
         return EXIT_FAILURE;
     }
     for (i = 1 ; i < argc ; i++) {
+        int bitmap_format;
         filename = argv[i];
         if (stat(filename, &sbuf)) {
             fprintf(stderr, "Can't stat file(%s)\n", filename);
@@ -116,15 +132,23 @@ int main(int argc, char **argv) {
             return 1;
         }
         fclose(fp);
-        if (strncmp((const char*)data, "GIF", 3) == 0) {
-            printf("GIF\n");
-            ret = gif_size(data, data_len, &width, &height);
-        } else if (strncmp((const char*)data + 1, "PNG", 3) == 0) {
-            printf("PNG\n");
-            ret = png_size(data, data_len, &width, &height);
-        } else {
+        bitmap_format = detect_bitmap_format(data, data_len);
+        switch (bitmap_format) {
+        case BITMAP_UTIL_FORMAT_JPEG:
             printf("JPEG\n");
             ret = jpeg_size(data, data_len, &width, &height);
+            break;
+        case BITMAP_UTIL_FORMAT_PNG:
+            printf("PNG\n");
+            ret = png_size(data, data_len, &width, &height);
+            break;
+        case BITMAP_UTIL_FORMAT_GIF:
+            printf("GIF\n");
+            ret = gif_size(data, data_len, &width, &height);
+            break;
+        default:
+            fprintf(stderr, "unknown format (%s)\n", filename);
+            exit(0);
         }
         free(data);
         if (ret) {
