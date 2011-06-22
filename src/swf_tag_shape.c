@@ -219,6 +219,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
                 return NULL; // Illegal!!!
             }
             switch (fill_style->type) {
+                void *tmp;
               case 0x40: // tilled  bitmap fill with smoothed edges
               case 0x41: // clipped bitmap fill with smoothed edges
               case 0x42: // tilled  bitmap fill with hard edges
@@ -226,7 +227,13 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
                 if (fill_style->bitmap.bitmap_ref != 0xffff) {
                     if (cid_list_alloc <= *cid_list_num) {
                         cid_list_alloc *= 2;
-                        realloc(cid_list, cid_list_alloc);
+                        tmp = realloc(cid_list, cid_list_alloc);
+                        if (tmp == NULL) {
+                            fprintf(stderr, "swf_tag_shape_bitmap_get_refcid_list: Can't realloc memory (%p, %d)\n", cid_list, cid_list_alloc);
+                            free(cid_list);
+                            return NULL;
+                        }
+                        cid_list = tmp;
                     }
                     cid_list[*cid_list_num] = fill_style->bitmap.bitmap_ref;
                     *cid_list_num  = (*cid_list_num) + 1;
