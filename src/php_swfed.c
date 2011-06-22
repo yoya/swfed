@@ -786,7 +786,7 @@ PHP_METHOD(swfed, getShapeData) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     data = swf_object_get_shapedata(swf, cid, &data_len);
     if (data == NULL) {
-        fprintf(stderr, "getShapeData: Can't swf_object_get_shapedata (cid=%d)\n", cid);
+        fprintf(stderr, "getShapeData: Can't swf_object_get_shapedata (cid=%ld)\n", cid);
         RETURN_FALSE;
     }
     new_buff = emalloc(data_len);
@@ -1131,7 +1131,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
         }
     }
 
-    bitmap_format = detect_bitmap_format(data, data_len);
+    bitmap_format = detect_bitmap_format((unsigned char*) data, data_len);
     switch (bitmap_format) {
     case BITMAP_UTIL_FORMAT_JPEG:
         result = swf_object_replace_jpegdata(swf, image_id,
@@ -1516,7 +1516,6 @@ PHP_METHOD(swfed, setCompressLevel) {
 }
 
 PHP_METHOD(swfed, isShapeTagData) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
     char *data = NULL;
     int data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
@@ -1530,7 +1529,6 @@ PHP_METHOD(swfed, isShapeTagData) {
 }
 
 PHP_METHOD(swfed, isBitmapTagData) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
     char *data = NULL;
     int data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
