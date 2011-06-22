@@ -61,6 +61,8 @@ extern int swf_tag_replace_refcid(swf_tag_t *tag, int cid);
 
 extern int swf_tag_get_bitmap_size(swf_tag_t *tag,
                                    int *width, int *height);
+extern int swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
+                                            int *red, int *green, int *blue);
 
 extern unsigned char *swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_tag_t *tag_jpegtables);
 extern unsigned char *swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id);
@@ -122,5 +124,10 @@ extern int swf_tag_replace_action_strings(swf_tag_t *tag,
                                           struct swf_object_ *swf);
 
 extern swf_tag_t * swf_tag_move(swf_tag_t *tag);
+
+extern int swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
+                                                  int width, int height,
+                                                  int red, int green, int blue);
+
 
 #endif /* __SWF_TAG_H__ */

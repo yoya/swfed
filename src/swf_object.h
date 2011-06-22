@@ -76,6 +76,9 @@ extern swf_tag_t *swf_object_search_shape_tag(swf_object_t *swf,
 
 extern swf_tag_t *swf_object_search_bitmap_tag(swf_object_t *swf,
                                                int bitmap_id);
+extern int swf_object_search_cid_by_bitmap_condition(swf_object_t *swf,
+                                                     int width, int height,
+                                                     int red, int green, int blue);
 
 /* --- */
 

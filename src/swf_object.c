@@ -682,6 +682,29 @@ swf_object_search_bitmap_tag(swf_object_t *swf, int bitmap_id) {
     return NULL;
 }
 
+int
+swf_object_search_cid_by_bitmap_condition(swf_object_t *swf,
+                                          int width, int height,
+                                          int red, int green, int blue) {
+    swf_tag_t *tag;
+    int cid;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_search_cid_by_bitmap_condition: swf == NULL\n");
+        return -1; // NG
+    }
+    for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        register int tag_code = tag->code;
+        if (isBitmapTag(tag_code)) {
+            cid = swf_tag_search_cid_by_bitmap_condition(tag, width, height,
+                                                   red, green, blue);
+            if (cid > 0) {
+                return cid;
+            }
+        }
+    }
+    return -1; // Not Found
+}
+
 /* --- */
 
 int

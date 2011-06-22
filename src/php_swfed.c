@@ -1064,29 +1064,72 @@ PHP_METHOD(swfed, replaceGIFData) {
 }
 
 
+#define get_zend_hash_value_long(table, key, value) do { \
+        zval **tmp = NULL; \
+        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
+            convert_to_long_ex(tmp); \
+            value = Z_LVAL_PP(tmp); \
+        } \
+    } while (0);
+
 PHP_METHOD(swfed, replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
     int data_len = 0 , alpha_data_len = 0;
     int image_id = 0;
+    zval *image_info = NULL;
+    HashTable *image_info_table = NULL;
     swf_object_t *swf = NULL;
     int result = 0;
     int bitmap_format;
+    int width = -1, height = -1;
+    int red = -1, green = -1, blue = -1;
     switch (ZEND_NUM_ARGS()) {
       default:
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
-            RETURN_FALSE;
-        }
-         break;
-      case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == FAILURE) {
+          if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                       ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == SUCCESS) {
+              ; // OK
+          } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                              ZEND_NUM_ARGS() TSRMLS_CC, "as", &image_info, &data, &data_len) == SUCCESS) {
+              ; // OK
+          } else {
+              php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
+              
+              RETURN_FALSE;
+          }
+          break;
+    case 3:
+        if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                     ZEND_NUM_ARGS() TSRMLS_CC, "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == SUCCESS) {
+            ; // OK
+        } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                            ZEND_NUM_ARGS() TSRMLS_CC, "ass", &image_info, &data, &data_len, &alpha_data, &alpha_data_len) == SUCCESS) {
+            ; // OK
+        } else {
+            php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
             RETURN_FALSE;
         }
         break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
+    
+    if (image_info) {
+        image_info_table = Z_ARRVAL_P(image_info);
+        get_zend_hash_value_long(image_info_table, "width",  width);
+        get_zend_hash_value_long(image_info_table, "height", height);
+        get_zend_hash_value_long(image_info_table, "red",    red);
+        get_zend_hash_value_long(image_info_table, "green",  green);
+        get_zend_hash_value_long(image_info_table, "blue",   blue);
+        image_id = swf_object_search_cid_by_bitmap_condition(swf, width, height,
+                                                             red, green, blue);
+        if (image_id <= 0) {
+            php_error(E_WARNING, "%s() cid not found by bitmap condition(width=%d height=%d red=%d green=%d blue=%d)", get_active_function_name(TSRMLS_C),
+                      width, height, red, green, blue);
+            RETURN_FALSE;
+        }
+    }
 
     bitmap_format = detect_bitmap_format(data, data_len);
     switch (bitmap_format) {

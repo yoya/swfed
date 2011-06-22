@@ -444,7 +444,9 @@ swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
     return 0; // success
 }
 
-/* bitmap */
+/*
+ * bitmap tag
+ */
 
 int
 swf_tag_get_bitmap_size(swf_tag_t *tag,
@@ -458,22 +460,82 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         fprintf(stderr, "swf_tag_get_bitmap_size: width == NULL or height == NULL\n");
         return 1;
     }
-    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
-        fprintf(stderr, "swf_tag_get_bitmap_size: swf_tag_create_input_detail failed\n");
-        return 1;
-    }
     if (isBitsJPEGTag(tag->code)) {
-        swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
+        swf_tag_jpeg_detail_t *swf_tag_jpeg;
+        if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+            fprintf(stderr, "swf_tag_get_bitmap_size: swf_tag_create_input_detail failed\n");
+            return 1;
+        }
+        swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         ret = jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
-                  width, height);
+                        width, height);
     } else if (isBitsLosslessTag(tag->code)) {
-        swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
-        *width  = swf_tag_lossless->width;
-        *height = swf_tag_lossless->height;
+        if (tag->detail) {
+            swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+            *width  = swf_tag_lossless->width;
+            *height = swf_tag_lossless->height;
+        } else {
+            *width  = GetUShortLE((tag->data + 3));
+            *height = GetUShortLE((tag->data + 5));
+        }
     } else { // no Bitmap Tag
         return 1;
     }
     return ret;
+}
+
+int
+swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
+                                 int *red, int *green, int *blue) {
+    swf_tag_lossless_detail_t *swf_tag_lossless = NULL;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_get_bitmap_color1stpixel: tag == NULL\n");
+        return 1;
+    }
+    if ((red == NULL ) || (green == NULL) || (blue == NULL)) {
+        fprintf(stderr, "swf_tag_get_bitmap_color1stpixel: width == NULL or height == NULL\n");
+        return 1;
+    }
+    if (swf_tag_create_input_detail(tag, NULL) == NULL) {
+        fprintf(stderr, "swf_tag_get_bitmap_color1stpixel: swf_tag_create_input_detail failed\n");
+        return 1;
+    }
+    if (isBitsLosslessTag(tag->code) == 0) {
+        return 1; // No Lossless Tag;
+    }
+    swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+
+    // 1pixel目の RGB値 を format, tag_code に応じて取得。
+    switch (swf_tag_lossless->format) {
+        int color_index;
+    case 3:
+        color_index = swf_tag_lossless->indices[0];
+        if (tag->code == 20) { // Lossless => RGB
+            *red   = swf_tag_lossless->colormap[color_index].red;
+            *green = swf_tag_lossless->colormap[color_index].green;
+            *blue  = swf_tag_lossless->colormap[color_index].blue;
+        } else { // Lossless2 => RGBA
+            *red   = swf_tag_lossless->colormap2[color_index].red;
+            *green = swf_tag_lossless->colormap2[color_index].green;
+            *blue  = swf_tag_lossless->colormap2[color_index].blue;
+        }
+        break;
+    case 5:
+        if (tag->code == 20) { // Lossless => RGB
+            *red   = swf_tag_lossless->bitmap[0].red;
+            *green = swf_tag_lossless->bitmap[0].green;
+            *blue  = swf_tag_lossless->bitmap[0].blue;
+        } else { // Lossless2 => ARGB
+            *red   = swf_tag_lossless->bitmap2[0].red;
+            *green = swf_tag_lossless->bitmap2[0].green;
+            *blue  = swf_tag_lossless->bitmap2[0].blue;
+        }
+        break;
+    default: // include 4 (15bit color)
+        fprintf(stderr, "swf_tag_get_bitmap_color1stpixel: unacceptable format=(%d)\n", swf_tag_lossless->format);
+        return 1;
+    }
+    return 0; // SUCCESS
 }
 
 unsigned char *
@@ -1043,4 +1105,44 @@ swf_tag_move(swf_tag_t *from_tag) {
     to_tag->detail = from_tag->detail;
     from_tag->detail = NULL;
     return to_tag;
+}
+
+/*
+ * 指定した条件に全て合致する tag の cid を返す
+ */
+
+int
+swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
+                                       int width, int height,
+                                       int red, int green, int blue) {
+    int cid = -1;
+    if ((width > 0) || (height > 0)) {
+        int w, h;
+        if (swf_tag_get_bitmap_size(tag, &w, &h)) {
+            return -1; // out
+        }
+        if ((width > 0) && (width != w)) {
+            return -1; // out
+        }
+        if ((height > 0) && (height != h)) {
+            return -1; // out
+        }
+        cid = swf_tag_get_cid(tag);
+    }
+    if (isBitsLosslessTag(tag->code) &&
+        ( (red >= 0) || (green >= 0) || (blue >= 0) ))  {
+        int r, g, b;
+        swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b);
+        if ((red >= 0) && (red != r)) {
+            return -1; // out
+        }
+        if ((green >= 0) && (green != g)) {
+            return -1; // out
+        }
+        if ((blue >= 0) && (blue != b)) {
+            return -1; // out
+        }
+        cid = swf_tag_get_cid(tag);
+    }
+    return cid;
 }
