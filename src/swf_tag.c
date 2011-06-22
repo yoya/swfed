@@ -515,9 +515,10 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
             *green = swf_tag_lossless->colormap[color_index].green;
             *blue  = swf_tag_lossless->colormap[color_index].blue;
         } else { // Lossless2 => RGBA
-            *red   = swf_tag_lossless->colormap2[color_index].red;
-            *green = swf_tag_lossless->colormap2[color_index].green;
-            *blue  = swf_tag_lossless->colormap2[color_index].blue;
+            int alpha = swf_tag_lossless->colormap2[color_index].alpha;
+            *red   = swf_tag_lossless->colormap2[color_index].red * 255 / alpha;
+            *green = swf_tag_lossless->colormap2[color_index].green * 255 / alpha;
+            *blue  = swf_tag_lossless->colormap2[color_index].blue * 255 / alpha;
         }
         break;
     case 5:
@@ -526,9 +527,10 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
             *green = swf_tag_lossless->bitmap[0].green;
             *blue  = swf_tag_lossless->bitmap[0].blue;
         } else { // Lossless2 => ARGB
-            *red   = swf_tag_lossless->bitmap2[0].red;
-            *green = swf_tag_lossless->bitmap2[0].green;
-            *blue  = swf_tag_lossless->bitmap2[0].blue;
+            int alpha = swf_tag_lossless->bitmap2[0].alpha;
+            *red   = swf_tag_lossless->bitmap2[0].red * 255 / alpha;
+            *green = swf_tag_lossless->bitmap2[0].green * 255 / alpha;
+            *blue  = swf_tag_lossless->bitmap2[0].blue * 255 / alpha;
         }
         break;
     default: // include 4 (15bit color)
@@ -1133,14 +1135,23 @@ swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
         ( (red >= 0) || (green >= 0) || (blue >= 0) ))  {
         int r, g, b;
         swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b);
-        if ((red >= 0) && (red != r)) {
-            return -1; // out
+        if (red >= 0) {
+            int red_diff = red - r;
+            if ((red_diff < -10) || (10 < red_diff)) {
+                return -1; // out
+            }
         }
-        if ((green >= 0) && (green != g)) {
-            return -1; // out
+        if (green >= 0) {
+            int green_diff = green - g;
+            if ((green_diff < -10) || (10 < green_diff)) {
+                return -1; // out
+            }
         }
-        if ((blue >= 0) && (blue != b)) {
-            return -1; // out
+        if (blue >= 0) {
+            int blue_diff = blue - b;
+            if ((blue_diff < -10) || (10 < blue_diff)) {
+                return -1; // out
+            }
         }
         cid = swf_tag_get_cid(tag);
     }
