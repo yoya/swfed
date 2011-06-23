@@ -1,3 +1,5 @@
+* how to install
+
 % tar xvfz swfed-?.??.tar.gz
 % cd src
 % phpize
@@ -6,3 +8,7 @@
 % su
 Password:
 # cp modules/swfed.so <php extension dir>/.
+
+# vi <php lib>/php.ini
+ or
+# vi <php conf.d>/swfed.ini
