@@ -16,11 +16,11 @@
  - replace image id = 1 jpeg data
  $swf = new SWFEditor();
  $swf->input($swfdata);
- $swf->replaceJpegData(1, $jpegdata);
+ $swf->replaceBitmapData(1, $jpegdata);
  echo $swf->output();
  
  - other sample code
-   http://svn.sourceforge.jp/svnroot/swfed/trunk/sample/
+   http://git.sourceforge.jp/view?p=swfed/swfed.git;a=tree;f=sample
 
 * demo
 
@@ -31,11 +31,12 @@
  - http://diary.awm.jp/~yoya/?20101130#201011300 action bytecode
  - http://diary.awm.jp/~yoya/?20110203#201102030 replace shape
  - http://diary.awm.jp/~yoya/?20110319#201103190 replace movieclip
+ - http://diary.awm.jp/~yoya/?20110623#201106231 replace bitmap
 
 * download
 
  - http://sourceforge.jp/projects/swfed/files/ release 
- - http://svn.sourceforge.jp/svnroot/swfed/trunk/ current 
+ - git://git.sourceforge.jp/gitroot/swfed/swfed.git current 
 
 * install
 
