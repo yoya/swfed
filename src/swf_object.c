@@ -591,6 +591,9 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
             new_tag = swf_tag_move(old_tag);
             swf_tag_destroy_detail(new_tag);
             new_tag->length = length + 2;
+            if (new_tag->data) {
+                free(new_tag->data);
+            }
             new_tag->data = malloc(length + 2);
             PutUShortLE(new_tag->data, cid);
             memcpy(new_tag->data + 2, data, length);
@@ -602,6 +605,7 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
                 // 新しいタグに繋ぎかえる
                 _swf_object_replace_tag(swf, old_tag, new_tag);
                 swf_tag_destroy(old_tag); // 前のは消す
+                // 情報要素を編集したので生データは削除
                 free(new_tag->data);
                 new_tag->data = NULL;
                 return 0;
