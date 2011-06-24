@@ -96,6 +96,7 @@ swf_tag_action_output_detail(swf_tag_t *tag, unsigned long *length,
     }
     swf_action_list_build(bs,swf_tag_action->action_list);
     data = bitstream_steal(bs, length);
+    bitstream_close(bs);
     return data;
 }
 
