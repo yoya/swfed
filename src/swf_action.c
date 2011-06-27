@@ -293,51 +293,58 @@ swf_action_list_print(swf_action_list_t *action_list, int indent_depth) {
 
 int
 swf_action_data_print(unsigned char *action_data, unsigned short action_data_len) {
-    unsigned char type = action_data[0] & 0xff;
+  unsigned char type;
     unsigned char *data = action_data+1;
     unsigned short data_len = action_data_len - 1;
-    int result = 1; // type field
-    switch (type) {
-    case 0x00: // String
-        printf("(String)%*s", data_len, data);
-        result += strlen((char*) data) + 1; // text + \0
-        break;
-    case 0x01: // Float
-        printf("(Float)XXX");
-        break;
-    case 0x02: // NULL
-        printf("(NULL)");
-        break;
-    case 0x03: // Undefined
-        printf("(Undefined)");
-        break;
-    case 0x04: // Register
-        printf("(Register)%d", (data[0]&0xff));
-        break;
-    case 0x05: // Boolean
-        printf("(Boolean)%s", (data[0]&0xff)?"true":"false");
-        result += 1;
-        break;
-    case 0x06: // Double
-        printf("(Double)%f", GetDoubleIEEE(data));
-        break;
-    case 0x07: // Integer
-        printf("(Integer)%ld", GetULongLE(data));
-        result += 4;
-        break;
-    case 0x08: // Dictionary Lookup
-        printf("(Dictionary Lookup)%d", data[0] & 0xff);
-        result += 1;
-        break;
-    case 0x09: // Large Dictionary Lookup
-        printf("(Large Dictionary Lookup)%d", GetUShortLE(data) & 0xffff);
-        result += 2;
-        break;
-    default:
-        printf("type=0x%02x len=%d", type, data_len);
-        break;
+    data = action_data;
+    while (data < action_data + action_data_len) {
+        type = data[0];
+	data += 1;
+	switch (type) {
+          case 0x00: // String
+	    printf("(String)%s", data);
+	    data += strlen((char*) data) + 1; // text + \0
+	    break;
+          case 0x01: // Float
+	    printf("(Float)%f", GetFloatIEEE(data));
+	    data += 4;
+	    break;
+          case 0x02: // NULL
+	    printf("(NULL)");
+	    break;
+          case 0x03: // Undefined
+	    printf("(Undefined)");
+	    break;
+          case 0x04: // Register
+	    printf("(Register)%d", (data[0]&0xff));
+	    data += 1;
+	    break;
+          case 0x05: // Boolean
+	    printf("(Boolean)%s", (data[0]&0xff)?"true":"false");
+	    data += 1;
+	    break;
+          case 0x06: // Double
+	    printf("(Double)%f", GetDoubleIEEE(data));
+	    data += 8;
+	    break;
+          case 0x07: // Integer
+	    printf("(Integer)%ld", GetULongLE(data));
+	    data += 4;
+	    break;
+          case 0x08: // Dictionary Lookup
+	    printf("(Dictionary Lookup)%d", data[0] & 0xff);
+	    data += 1;
+	    break;
+          case 0x09: // Large Dictionary Lookup
+	    printf("(Large Dictionary Lookup)%d", GetUShortLE(data) & 0xffff);
+	    data += 2;
+	    break;
+          default:
+	    printf("type=0x%02x len=%d", type, data_len);
+	    break;
+        }
     }
-    return result;
+    return 0;
 }
 
 int
@@ -352,8 +359,7 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
 	    continue; // skip (no string)
 	}
 	switch(action->action_id) {
-	  unsigned char *action_data;
-	  unsigned char type;
+	  int type;
           unsigned char *token;
           int token_len;
           bitstream_t *bs;
@@ -429,25 +435,56 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
             bitstream_close(bs);
 	    break;
 	case 0x96: // Push Data
-	    action_data = action->action_data;
-	    type = action_data[0] & 0xff;
-	    if (type == 0x00) { // Type: String 
-	        unsigned char *data = action_data + 1;
-		int data_len = action->action_length - 2;
-		value = y_keyvalue_get(kv, (char *)data, data_len, &value_len);
-		if (value) {
-		    action_data = malloc(1 + value_len + 1);
-		    action_data[0] = 0x00; // Type: String
-		    memcpy(action_data + 1, value, value_len);
-		    action_data[1 + value_len] = '\0';
-		    free(action->action_data);
-		    action->action_data = action_data;
-		    action->action_length = 1 + value_len + 1;
-                    if (modified) {
-                        *modified = 1;
-                    }
-		}
+            m = 0;
+            token = action->action_data;
+            bs = bitstream_open();
+	    while (token < action->action_data + action->action_length) {
+	      static const int action_value_type_size[] = {
+		-1, // 0: String
+		4,  // 1: Float
+		0,  // 2: NULL
+		0,  // 3: Undefined
+		1,  // 4: Register
+		1,  // 5: Boolean
+		8,  // 6: Double
+		4,  // 7: Integer
+		1,  // 8: Dictionary Lookup
+		2,  // 9: Large Dictionary Lookup
+	      };
+	      type = token[0];
+	      bitstream_putbyte(bs, type);
+	      token += 1;
+	      if (type == 0) { // String
+                token_len = strlen((char *) token);
+                value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
+                if (value) {
+                    bitstream_putstring(bs, (unsigned char *)value, value_len);
+                    bitstream_putbyte(bs, '\0');
+                    m = 1;
+                } else {
+                    bitstream_putstring(bs, (unsigned char *)token , token_len);
+                    bitstream_putbyte(bs, '\0');
+                }
+                token +=  token_len + 1;
+	      } else if (type < 10) { // else String
+		bitstream_putstring(bs, token, action_value_type_size[type]);
+		token += action_value_type_size[type];
+	      } else {
+		fprintf(stderr, "swf_action_list_replace_strings: illegal type=%d\n", type);
+		bitstream_close(bs);
+		return 1; // FAILURE
+	      }
 	    }
+            if (m) {
+                unsigned long length;
+                free(action->action_data);
+                action->action_data = bitstream_steal(bs, &length);
+                action->action_length = length;
+                if (modified) {
+                    *modified = 1;
+                }
+            }
+            bitstream_close(bs);
 	    break;
 	}
     }
