@@ -439,7 +439,7 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
             token = action->action_data;
             bs = bitstream_open();
 	    while (token < action->action_data + action->action_length) {
-	      static int action_value_type_size[] = {
+	      static const int action_value_type_size[] = {
 		-1, // 0: String
 		4,  // 1: Float
 		0,  // 2: NULL
