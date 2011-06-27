@@ -303,7 +303,7 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
         result += strlen((char*) data) + 1; // text + \0
         break;
     case 0x01: // Float
-        printf("(Float)XXX");
+        printf("(Float)%f"GetFloatIEEE(data))
         result += 4;
         break;
     case 0x02: // NULL
@@ -321,7 +321,7 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
         result += 1;
         break;
     case 0x06: // Double
-        printf("(Double)%f", GetDoubleIEEE(data));
+        printf("(Double)%d", GetDoubleIEEE(data));
         result += 8;
         break;
     case 0x07: // Integer
