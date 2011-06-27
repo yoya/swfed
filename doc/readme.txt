@@ -9,7 +9,7 @@
 
  - php on unix
  - zlib
- - libpng and giflib (optional)
+ - libpng and giflib
 
 * example
 
