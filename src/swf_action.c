@@ -293,54 +293,58 @@ swf_action_list_print(swf_action_list_t *action_list, int indent_depth) {
 
 int
 swf_action_data_print(unsigned char *action_data, unsigned short action_data_len) {
-    unsigned char type = action_data[0] & 0xff;
+  unsigned char type;
     unsigned char *data = action_data+1;
     unsigned short data_len = action_data_len - 1;
-    int result = 1; // type field
-    switch (type) {
-    case 0x00: // String
-        printf("(String)%*s", data_len, data);
-        result += strlen((char*) data) + 1; // text + \0
-        break;
-    case 0x01: // Float
-        printf("(Float)%f"GetFloatIEEE(data))
-        result += 4;
-        break;
-    case 0x02: // NULL
-        printf("(NULL)");
-        break;
-    case 0x03: // Undefined
-        printf("(Undefined)");
-        break;
-    case 0x04: // Register
-        printf("(Register)%d", (data[0]&0xff));
-        result += 1;
-        break;
-    case 0x05: // Boolean
-        printf("(Boolean)%s", (data[0]&0xff)?"true":"false");
-        result += 1;
-        break;
-    case 0x06: // Double
-        printf("(Double)%d", GetDoubleIEEE(data));
-        result += 8;
-        break;
-    case 0x07: // Integer
-        printf("(Integer)%ld", GetULongLE(data));
-        result += 4;
-        break;
-    case 0x08: // Dictionary Lookup
-        printf("(Dictionary Lookup)%d", data[0] & 0xff);
-        result += 1;
-        break;
-    case 0x09: // Large Dictionary Lookup
-        printf("(Large Dictionary Lookup)%d", GetUShortLE(data) & 0xffff);
-        result += 2;
-        break;
-    default:
-        printf("type=0x%02x len=%d", type, data_len);
-        break;
+    data = action_data;
+    while (data < action_data + action_data_len) {
+        type = data[0];
+	data += 1;
+	switch (type) {
+          case 0x00: // String
+	    printf("(String)%s", data);
+	    data += strlen((char*) data) + 1; // text + \0
+	    break;
+          case 0x01: // Float
+	    printf("(Float)%f", GetFloatIEEE(data));
+	    data += 4;
+	    break;
+          case 0x02: // NULL
+	    printf("(NULL)");
+	    break;
+          case 0x03: // Undefined
+	    printf("(Undefined)");
+	    break;
+          case 0x04: // Register
+	    printf("(Register)%d", (data[0]&0xff));
+	    data += 1;
+	    break;
+          case 0x05: // Boolean
+	    printf("(Boolean)%s", (data[0]&0xff)?"true":"false");
+	    data += 1;
+	    break;
+          case 0x06: // Double
+	    printf("(Double)%f", GetDoubleIEEE(data));
+	    data += 8;
+	    break;
+          case 0x07: // Integer
+	    printf("(Integer)%ld", GetULongLE(data));
+	    data += 4;
+	    break;
+          case 0x08: // Dictionary Lookup
+	    printf("(Dictionary Lookup)%d", data[0] & 0xff);
+	    data += 1;
+	    break;
+          case 0x09: // Large Dictionary Lookup
+	    printf("(Large Dictionary Lookup)%d", GetUShortLE(data) & 0xffff);
+	    data += 2;
+	    break;
+          default:
+	    printf("type=0x%02x len=%d", type, data_len);
+	    break;
+        }
     }
-    return result;
+    return 0;
 }
 
 int
