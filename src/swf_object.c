@@ -422,7 +422,7 @@ swf_object_replace_tagcontents_bycid(swf_object_t *swf, int cid,
     tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
         if (tag->detail) {
-            swf_tag_destroy(tag);
+            swf_tag_destroy_detail(tag);
             tag->detail = NULL;
         }
         if (tag->data) {
