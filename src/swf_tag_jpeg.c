@@ -361,7 +361,7 @@ swf_tag_jpeg_print_detail(swf_tag_t *tag,
                swf_tag_jpeg->image_id, swf_tag_jpeg->jpeg_data_len);
     }
     jpeg_seg = jpeg_segment_parse(swf_tag_jpeg->jpeg_data,
-                                  swf_tag_jpeg->jpeg_data_len, 1);
+                                  swf_tag_jpeg->jpeg_data_len, SWFED_JPEG_RST_SCAN_SWFJPEG);
     if (jpeg_seg) {
         int ret, width = 0, height = 0;
         // bitmap size
