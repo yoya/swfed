@@ -373,7 +373,6 @@ pngconv_lossless2png(void *image_data,
         png_set_PLTE( png_ptr, png_info_ptr, png_palette, index_data_count);
         free(png_palette);
     }
-    png_set_gAMA(png_ptr, png_info_ptr, 1.0);
     png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         for (y=0 ; y < png_height ; y++) {
