@@ -332,13 +332,7 @@ swf_tag_get_cid(swf_tag_t *tag) {
         return 1;
     }
     tag_no = tag->code;
-    tag_info = get_swf_tag_info(tag_no);
-    if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
-        if (detail_handler->get_cid) {
-            return detail_handler->get_cid(tag);
-        }
-    } else {
+    if (tag->data) {
         switch (tag_no) {
           case 7:  // DefineButton
           case 10: // DefineFont
@@ -352,12 +346,15 @@ swf_tag_get_cid(swf_tag_t *tag) {
           case 46: // DefineMorphShape
           case 48: // DefineFont2
           case 88: // DefineFontName
-              if (tag->data) {
-                  return GetUShortLE(tag->data);
-              }
+              return GetUShortLE(tag->data);
               break;
-          default:
-              ;
+        }
+    }
+    tag_info = get_swf_tag_info(tag_no);
+    if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        if (detail_handler->get_cid) {
+            return detail_handler->get_cid(tag);
         }
     }
     return -1; // no cid tag
