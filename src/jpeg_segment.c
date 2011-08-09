@@ -92,12 +92,16 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
     jpeg_segment_t *jpeg_seg;
     int marker1;
     unsigned len;
+    int eoi_found = 0;
     bs = bitstream_open();
     bitstream_input(bs, data, data_len);
     jpeg_seg = jpeg_segment_create();
     
     while((marker1 = bitstream_getbyte(bs)) >= 0) {
         if (marker1 != 0xFF) {
+            if (eoi_found) {
+                break;
+            }
             fprintf(stderr, "jpeg_segment_parse: marker1=0x%02X\n", marker1);
             jpeg_segment_destroy(jpeg_seg);
             bitstream_close(bs);
@@ -111,8 +115,11 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
               /* removed segment */
               break;
           case 0xD8: // SOI (Start of Image)
+            jpeg_segment_append(jpeg_seg, marker2, NULL, 0);
+            break;
           case 0xD9: // EOI (End of Image)
             jpeg_segment_append(jpeg_seg, marker2, NULL, 0);
+            eoi_found = 1;
             break;
           case 0xDA: // SOS
 	    if ((! rst_scan) && (data[data_len - 2] == 0xFF) &&
