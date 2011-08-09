@@ -7,15 +7,20 @@
 #include "config.h"
 #endif
 
+#ifndef SWFED_JPEG_RST_SCAN_STDJPEG
+#define SWFED_JPEG_RST_SCAN_STDJPEG 0 // default
+#endif
+#ifndef SWFED_JPEG_RST_SCAN_SWFJPEG
+#define SWFED_JPEG_RST_SCAN_SWFJPEG 0 // default
+#endif
+
+#define INDENT_UNIT 4
+#define print_indent(depth) printf("%*s", INDENT_UNIT*(depth), " ")
+
 #define SWF_TWIPS 20
 #define SWF_MAGIC_SIZE 4
 #define SWF_FILE_LENGTH_SIZE 4
 #define SWF_HEADER_SIZE 8
-
-#define INDENT_UNIT 4
-
-#define print_indent(depth) printf("%*s", INDENT_UNIT*(depth), " ")
-
 
 extern int swf_debug;
 
