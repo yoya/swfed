@@ -31,7 +31,9 @@ static void _swf_object_tag_close(swf_tag_t *tag_head);
 swf_object_t *
 swf_object_open(void) {
     swf_object_t *swf;
+#ifdef MALLOC_DEBUG
     malloc_debug_start(); /* DEBUG XXX */
+#endif // MALLOC_DEBUG
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
     swf->tag_head = NULL;
     swf->tag_tail = NULL;
@@ -59,7 +61,9 @@ swf_object_close(swf_object_t *swf) {
         swf->tag_tail= NULL;
         free(swf);
     }
+#ifdef MALLOC_DEBUG
     malloc_debug_end(); /* DEBUG XXX */
+#endif // MALLOC_DEBUG
     return ;
 }
 
