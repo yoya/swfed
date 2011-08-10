@@ -98,11 +98,12 @@ free_debug(void *ptr, char *filename, int linenum) {
         }
     }
     if (i == MALLOC_DEBUG_TABLE_NUM) {
+        char *p;
         fprintf(stderr, "free non-allocated memory: ptr=%p (%s,%d)\n", ptr,
                 filename, linenum);
         malloc_debug_end();
-        char *p = ptr;
-        *p = 0;
+        p = ptr;
+        p = 0;
     }
     free(ptr);
 }
