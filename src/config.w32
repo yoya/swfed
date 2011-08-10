@@ -5,7 +5,7 @@ ARG_ENABLE("swfed", "SWFEditor support", "yes,shared");
 
 if (PHP_SWFED == "yes") {
 	CHECK_LIB("libpng_a.lib;libpng.lib", "swfed", PHP_SWFED);
-	CHECK_LIB("libgif.dll.a;giflib.lib", "swfed", PHP_SWFED);
+	CHECK_LIB("libgif_a_dll.lib;giflib.lib", "swfed", PHP_SWFED);
 
 	EXTENSION("swfed", "php_swfed.c", null, "-Iext/swfed/libswfed", "php_swfed.dll");
 
