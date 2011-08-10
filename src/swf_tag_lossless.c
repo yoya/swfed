@@ -408,9 +408,9 @@ unsigned char *swf_tag_lossless_get_png_data(void *detail,
                                              swf_tag_t *tag) {
     swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) detail;
     unsigned char *data = NULL;
-    *length = 0;
     void *index_data = NULL;
     void *image_data = NULL;
+    *length = 0;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_lossless_get_lossless_data: detail == NULL at line(%d)\n", __LINE__);
         return NULL;

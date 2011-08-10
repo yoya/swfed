@@ -191,6 +191,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
      */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         int i;
+        unsigned char *indices_data;
         *colormap_count = palette_num;
         if (num_trans == 0) {
             swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);   // Lossless
@@ -218,7 +219,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             }
             *colormap = result_colormap;
         }
-        unsigned char *indices_data = malloc(((png_width+ 3) & -4) * png_height);
+        indices_data = malloc(((png_width+ 3) & -4) * png_height);
 	i = 0;
         for (y=0 ; y < png_height ; y++) {
 	    bitstream_t *bs = bitstream_open();
