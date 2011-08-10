@@ -43,7 +43,7 @@ extern void print_hexbin(unsigned char *data, int data_len);
 
 #else
 
-// MALLOC_DEBUG 指定しない時は無効化
+// no MALLOC_DEBUG is disabled this functions
 #define malloc_debug_start() 
 #define malloc_debug_end()
 
