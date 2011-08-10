@@ -48,7 +48,6 @@ swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *line_style_a
     int i;
     if ((tag->code == 2) || // DefineShape
         ((tag->code > 2) && (line_style_array->count < 255))) {
-        // tag->code == 2 の時は count == 255 でもここに来るように
         bitstream_putbyte(bs, line_style_array->count);
     } else {
         bitstream_putbyte(bs, 255);

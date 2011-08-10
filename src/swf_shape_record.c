@@ -9,8 +9,9 @@ swf_shape_record_parse(bitstream_t *bs, swf_shape_record_t *shape_record,
     swf_shape_record_t *current_record = shape_record;
     int limit;
     for (limit = 1; current_record ; limit ++) {
+        int ret;
         current_record->next = NULL; // stopper
-        int ret = bitstream_getbits(bs, 6);
+        ret = bitstream_getbits(bs, 6);
         if (ret == -1) {
             fprintf(stderr, "swf_shape_record_parse: bitstream_getbits failed at L%d\n", __LINE__);
             return ret;

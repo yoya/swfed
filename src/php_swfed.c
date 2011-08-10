@@ -480,6 +480,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_action_t   *action;
         int action_list_count;
 	zval *data = NULL;
+        int *bitmap_id_list, bitmap_id_list_num;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
@@ -561,7 +562,6 @@ PHP_METHOD(swfed, getTagDetail) {
         add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
         add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
 //        tag_shape->shape_with_style.shape_records
-	int *bitmap_id_list, bitmap_id_list_num;
 	bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
 	if (bitmap_id_list) {
 	    int i;
@@ -1506,11 +1506,12 @@ PHP_METHOD(swfed, purgeUselessContents) {
 
 PHP_METHOD(swfed, setCompressLevel) {
     unsigned long compress_level = 6 ; // Z_DEFAULT_COMPRESSION
+    swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
                               "l", &compress_level) == FAILURE) {
         RETURN_FALSE;
     }
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis() TSRMLS_CC);
     swf->compress_level = compress_level;
     RETURN_TRUE;
 }

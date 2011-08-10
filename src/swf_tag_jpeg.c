@@ -168,8 +168,8 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
     offset = 2 + 4 + offset_to_alpha;
     alpha_data_len = length - offset;
-    // 本来は jpeg を解読して width*height で算出するべきだが…
-    origsize = 512 * alpha_data_len; // XXX jpeg1,2より少し大目
+    // TODO: analyze jpeg and get width and height
+    origsize = 512 * alpha_data_len; // XXX greater than jpeg1,2
     
     new_buff = malloc(origsize); // enough size?
     old_buff_ref = bitstream_buffer(bs, offset);
@@ -313,7 +313,7 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
     old_size = swf_tag_jpeg->alpha_data_len;
-    compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
+    compsize = old_size * 1.001 + 12; // increasing, rarely situation
     new_buff = malloc(compsize);
     //    result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
     result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);

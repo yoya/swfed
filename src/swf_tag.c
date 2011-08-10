@@ -253,11 +253,12 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     }
     printf("\n");
     if (tag_info && tag_info->detail_handler) {
+        swf_tag_detail_handler_t * detail_handler;
         if (swf_tag_create_input_detail(tag, swf) == NULL) {
             fprintf(stderr, "swf_tag_print: swf_tag_create_input_detail failed\n");
             return ;
         }
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        detail_handler = tag_info->detail_handler();
         if (detail_handler->print) {
             detail_handler->print(tag, swf, indent_depth + 1);
         }
@@ -502,7 +503,7 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
     }
     swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
 
-    // 1pixel目の RGB値 を format, tag_code に応じて取得。
+    // get first 1 pixel RGB value. by format and tag_code.
     switch (swf_tag_lossless->format) {
         int color_index;
     case 3:
@@ -1005,14 +1006,16 @@ swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     int ret;
     swf_tag_t *tag = NULL;
     swf_tag_action_detail_t *swf_tag_action;
+    swf_tag_info_t *tag_info;
+    swf_tag_detail_handler_t *detail_handler;
     if (kv == NULL) {
         fprintf(stderr, "swf_tag_create_action_setvariables: kv == NULL\n");
         return NULL;
     }
     tag = calloc(sizeof(*tag), 1);
     tag->code = 12; // DoAction
-    swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
-    swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
+    tag_info = get_swf_tag_info(tag->code);
+    detail_handler = tag_info->detail_handler();
     tag->detail = detail_handler->create();
     swf_tag_action = (swf_tag_action_detail_t*) tag->detail;
     swf_tag_action->action_list = swf_action_list_create();
@@ -1086,7 +1089,7 @@ swf_tag_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
 }
 
 
-// タグの中味を移し替える
+// move tag contents.
 swf_tag_t *
 swf_tag_move(swf_tag_t *from_tag) {
     swf_tag_t *to_tag = NULL;
@@ -1107,7 +1110,7 @@ swf_tag_move(swf_tag_t *from_tag) {
 }
 
 /*
- * 指定した条件に全て合致する tag の cid を返す
+ * return tag CID that all condition match
  */
 
 int

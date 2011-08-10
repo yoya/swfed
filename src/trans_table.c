@@ -66,7 +66,7 @@ trans_table_set(trans_table_t  *trans_table, int offset, int cid) {
 int
 trans_table_get_freeid(trans_table_t  *trans_table) {
     int i;
-    // 0 は選択させない
+    // 0 is special.
     for (i = 1 ; i < trans_table->table_num ; i++) {
         if (trans_table->table[i] == 0) {
             return i;

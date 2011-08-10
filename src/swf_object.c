@@ -69,7 +69,7 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     int result;
     bitstream_t *bs;
     swf_tag_t *tag, *prev_tag;
-    // 2度呼ばれた時は古い tag を削除
+    // delete old tag if twice call
     _swf_object_tag_close(swf->tag_head);
     
     bs = bitstream_open();
@@ -192,7 +192,7 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
         old_size = bs->data_len - SWF_HEADER_SIZE;
-        compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
+        compsize = old_size * 1.001 + 12; // increasing, rarely situation
         new_buff = malloc(compsize);
         result = compress2(new_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
@@ -264,19 +264,20 @@ swf_object_purge_contents(swf_object_t *swf) {
         fprintf(stderr, "swf_object_purge_contents: trans_table_open failed\n");
         return ;
     }
-    // 後ろから走査
+    // scan from tail
     for (tag = swf->tag_tail; tag ; tag = tag->prev) {
+        int cid;
         int refcid = swf_tag_get_refcid(tag);
         if (refcid > 0) {
-            // 制御系タグに参照IDがある場合は登録
+            // register ref id in control tag
             trans_table_set(refcid_trans_table, refcid, TRANS_TABLE_RESERVE_ID);
             continue;
         }
-        int cid = swf_tag_get_cid(tag);
+        cid = swf_tag_get_cid(tag);
         if (cid <= 0) {
             continue;
         }
-        // 以下コンテンツ系のタグ
+        // contents tag routine is here.
         if (trans_table_get(refcid_trans_table, cid) == TRANS_TABLE_RESERVE_ID) {
             // no purge
             if (isShapeTag(tag->code)) {
@@ -346,9 +347,8 @@ swf_object_replace_tagdata(swf_object_t *swf, int tag_seqno,
         new_tag = swf_tag_create(bs);
         bitstream_close(bs);
         if (new_tag) {
-            // 新しいタグに繋ぎかえる
             _swf_object_replace_tag(swf, old_tag, new_tag);
-            swf_tag_destroy(old_tag); // 古いのは消す
+            swf_tag_destroy(old_tag);
             return 0;
         }
     }
@@ -380,11 +380,11 @@ swf_object_replace_tagdata_bycid(swf_object_t *swf, int cid,
         bitstream_input(bs, data,length);
         new_tag = swf_tag_create(bs);
         bitstream_close(bs);
-        swf_tag_replace_cid(new_tag, cid); // SWF 中の cid は維持する
+        swf_tag_replace_cid(new_tag, cid); // keep cid in SWF
         if (new_tag) {
-            // 新しいタグに繋ぎかえる
+            // re-join to new tag
             _swf_object_replace_tag(swf, old_tag, new_tag);
-            swf_tag_destroy(old_tag); // 前のは消す
+            swf_tag_destroy(old_tag);
             return 0;
         }
     }
@@ -397,7 +397,7 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
-        // 編集されている場合は detail を data に戻す
+        // rebuild detail to (raw)data if modified
         if ((tag->data == NULL) && tag->detail) {
             bitstream_t *bs;
             bs = bitstream_open();
@@ -584,7 +584,7 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         bitstream_close(bs);
         if ((new_tag == NULL) || (! isShapeTag(new_tag->code))) {
             fprintf(stderr, "swf_object_replace_shapedata: fallback to read old shape data\n");
-            // 0.37 以前で作成した shape をなるべく読めるように
+            // fallback reading Shape v0.37 and before
             if (new_tag) {
                 swf_tag_destroy(new_tag);
             }
@@ -600,12 +600,11 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         }
         if (new_tag) {
             if (swf_tag_create_input_detail(new_tag, swf)) {
-                // SWF 中の cid を維持する
+                // save cid in SWF
                 swf_tag_replace_cid(new_tag, cid);
-                // 新しいタグに繋ぎかえる
                 _swf_object_replace_tag(swf, old_tag, new_tag);
-                swf_tag_destroy(old_tag); // 前のは消す
-                // 情報要素を編集したので生データは削除
+                swf_tag_destroy(old_tag);
+                // information modified so remove raw data.
                 free(new_tag->data);
                 new_tag->data = NULL;
                 return 0;
@@ -1152,20 +1151,20 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
         switch (tag->code) {
         case 1: // ShowFrame
             if (prev_tag == NULL) {
-                // ShowFrame までに候補が見つからなければ、ShowFrame の直前
+                // no candidate point before ShowFrame so prev It.
                 prev_tag = prev;
             }
             done = 1;
             break;
         case 12: // DoAction
-            // DoAction が見つかれば、そこに ActionByteCode を混ぜる。
+            // DoAction found so merge ActionByteCode to it.
             action_tag = tag;
             done = 1;
             break;
         case 69: // FileAttributs
         case  9: // SetBackgroundColor
         case 24: // Protect
-            // これらのタグより後ろにイメージを置く
+            // put image after there tags.
             prev_tag = tag;
             break;
         default:
@@ -1179,7 +1178,7 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
         }
         prev = tag;
     }
-    if (action_tag) { // DoAction の頭に変数代入イメージを挿入
+    if (action_tag) { // apppend setvariable image to top of DoAction
         ret = swf_tag_put_action_setvariables(action_tag,
                                               kv,
                                               swf);
@@ -1187,13 +1186,13 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
             fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_put_action_setvariables failed\n");
             return 1; // NG
         }
-    } else { // 新規に DoAction を挿入
+    } else { // insert new DoAction
         tag = swf_tag_create_action_setvariables(kv);
         if (tag == NULL) {
             fprintf(stderr, "swf_object_insert_action_setvariables: swf_tag_create_action_setvariables failed\n");
             return 1; // NG
         }
-        if (prev_tag == NULL) { // 普通ないけど、念の為。
+        if (prev_tag == NULL) { // to make sure. abnormal situation.
             tag->next = swf->tag_head;
             tag->next->prev = tag;
             swf->tag_head = tag;
@@ -1267,7 +1266,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
 }
 
 /*
- * 参照側の cid 値を入れ替える
+ * replacce reference side CID value
  */
 static void
 trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_table) {
@@ -1292,7 +1291,7 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
     }
 }
 
-// ターゲットパスに対応する Sprite タグを返す
+// return Sprite tag mapped target path
 static swf_tag_t *
 swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
 					unsigned char *target_path,
@@ -1312,7 +1311,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
     instance_name = target_path;
     instance_name_len = strlen((char *) instance_name);
     
-    // インスタンス名から PlaceObject を探し、参照している CID を取得する
+    // search PlaceObject by instance_name and get ref CID
     for (tag = tag_head ; tag ; tag=tag->next) {
         cid = 0;
         if (tag->code == 26) { // PlaceObject2
@@ -1329,7 +1328,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
         return NULL; // not found instance name;
     }
 
-    // CID で DefineSprite を探す
+    // search DefineSprite by CID
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (isSpriteTag(tag->code)) {
             if (swf_tag_get_cid(tag) ==  cid) {
@@ -1338,7 +1337,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
             }
         }
     }
-    if (next_instance_name) { // 入れ子になっている場合
+    if (next_instance_name) { // nested sprite
        if (sprite_tag) {
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(sprite_tag, swf);
@@ -1359,7 +1358,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     int cid = 0, sprite_cid = 0, ret = 0;
     swf_tag_t *tag = NULL;
     swf_tag_t *sprite_tag = NULL, *prev_sprite_tag = NULL;
-    swf_tag_t *sprite_tag_tail = NULL; // sprite の中の最後の tag
+    swf_tag_t *sprite_tag_tail = NULL; // last tag in sprite.
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
     swf_object_t *swf4sprite = NULL;
     swf_tag_info_t *tag_info = NULL;
@@ -1371,7 +1370,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         return 1;
     }
 
-    // インスタンス名(ターゲットパス)に対応するシンボル(Spriteタグ)を探す
+    // search symbol(SpriteTag) mapped instance_name(target path)
     sprite_tag = swf_object_saerch_sprite_by_target_path(tag=swf->tag_head,
                                                          instance_name,
                                                          instance_name_len,
@@ -1384,7 +1383,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     prev_sprite_tag = sprite_tag->prev;
     sprite_cid = swf_tag_get_cid(sprite_tag);
 
-    // MC に差し替える SWF データ
+    // swf data that MC replace to
     swf4sprite = swf_object_open();
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
@@ -1392,7 +1391,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         return ret;
     }
 
-    // 既存の CID
+    // old CID
     cid_trans_table = trans_table_open();
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         int cid;
@@ -1403,7 +1402,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     }
 //    trans_table_print(cid_trans_table);
     
-    // Sprite タグの中を綺麗にする
+    // clean up innner SpriteTag
     tag_info = get_swf_tag_info(sprite_tag->code);
     detail_handler = tag_info->detail_handler();
     free(sprite_tag->data);
@@ -1416,7 +1415,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_sprite = sprite_tag->detail;
     swf_tag_sprite->sprite_id = sprite_cid;
 
-    // SWF 中のタグを種類に応じて展開する
+    // extract tag each that type in SWF
     for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
         int tag_no = tag->code;
         switch (tag_no) {
@@ -1459,7 +1458,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 83: // DefineShape4
           case 84: // DefineMorphShape2
           case 88: // DefineFontName
-              // CID 変更
+              // change CID
               cid = swf_tag_get_cid(tag);
               if (cid > 0) {
                   int to_cid;
@@ -1503,7 +1502,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   free(tag->data);
                   tag->data = NULL;
               }
-              // Sprite の前に展開
+              // extract tag before SpriteTag
               prev_sprite_tag->next = swf_tag_move(tag);
               prev_sprite_tag = prev_sprite_tag->next;
               prev_sprite_tag->next = sprite_tag;
@@ -1519,8 +1518,8 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 28: // RemoveObject2
           case 43: // FrameLabel
           case 59: // DoInitAction
-            // Sprite の中に挿入
-            // Character ID の変更に追随
+            // insert into Sprite
+            // follow Character ID change
               switch (tag_no) {
                   int refcid, to_refcid;
                 case 4:  // PlaceObject
@@ -1534,7 +1533,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                   }
                   break;
               }
-              // Sprite への tag 埋め込み
+              // inplant tag to Sprite
               if (sprite_tag_tail == NULL) {
                   swf_tag_sprite->tag = swf_tag_move(tag);
                   sprite_tag_tail = swf_tag_sprite->tag;
@@ -1653,7 +1652,6 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
   return ret;
 }
 
-// 新しいタグに繋ぎかえる
 static int
 _swf_object_replace_tag(swf_object_t *swf, 
                         swf_tag_t *old_tag, swf_tag_t *new_tag) {

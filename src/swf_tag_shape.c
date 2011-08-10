@@ -243,7 +243,6 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
                 break;
             }
         }
-        // new style を探す
         shape_records = _swf_tag_shape_search_new_style_in_shape_records(shape_records);
         
         if (shape_records) {
@@ -314,7 +313,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
                 if (fill_style->bitmap.bitmap_ref == from_cid) {
                     fill_style->bitmap.bitmap_ref = to_cid;
                     if (tag->data) {
-                        // 内容が変わったので元データは削除
+                        // content modified so delete original data
                         free(tag->data);
                         tag->data = NULL;
                     }
@@ -325,7 +324,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
                 break;
             }
         }
-        // new style を探す
+        // search new style
         for ( ; shape_records ; shape_records = shape_records->next) {
             if ((shape_records->first_6bits) && 
                 ((shape_records->first_6bits & 0x20) == 0)) {
@@ -366,7 +365,6 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_t *bs;
     unsigned char *data;
     int ret;
-    (void) swf;
     long offset_of_offset_morph = 0;
     long tmp_offset_byte = 0;
     long tmp_offset_bit = 0;
@@ -416,18 +414,18 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     }
     if (swf_tag_shape->is_morph) {
         bitstream_align(bs);
-        // 後で上書きするので、offset を覚えておく
+        // memory offset for overwrite this value after.
         offset_of_offset_morph = bitstream_getbytepos(bs);
         bitstream_putbytesLE(bs, swf_tag_shape->offset_morph, 4);
         swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag);
-        // offset_morph のフィールドに戻って上書きする
-        // offset_morph の後ろからの offset 差なので、- 4 する
+        // rewind to overwrite offset_morph field and overwrite it.
+        // offset distance from offset_morph so -4 operation
         swf_tag_shape->offset_morph = swf_tag_shape->morph_shape_with_style.offset_of_end_edges - offset_of_offset_morph - 4;
-        tmp_offset_byte = bitstream_getbytepos(bs); // offset を退避
+        tmp_offset_byte = bitstream_getbytepos(bs); // save offset
         tmp_offset_bit = bitstream_getbitpos(bs);
         bitstream_setpos(bs, offset_of_offset_morph, 0);
         bitstream_putbytesLE(bs, swf_tag_shape->offset_morph , 4);
-        bitstream_setpos(bs, tmp_offset_byte, tmp_offset_bit); // 元に戻す
+        bitstream_setpos(bs, tmp_offset_byte, tmp_offset_bit); // restore offset
     } else {
         ret = swf_shape_with_style_build(bs, &swf_tag_shape->shape_with_style, tag);
         if (ret) {
@@ -498,11 +496,11 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
                                   signed int trans_y) {
     int i;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    swf_fill_style_t *fill_style;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
         return 1;
     }
-    swf_fill_style_t *fill_style;
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }

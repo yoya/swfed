@@ -18,7 +18,7 @@ typedef struct swf_morph_shape_with_style_ {
     swf_styles_count_t styles_count;
     swf_shape_record_t shape_records_morph;
 
-    // offset_morph の計算に必要
+    // for offset_morph calculation
     long offset_of_end_edges;
 } swf_morph_shape_with_style_t;
 

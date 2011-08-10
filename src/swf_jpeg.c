@@ -35,8 +35,8 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
         jpeg_segment_destroy(jpeg_data);
         return NULL;
     }
-    /* 並び替え */
-    // 圧縮テーブル部
+    /* re-order */
+    // compression table parts
     jpeg_segment_append(jpeg_output, 0xD8, NULL, 0); // SOI
     while ((d = jpeg_segment_steal_node(jpeg_data, 0xDB, &d_len)) != NULL) {
         jpeg_segment_append(jpeg_output, 0xDB, d, d_len); // DQT
@@ -45,7 +45,7 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
         jpeg_segment_append(jpeg_output, 0xC4, d, d_len); // DHT
     }
     jpeg_segment_append(jpeg_output, 0xD9, NULL, 0); // EOI
-    // 画像実データ部 (APP 等も含む)
+    // image data parts (include APP)
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
         d = jpeg_segment_steal_node(jpeg_data, m, &d_len);
         jpeg_segment_append(jpeg_output, m, d, d_len);
@@ -77,7 +77,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
             return NULL;
     }
     if (jpeg_segment_contain(jpeg_data, 0xDB)) {
-        /* 圧縮テーブルが含まれている場合 */
+        /* contain compression table */
         jpeg_table = jpeg_segment_create();
         if (jpeg_table == NULL) {
             fprintf(stderr,
@@ -92,7 +92,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
             jpeg_segment_append(jpeg_table, 0xC4, d, d_len); // DHT
         }
     } else if (table_data && table_data_len) {
-        /* 圧縮テーブルが入っていない場合は JPEGTables を参照 */
+        /* reference JPEGTables if no compression table */
         jpeg_table = jpeg_segment_parse(table_data, table_data_len, SWFED_JPEG_RST_SCAN_SWFJPEG);
         if (jpeg_table == NULL) {
             fprintf(stderr, "Can't create jpeg segment for table\n");
@@ -104,7 +104,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
         jpeg_segment_destroy(jpeg_data);
         return NULL;
     }
-    /* 並び替え */
+    /* re-order */
     jpeg_segment_delete_node(jpeg_data, 0xD8); // SOI
     jpeg_segment_delete_node(jpeg_data, 0xD9); // EOI
     jpeg_output = jpeg_segment_create();
@@ -115,8 +115,8 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
         return NULL;
     }
     jpeg_segment_append(jpeg_output, 0xD8, NULL, 0); // SOI
-    /* 圧縮テーブルを退避 */
-    /* SOF0,1,2 マーカーの手前まで構成 */
+    /* save compression table */
+    /* build data before SOF0,1,2 marker */
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
         if ((m == 0xC0) ||  (m == 0xC1) || (m == 0xC2)) { // SOF0,1,2
             break;
@@ -127,7 +127,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
     while ((d = jpeg_segment_steal_node(jpeg_table, 0xDB, &d_len)) != NULL) {
         jpeg_segment_append(jpeg_output, 0xDB, d, d_len); // DQT
     }
-    /* SOF0,1,2 を構成 */
+    /* build SOF0,1,2 */
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
         if ((m != 0xC0) &&  (m != 0xC1) && (m != 0xC2)) { // SOF0,1,2
             break;

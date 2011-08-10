@@ -270,7 +270,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                             indices_len);
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
+        compsize = old_size * 1.001 + 12; // increasing, rarely situation
         tmp_buff = malloc(compsize);
         result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
@@ -307,7 +307,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         }
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        compsize = old_size * 1.001 + 12; // 稀に増える事もあるので
+        compsize = old_size * 1.001 + 12; // increasing, rarely situation
         tmp_buff = malloc(compsize);
         result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {

@@ -98,6 +98,8 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
     jpeg_seg = jpeg_segment_create();
     
     while((marker1 = bitstream_getbyte(bs)) >= 0) {
+        int marker2;
+        int next_marker2;
         if (marker1 != 0xFF) {
             if (eoi_found) {
                 break;
@@ -107,8 +109,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
             bitstream_close(bs);
             return NULL;
         }
-        int marker2 = bitstream_getbyte(bs);
-        int next_marker2;
+        marker2 = bitstream_getbyte(bs);
         switch(marker2) {
             unsigned long sos_offset;
           case -1:
