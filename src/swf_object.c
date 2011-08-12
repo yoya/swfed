@@ -1226,15 +1226,15 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (isActionTag(tag->code)) {
-	    ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
-	    if (ret) {
-	        fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
-		break;
-	    }
-	    if (m && tag->data) { // action tag modified
-	        free(tag->data);
-		tag->data = NULL;
-	    }
+            ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
+            if (ret) {
+                fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
+                break;
+            }
+            if (m && tag->data) { // action tag modified
+                free(tag->data);
+                tag->data = NULL;
+            }
         } else if (isSpriteTag(tag->code)) {
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(tag, swf);
@@ -1305,13 +1305,13 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
     unsigned char *instance_name, *next_instance_name;
     int instance_name_len;
     int cid = 0;
-
+    
     next_instance_name = (unsigned char *) strchr((char *) target_path, '/');
     if (next_instance_name != NULL) {
         next_instance_name[0] = '\0'; // null terminate
         next_instance_name++;
     }
-
+    
     instance_name = target_path;
     instance_name_len = strlen((char *) instance_name);
     
@@ -1331,7 +1331,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
                 target_path, cid);
         return NULL; // not found instance name;
     }
-
+    
     // search DefineSprite by CID
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (isSpriteTag(tag->code)) {
@@ -1342,15 +1342,15 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
         }
     }
     if (next_instance_name) { // nested sprite
-       if (sprite_tag) {
+        if (sprite_tag) {
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(sprite_tag, swf);
             if (tag_sprite == NULL) {
                 fprintf(stderr, "swf_object_saerch_sprite_by_target_path: tag_sprite swf_tag_create_input_detail failed\n");
             } else {
-	      sprite_tag = swf_object_saerch_sprite_by_target_path(tag_sprite->tag, next_instance_name, target_path_len - instance_name_len - 1, swf);
-	    }
-       }
+                sprite_tag = swf_object_saerch_sprite_by_target_path(tag_sprite->tag, next_instance_name, target_path_len - instance_name_len - 1, swf);
+            }
+        }
     }
     return sprite_tag;
 }
@@ -1368,25 +1368,25 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table = NULL;
-
+    
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: swf == NULL\n");
         return 1;
     }
-
+    
     // search symbol(SpriteTag) mapped instance_name(target path)
     sprite_tag = swf_object_saerch_sprite_by_target_path(tag=swf->tag_head,
                                                          instance_name,
                                                          instance_name_len,
                                                          swf);
-
+    
     if (sprite_tag == NULL) {
         fprintf(stderr, "swf_object_replace_movieclip: sprite_tag == NULL\n");
         return 1; // not found instance name;
     }
     prev_sprite_tag = sprite_tag->prev;
     sprite_cid = swf_tag_get_cid(sprite_tag);
-
+    
     // swf data that MC replace to
     swf4sprite = swf_object_open();
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
@@ -1394,7 +1394,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
         return ret;
     }
-
+    
     // old CID
     cid_trans_table = trans_table_open();
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
@@ -1418,7 +1418,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     sprite_tag->detail = detail_handler->create();
     swf_tag_sprite = sprite_tag->detail;
     swf_tag_sprite->sprite_id = sprite_cid;
-
+    
     // extract tag each that type in SWF
     for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
         int tag_no = tag->code;
@@ -1462,55 +1462,55 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 83: // DefineShape4
           case 84: // DefineMorphShape2
           case 88: // DefineFontName
-              // change CID
-              cid = swf_tag_get_cid(tag);
-              if (cid > 0) {
-                  int to_cid;
-                  to_cid = trans_table_get(cid_trans_table, cid);
-                  if (to_cid == TRANS_TABLE_RESERVE_ID) {
-                      to_cid = trans_table_get_freeid(cid_trans_table);
-                      trans_table_set(cid_trans_table, cid, to_cid);
-                      trans_table_set(cid_trans_table, to_cid, TRANS_TABLE_RESERVE_ID);
-                  } else if (to_cid == 0) {
-                      trans_table_set(cid_trans_table, cid, cid);
-                      to_cid = cid;
-                  }
-                  if (cid != to_cid) {
-                      if (swf_tag_replace_cid(tag, to_cid)) {
-                          fprintf(stderr, "swf_object_replace_movieclip: swf_tag_replace_cid %d => %d failed\n", cid, to_cid);
-                          // no stop
-                      }
-                  }
-              }
-              if (isShapeTag(tag_no)) {
-                  int *bitmap_id_list, bitmap_id_list_num;
-                  bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-                  if (bitmap_id_list) {
-                      int i;
-                      for (i = 0 ; i < bitmap_id_list_num; i++) {
-                          int bitmap_id = bitmap_id_list[i];
-                          int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
-                          if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
-                              swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
-                          }
-                      }
-                      free(bitmap_id_list);
-                  }
-              } else if (isSpriteTag(tag_no)){
-                  swf_tag_sprite_detail_t *s;
-                  s = swf_tag_create_input_detail(tag, swf);
-                  if (s == NULL) {
-                      fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
-                  }
-                  trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
-                  free(tag->data);
-                  tag->data = NULL;
-              }
-              // extract tag before SpriteTag
-              prev_sprite_tag->next = swf_tag_move(tag);
-              prev_sprite_tag = prev_sprite_tag->next;
-              prev_sprite_tag->next = sprite_tag;
-              break;
+            // change CID
+            cid = swf_tag_get_cid(tag);
+            if (cid > 0) {
+                int to_cid;
+                to_cid = trans_table_get(cid_trans_table, cid);
+                if (to_cid == TRANS_TABLE_RESERVE_ID) {
+                    to_cid = trans_table_get_freeid(cid_trans_table);
+                    trans_table_set(cid_trans_table, cid, to_cid);
+                    trans_table_set(cid_trans_table, to_cid, TRANS_TABLE_RESERVE_ID);
+                } else if (to_cid == 0) {
+                    trans_table_set(cid_trans_table, cid, cid);
+                    to_cid = cid;
+                }
+                if (cid != to_cid) {
+                    if (swf_tag_replace_cid(tag, to_cid)) {
+                        fprintf(stderr, "swf_object_replace_movieclip: swf_tag_replace_cid %d => %d failed\n", cid, to_cid);
+                        // no stop
+                    }
+                }
+            }
+            if (isShapeTag(tag_no)) {
+                int *bitmap_id_list, bitmap_id_list_num;
+                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+                if (bitmap_id_list) {
+                    int i;
+                    for (i = 0 ; i < bitmap_id_list_num; i++) {
+                        int bitmap_id = bitmap_id_list[i];
+                        int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
+                        if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
+                            swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
+                        }
+                    }
+                    free(bitmap_id_list);
+                }
+            } else if (isSpriteTag(tag_no)){
+                swf_tag_sprite_detail_t *s;
+                s = swf_tag_create_input_detail(tag, swf);
+                if (s == NULL) {
+                    fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
+                }
+                trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
+                free(tag->data);
+                tag->data = NULL;
+            }
+            // extract tag before SpriteTag
+            prev_sprite_tag->next = swf_tag_move(tag);
+            prev_sprite_tag = prev_sprite_tag->next;
+            prev_sprite_tag->next = sprite_tag;
+            break;
             // Control Tag
           case 0: // End
           case 1: // ShowFrame
@@ -1524,32 +1524,32 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case 59: // DoInitAction
             // insert into Sprite
             // follow Character ID change
-              switch (tag_no) {
-                  int refcid, to_refcid;
-                case 4:  // PlaceObject
-                case 26: // PlaceObject2
-                  refcid = swf_tag_get_refcid(tag);
-                  if (refcid > 0) {
-                      to_refcid = trans_table_get(cid_trans_table, refcid);
-                      if (refcid != to_refcid) {
-                          swf_tag_replace_refcid(tag, to_refcid);
-                      }
-                  }
-                  break;
-              }
-              // inplant tag to Sprite
-              if (sprite_tag_tail == NULL) {
-                  swf_tag_sprite->tag = swf_tag_move(tag);
-                  sprite_tag_tail = swf_tag_sprite->tag;
-              } else {
-                  sprite_tag_tail->next = swf_tag_move(tag);
-                  sprite_tag_tail = sprite_tag_tail->next;
-              }
-              sprite_tag_tail->next = NULL;
-              if (tag_no == 1) { // ShowFrame
-                  swf_tag_sprite->frame_count  += 1;
-              }
-              break;
+            switch (tag_no) {
+                int refcid, to_refcid;
+              case 4:  // PlaceObject
+              case 26: // PlaceObject2
+                refcid = swf_tag_get_refcid(tag);
+                if (refcid > 0) {
+                    to_refcid = trans_table_get(cid_trans_table, refcid);
+                    if (refcid != to_refcid) {
+                        swf_tag_replace_refcid(tag, to_refcid);
+                    }
+                }
+                break;
+            }
+            // inplant tag to Sprite
+            if (sprite_tag_tail == NULL) {
+                swf_tag_sprite->tag = swf_tag_move(tag);
+                sprite_tag_tail = swf_tag_sprite->tag;
+            } else {
+                sprite_tag_tail->next = swf_tag_move(tag);
+                sprite_tag_tail = sprite_tag_tail->next;
+            }
+            sprite_tag_tail->next = NULL;
+            if (tag_no == 1) { // ShowFrame
+                swf_tag_sprite->frame_count  += 1;
+            }
+            break;
         }
     }
     trans_table_close(cid_trans_table);
@@ -1583,8 +1583,8 @@ swf_object_apply_shapematrix_factor(swf_object_t *swf, int shape_id,
 
 int
 swf_object_apply_shaperect_factor(swf_object_t *swf, int shape_id,
-                                 double scale_x, double scale_y,
-                                 signed int trans_x, signed int trans_y) {
+                                  double scale_x, double scale_y,
+                                  signed int trans_x, signed int trans_y) {
     int result = 1;
     swf_tag_t *tag;
     if (swf == NULL) {
@@ -1593,9 +1593,9 @@ swf_object_apply_shaperect_factor(swf_object_t *swf, int shape_id,
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         result = swf_tag_apply_shape_rect_factor(tag, shape_id,
-                                                   scale_x, scale_y,
-                                                   trans_x, trans_y,
-                                                   swf);
+                                                 scale_x, scale_y,
+                                                 trans_x, trans_y,
+                                                 swf);
         if (! result) {
             break;
         }
@@ -1622,38 +1622,38 @@ swf_object_apply_shapetype_tilled(swf_object_t *swf,int shape_id) {
 
 int
 swf_object_is_shape_tagdata(unsigned char *data, int data_len) {
-  bitstream_t *bs;
-  swf_tag_t *tag;
-  int ret = 0; // default FALSE;
-
-  bs = bitstream_open();
-  bitstream_input(bs, data, data_len);
-  tag = swf_tag_create(bs);
-  if (tag) {
-      if (isShapeTag(tag->code)) {
-          ret = 1; // TRUE
-      }
-  }
-  bitstream_close(bs);
-  return ret;
+    bitstream_t *bs;
+    swf_tag_t *tag;
+    int ret = 0; // default FALSE;
+    
+    bs = bitstream_open();
+    bitstream_input(bs, data, data_len);
+    tag = swf_tag_create(bs);
+    if (tag) {
+        if (isShapeTag(tag->code)) {
+            ret = 1; // TRUE
+        }
+    }
+    bitstream_close(bs);
+    return ret;
 }
 
 int
 swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
-  bitstream_t *bs;
-  swf_tag_t *tag;
-  int ret = 0; // default FALSE;
-
-  bs = bitstream_open();
-  bitstream_input(bs, data, data_len);
-  tag = swf_tag_create(bs);
-  if (tag) {
-      if (isBitmapTag(tag->code)) {
-          ret = 1; // TRUE
-      }
-  }
-  bitstream_close(bs);
-  return ret;
+    bitstream_t *bs;
+    swf_tag_t *tag;
+    int ret = 0; // default FALSE;
+    
+    bs = bitstream_open();
+    bitstream_input(bs, data, data_len);
+    tag = swf_tag_create(bs);
+    if (tag) {
+        if (isBitmapTag(tag->code)) {
+            ret = 1; // TRUE
+        }
+    }
+    bitstream_close(bs);
+    return ret;
 }
 
 static int
