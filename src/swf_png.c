@@ -220,22 +220,22 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             *colormap = result_colormap;
         }
         indices_data = malloc(((png_width+ 3) & -4) * png_height);
-	i = 0;
+        i = 0;
         for (y=0 ; y < png_height ; y++) {
-	    bitstream_t *bs = bitstream_open();
-	    if (bs == NULL) {
-	      free(*colormap);
-	      *colormap = NULL;
-	      free(indices_data);
-	      return NULL;
-	    }
-	    bitstream_input(bs, png_image_data[y], png_width);
+            bitstream_t *bs = bitstream_open();
+            if (bs == NULL) {
+                free(*colormap);
+                *colormap = NULL;
+                free(indices_data);
+                return NULL;
+            }
+            bitstream_input(bs, png_image_data[y], png_width);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
-		i++;
+                i++;
             }
-	    while (i % 4) { i++; } // 4byte alignment
-	    bitstream_close(bs);
+            while (i % 4) { i++; } // 4byte alignment
+            bitstream_close(bs);
         }
         image_data = indices_data;
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
