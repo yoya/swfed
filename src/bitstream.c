@@ -139,21 +139,18 @@ bitstream_putbyte(bitstream_t *bs, int byte) {
         bs->data_len ++;
     }
     byte &= 0xff;
-    bs->data[bs->byte_offset] = (unsigned char) byte ;
-    bs->byte_offset++;
+    bs->data[bs->byte_offset++] = (unsigned char) byte ;
     return 0;
 }
 
 int
 bitstream_getbyte(bitstream_t *bs) {
-    int byte;
+    register int byte;
     bitstream_align(bs);
     if (bs->data_len <= bs->byte_offset) {
         return -1; /* End of Stream */
     }
-    byte = bs->data[bs->byte_offset] & 0xff;
-    bs->byte_offset++;
-    return byte;
+    return bs->data[bs->byte_offset++] & 0xff;
 }
 
 int
@@ -187,7 +184,7 @@ bitstream_getstring(bitstream_t *bs,
 unsigned char *
 bitstream_outputstring(bitstream_t *bs) {
     unsigned char *data;
-    unsigned long data_len;
+    register unsigned long data_len;
     bitstream_align(bs);
     data_len = strlen((char *) bs->data + bs->byte_offset);
     data_len += 1; // + '\0'
@@ -206,33 +203,34 @@ bitstream_outputstring(bitstream_t *bs) {
 
 int
 bitstream_putbytesLE(bitstream_t *bs, unsigned long bytes, int byte_width) {
-    int i;
-    unsigned long byte;
+    register int i;
+    register unsigned long tmp_bytes = bytes;
     for (i=0 ; i < byte_width ; i++) {
-        byte = bytes & 0xff;
-        bitstream_putbyte(bs, byte);
-        bytes >>= 8;
+        bitstream_putbyte(bs, tmp_bytes & 0xff);
+        tmp_bytes >>= 8;
     }
     return 0;
 }
 
 int
 bitstream_putbytesBE(bitstream_t *bs, unsigned long bytes, int byte_width) {
-    int i;
-    unsigned long byte;
+    register int i;
+    register unsigned long tmp_bytes = bytes;
     for (i=0 ; i < byte_width ; i++) {
-        byte = bytes >> ( 8 * (byte_width - 1 - i));
-        bitstream_putbyte(bs, byte & 0xff);
+        bitstream_putbyte(bs, (tmp_bytes >> ( 8 * (byte_width - 1 - i))) & 0xff);
     }
     return 0;
 }
 
 unsigned long
 bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
-    int i;
-    unsigned long byte, bytes = 0;
+    register int i;
+    register unsigned long byte, bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         byte = bitstream_getbyte(bs);
+        if (byte == -1) {
+            return -1; // End of Stream;
+        }
         byte <<= 8 * i;
         bytes |= byte;
     }
@@ -241,11 +239,14 @@ bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
 
 unsigned long
 bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
-    int i;
-    unsigned long byte, bytes = 0;
+    register int i;
+    register unsigned long byte, bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         bytes <<= 8;
         byte = bitstream_getbyte(bs);
+        if (byte == -1) {
+            return -1; // End of Stream;
+        }
         bytes |= byte;
     }
     return bytes;
@@ -284,7 +285,7 @@ bitstream_getbit(bitstream_t *bs) {
 
 int
 bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
-    int i, bit;
+    register int i, bit;
     for (i=0 ; i < bit_width ; i++) {
         bit = bits >> (bit_width - 1 - i);
         bit &= 1;
@@ -297,7 +298,7 @@ int
 bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
     if (bits < 0) {
         register signed long msb = 1 << (bit_width - 1);
-        register signed long bitmask = (2 * msb) - 1;
+        register signed long bitmask = (msb << 1) - 1;
         bits = (-bits  - 1) ^ bitmask;
     }
     return bitstream_putbits(bs, bits, bit_width);
@@ -305,9 +306,8 @@ bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
 
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
-    int i;
-    int bit;
-    unsigned long bits = 0;
+    register int i, bit;
+    register unsigned long bits = 0;
     for (i=0 ; i < bit_width ; i++) {
         bit = bitstream_getbit(bs);
         if (bit == -1) {
@@ -320,10 +320,10 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
-    signed long bits = bitstream_getbits(bs, bit_width);
+    register signed long bits = bitstream_getbits(bs, bit_width);
     register signed long msb =  bits & (1 << (bit_width - 1));
     if (msb) {
-        register signed long bitmask = (2 * msb) - 1;
+        register signed long bitmask = (msb << 1) - 1;
         bits = - (bits ^ bitmask) - 1;
     }
     return bits;
@@ -344,18 +344,20 @@ bitstream_align(bitstream_t *bs) {
 int
 bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
                   signed long bit_incr) {
+    register signed long byte_offset, bit_offset;
     if (bit_incr < 0) {
-        byte_incr -= (-bit_incr + 7) >> 3;
-        bit_incr = (bit_incr % 8) + 8;
-    }
-    byte_incr += bs->byte_offset;
-    bit_incr += bs->bit_offset;
-    if (bit_incr < 8) {
-        bs->byte_offset = byte_incr;
-        bs->bit_offset = bit_incr;
+        byte_offset = bs->byte_offset - ((-bit_incr + 7) >> 3);
+        bit_offset = bs->bit_offset + (bit_incr % 8) + 8;
     } else {
-        bs->byte_offset = byte_incr + (bit_incr >> 3);
-        bs->bit_offset = bit_incr & 7;
+        byte_offset = bs->byte_offset + byte_incr;
+        bit_offset = bs->bit_offset + bit_incr;
+    }
+    if (bit_offset < 8) {
+        bs->byte_offset = byte_offset;
+        bs->bit_offset = bit_offset;
+    } else {
+        bs->byte_offset = byte_offset + (bit_offset >> 3);
+        bs->bit_offset = bit_offset & 7;
     }
     return 0;
 }
@@ -402,7 +404,7 @@ bitstream_length(bitstream_t *bs) {
 
 signed long
 bitstream_unsigned2signed(unsigned long num, int size) {
-    unsigned long sig_bit = 1 << (size - 1);
+    register unsigned long sig_bit = 1 << (size - 1);
     if ((sig_bit & num) == 0) {
         return (signed long) num;
     } else {
@@ -424,7 +426,7 @@ bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
 
 int
 bitstream_need_bits_unsigned(unsigned long n) {
-    int i;
+    register int i;
     for (i = 0 ; n ; i++) {
         n >>= 1;
     }
@@ -433,12 +435,12 @@ bitstream_need_bits_unsigned(unsigned long n) {
 
 int
 bitstream_need_bits_signed(signed long n) {
-    int i;
-    int ret;
+    register int ret;
     if (n < -1) {
         n = -1 - n;
     }
     if (n >= 0) {
+        register int i;
         for (i = 0 ; n ; i++) {
             n >>= 1;
         }
@@ -471,7 +473,7 @@ bitstream_printerror(bitstream_t *bs) {
 
 void
 bitstream_hexdump(bitstream_t *bs, int length) {
-    unsigned long i, j;
+    register unsigned long i, j;
     for ( i = bs->byte_offset ; i < bs->byte_offset + length ; i++) {
         if ((i == bs->byte_offset) || (i%16) == 0) {
             printf("%08lu: ", i);
