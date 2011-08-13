@@ -257,22 +257,15 @@ bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
 
 int
 bitstream_putbit(bitstream_t *bs, int bit) {
-    int byte;
     if (bs->data_len <= bs->byte_offset) {
-//        fprintf(stderr, "bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
-//                bs->data_len, bs->byte_offset);
         if (bs->data_alloc_len <= bs->byte_offset) {
 //            fprintf(stderr, "bitstream_putbit: alloc_len=%lu\n", bs->data_alloc_len);
             bitstream_realloc(bs);
         }
         bs->data[bs->byte_offset] = 0;
         bs->data_len ++;
-// return 1;
     }
-    bit &= 1;
-    byte = bs->data[bs->byte_offset];
-    byte |= bit << (7 - bs->bit_offset);
-    bs->data[bs->byte_offset] = byte;
+    bs->data[bs->byte_offset] |= (bit & 1) << (7 - bs->bit_offset);
     bitstream_incrpos(bs, 0, 1);
     return 0;
 }
