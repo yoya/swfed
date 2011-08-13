@@ -349,15 +349,18 @@ bitstream_align(bitstream_t *bs) {
 int
 bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
                   signed long bit_incr) {
-    while (bit_incr < 0) {
-        bit_incr += 8;
-        byte_incr --;
+    if (bit_incr < 0) {
+        byte_incr -= (-bit_incr + 7) >> 3;
+        bit_incr = (bit_incr % 8) + 8;
     }
-    bs->byte_offset += byte_incr;
-    bs->bit_offset += bit_incr;
-    while (bs->bit_offset >= 8) {
-        bs->bit_offset -= 8;
-        bs->byte_offset ++;
+    byte_incr += bs->byte_offset;
+    bit_incr += bs->bit_offset;
+    if (bit_incr < 8) {
+        bs->byte_offset = byte_incr;
+        bs->bit_offset = bit_incr;
+    } else {
+        bs->byte_offset = byte_incr + (bit_incr >> 3);
+        bs->bit_offset = bit_incr & 7;
     }
     return 0;
 }
