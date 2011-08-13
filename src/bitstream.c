@@ -271,14 +271,13 @@ bitstream_putbit(bitstream_t *bs, int bit) {
 }
 int
 bitstream_getbit(bitstream_t *bs) {
-    int bit, byte;
+    register int bit;
     if (bs->data_len <= bs->byte_offset) {
         fprintf(stderr, "bitstream_getbit: bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
                 bs->data_len, bs->byte_offset);
         return -1; /* End of Stream */
     }
-    byte = bs->data[bs->byte_offset];
-    bit = byte >> (7 - bs->bit_offset);
+    bit = bs->data[bs->byte_offset] >> (7 - bs->bit_offset);
     bitstream_incrpos(bs, 0, 1);
     return bit & 1;
 }
