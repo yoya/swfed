@@ -8,6 +8,11 @@
  *                     (C) 2008/03/09- yoya@awm.jp
  */
 
+
+#ifndef SWFED_BITOPERATION_OPTIMIZE
+#define SWFED_BITOPERATION_OPTIMIZE 0
+#endif
+
 typedef struct bitstream_ {
     /* raw data */
     unsigned char *data;

@@ -302,6 +302,42 @@ bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
     return bitstream_putbits(bs, bits, bit_width);
 }
 
+#if SWFED_BITOPERATION_OPTIMIZE == 1
+unsigned long
+bitstream_getbits(bitstream_t *bs, int bit_width) {
+    register unsigned long bits;
+    register int byte_offset = bs->byte_offset;
+    register int bit_offset  = bs->bit_offset;
+    if (bs->data_len <= byte_offset + (bit_offset + bit_width) >> 3) {
+        fprintf(stderr, "bitstream_getbits: bs->data_len(%ld) <= byte_offset(%ld) + (bit_offset(%ld) + bit_width(%ld)) >> 3\n",
+                bs->data_len, bs->byte_offset, bs->bit_offset , bit_width);
+        return -1; /* End of Stream */
+    }
+    if ((bit_offset + bit_width) < 9) {
+        bits = (bs->data[byte_offset] >> (8 - bit_offset - bit_width)) & bitstream_bitmask_list[bit_width];
+        bit_offset += bit_width;
+    } else {
+        register int len = 8 - bit_offset;
+        bits = bs->data[byte_offset] & bitstream_bitmask_list[len];
+        bit_offset += len;
+        bit_width -= len;
+        bits <<= bit_width;
+        while (1) {
+            if (bit_width < 9) {
+                bits |= ((bs->data[++byte_offset] >> (8 - bit_width))) & bitstream_bitmask_list[bit_width];
+                bit_offset += bit_width - 8;
+                break;
+            } else {
+                bits |= bs->data[++byte_offset];
+                bit_width -= 8;
+                bits <<= 8;
+            }
+        }
+    }
+    bitstream_setpos(bs, byte_offset, bit_offset);
+    return bits;
+}
+#else // SWFED_BITOPERATION_OPTIMIZE
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
     register int i, bit;
@@ -315,6 +351,7 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     }
     return bits;
 }
+#endif // SWFED_BITOPERATION_OPTIMIZE
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
