@@ -285,11 +285,9 @@ bitstream_getbit(bitstream_t *bs) {
 
 int
 bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
-    register int i, bit;
-    for (i=0 ; i < bit_width ; i++) {
-        bit = bits >> (bit_width - 1 - i);
-        bit &= 1;
-        bitstream_putbit(bs, bit);
+    register int i = bit_width;
+    while (i--) {
+        bitstream_putbit(bs, (bits >> i) & 1);
     }
     return 0;
 }
