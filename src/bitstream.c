@@ -145,7 +145,6 @@ bitstream_putbyte(bitstream_t *bs, int byte) {
 
 int
 bitstream_getbyte(bitstream_t *bs) {
-    register int byte;
     bitstream_align(bs);
     if (bs->data_len <= bs->byte_offset) {
         return -1; /* End of Stream */
@@ -274,7 +273,7 @@ int
 bitstream_getbit(bitstream_t *bs) {
     register int bit;
     if (bs->data_len <= bs->byte_offset) {
-        fprintf(stderr, "bitstream_getbit: bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
+        fprintf(stderr, "bitstream_getbit: bs->data_len(%lu) <= bs->byte_offset(%lu)\n",
                 bs->data_len, bs->byte_offset);
         return -1; /* End of Stream */
     }
@@ -302,14 +301,14 @@ bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
     return bitstream_putbits(bs, bits, bit_width);
 }
 
-#if SWFED_BITOPERATION_OPTIMIZE == 1
+#if BITOPERATION_OPTIMIZE == 1
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
     register unsigned long bits;
     register int byte_offset = bs->byte_offset;
     register int bit_offset  = bs->bit_offset;
     if (bs->data_len <= byte_offset + (bit_offset + bit_width) >> 3) {
-        fprintf(stderr, "bitstream_getbits: bs->data_len(%ld) <= byte_offset(%ld) + (bit_offset(%ld) + bit_width(%ld)) >> 3\n",
+        fprintf(stderr, "bitstream_getbits: bs->data_len(%lu) <= byte_offset(%lu) + (bit_offset(%lu) + bit_width(%d)) >> 3\n",
                 bs->data_len, bs->byte_offset, bs->bit_offset , bit_width);
         return -1; /* End of Stream */
     }
@@ -337,7 +336,7 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     bitstream_setpos(bs, byte_offset, bit_offset);
     return bits;
 }
-#else // SWFED_BITOPERATION_OPTIMIZE
+#else // BITOPERATION_OPTIMIZE
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
     register int i, bit;
@@ -351,7 +350,7 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     }
     return bits;
 }
-#endif // SWFED_BITOPERATION_OPTIMIZE
+#endif // BITOPERATION_OPTIMIZE
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
@@ -401,7 +400,7 @@ int
 bitstream_setpos(bitstream_t *bs, unsigned long byte_offset,
 		     unsigned long bit_offset) {
     if (bs->data_len <= byte_offset ) {
-        fprintf(stderr, "bitstream_setpos: bs->data_len(%ld) <= byte_offset(%ld)\n",
+        fprintf(stderr, "bitstream_setpos: bs->data_len(%lu) <= byte_offset(%lu)\n",
                 bs->data_len, byte_offset);
     }
     bs->byte_offset = byte_offset;

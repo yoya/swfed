@@ -9,8 +9,8 @@
  */
 
 
-#ifndef SWFED_BITOPERATION_OPTIMIZE
-#define SWFED_BITOPERATION_OPTIMIZE 0
+#ifndef BITOPERATION_OPTIMIZE
+#define BITOPERATION_OPTIMIZE 0
 #endif
 
 typedef struct bitstream_ {
