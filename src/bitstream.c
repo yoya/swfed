@@ -145,7 +145,6 @@ bitstream_putbyte(bitstream_t *bs, int byte) {
 
 int
 bitstream_getbyte(bitstream_t *bs) {
-    register int byte;
     bitstream_align(bs);
     if (bs->data_len <= bs->byte_offset) {
         return -1; /* End of Stream */
