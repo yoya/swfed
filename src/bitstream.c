@@ -66,6 +66,9 @@ bitstream_input(bitstream_t *bs, unsigned char *data,
                    unsigned long data_len) {
     bitstream_clear(bs);
     bs->data_alloc_len = data_len;
+    if (bs->data) {
+        free(bs->data);
+    }
     bs->data = malloc(bs->data_alloc_len);
     if (bs->data == NULL) {
         fprintf(stderr, "bitstream_input: malloc failed\n");
@@ -136,21 +139,18 @@ bitstream_putbyte(bitstream_t *bs, int byte) {
         bs->data_len ++;
     }
     byte &= 0xff;
-    bs->data[bs->byte_offset] = (unsigned char) byte ;
-    bs->byte_offset++;
+    bs->data[bs->byte_offset++] = (unsigned char) byte ;
     return 0;
 }
 
 int
 bitstream_getbyte(bitstream_t *bs) {
-    int byte;
+    register int byte;
     bitstream_align(bs);
     if (bs->data_len <= bs->byte_offset) {
         return -1; /* End of Stream */
     }
-    byte = bs->data[bs->byte_offset] & 0xff;
-    bs->byte_offset++;
-    return byte;
+    return bs->data[bs->byte_offset++] & 0xff;
 }
 
 int
@@ -184,7 +184,7 @@ bitstream_getstring(bitstream_t *bs,
 unsigned char *
 bitstream_outputstring(bitstream_t *bs) {
     unsigned char *data;
-    unsigned long data_len;
+    register unsigned long data_len;
     bitstream_align(bs);
     data_len = strlen((char *) bs->data + bs->byte_offset);
     data_len += 1; // + '\0'
@@ -203,33 +203,34 @@ bitstream_outputstring(bitstream_t *bs) {
 
 int
 bitstream_putbytesLE(bitstream_t *bs, unsigned long bytes, int byte_width) {
-    int i;
-    unsigned long byte;
+    register int i;
+    register unsigned long tmp_bytes = bytes;
     for (i=0 ; i < byte_width ; i++) {
-        byte = bytes & 0xff;
-        bitstream_putbyte(bs, byte);
-        bytes >>= 8;
+        bitstream_putbyte(bs, tmp_bytes & 0xff);
+        tmp_bytes >>= 8;
     }
     return 0;
 }
 
 int
 bitstream_putbytesBE(bitstream_t *bs, unsigned long bytes, int byte_width) {
-    int i;
-    unsigned long byte;
+    register int i;
+    register unsigned long tmp_bytes = bytes;
     for (i=0 ; i < byte_width ; i++) {
-        byte = bytes >> ( 8 * (byte_width - 1 - i));
-        bitstream_putbyte(bs, byte & 0xff);
+        bitstream_putbyte(bs, (tmp_bytes >> ( 8 * (byte_width - 1 - i))) & 0xff);
     }
     return 0;
 }
 
 unsigned long
 bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
-    int i;
-    unsigned long byte, bytes = 0;
+    register int i;
+    register unsigned long byte, bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         byte = bitstream_getbyte(bs);
+        if (byte == -1) {
+            return -1; // End of Stream;
+        }
         byte <<= 8 * i;
         bytes |= byte;
     }
@@ -238,11 +239,14 @@ bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
 
 unsigned long
 bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
-    int i;
-    unsigned long byte, bytes = 0;
+    register int i;
+    register unsigned long byte, bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         bytes <<= 8;
         byte = bitstream_getbyte(bs);
+        if (byte == -1) {
+            return -1; // End of Stream;
+        }
         bytes |= byte;
     }
     return bytes;
@@ -254,46 +258,36 @@ bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
 
 int
 bitstream_putbit(bitstream_t *bs, int bit) {
-    int byte;
     if (bs->data_len <= bs->byte_offset) {
-//        fprintf(stderr, "bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
-//                bs->data_len, bs->byte_offset);
         if (bs->data_alloc_len <= bs->byte_offset) {
 //            fprintf(stderr, "bitstream_putbit: alloc_len=%lu\n", bs->data_alloc_len);
             bitstream_realloc(bs);
         }
         bs->data[bs->byte_offset] = 0;
         bs->data_len ++;
-// return 1;
     }
-    bit &= 1;
-    byte = bs->data[bs->byte_offset];
-    byte |= bit << (7 - bs->bit_offset);
-    bs->data[bs->byte_offset] = byte;
+    bs->data[bs->byte_offset] |= (bit & 1) << (7 - bs->bit_offset);
     bitstream_incrpos(bs, 0, 1);
     return 0;
 }
 int
 bitstream_getbit(bitstream_t *bs) {
-    int bit, byte;
+    register int bit;
     if (bs->data_len <= bs->byte_offset) {
         fprintf(stderr, "bitstream_getbit: bs->data_len(%ld) <= bs->byte_offset(%ld)\n",
                 bs->data_len, bs->byte_offset);
         return -1; /* End of Stream */
     }
-    byte = bs->data[bs->byte_offset];
-    bit = byte >> (7 - bs->bit_offset);
+    bit = bs->data[bs->byte_offset] >> (7 - bs->bit_offset);
     bitstream_incrpos(bs, 0, 1);
     return bit & 1;
 }
 
 int
 bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
-    int i, bit;
-    for (i=0 ; i < bit_width ; i++) {
-        bit = bits >> (bit_width - 1 - i);
-        bit &= 1;
-        bitstream_putbit(bs, bit);
+    register int i = bit_width;
+    while (i--) {
+        bitstream_putbit(bs, (bits >> i) & 1);
     }
     return 0;
 }
@@ -302,17 +296,52 @@ int
 bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
     if (bits < 0) {
         register signed long msb = 1 << (bit_width - 1);
-        register signed long bitmask = (2 * msb) - 1;
+        register signed long bitmask = (msb << 1) - 1;
         bits = (-bits  - 1) ^ bitmask;
     }
     return bitstream_putbits(bs, bits, bit_width);
 }
 
+#if SWFED_BITOPERATION_OPTIMIZE == 1
 unsigned long
 bitstream_getbits(bitstream_t *bs, int bit_width) {
-    int i;
-    int bit;
-    unsigned long bits = 0;
+    register unsigned long bits;
+    register int byte_offset = bs->byte_offset;
+    register int bit_offset  = bs->bit_offset;
+    if (bs->data_len <= byte_offset + (bit_offset + bit_width) >> 3) {
+        fprintf(stderr, "bitstream_getbits: bs->data_len(%ld) <= byte_offset(%ld) + (bit_offset(%ld) + bit_width(%ld)) >> 3\n",
+                bs->data_len, bs->byte_offset, bs->bit_offset , bit_width);
+        return -1; /* End of Stream */
+    }
+    if ((bit_offset + bit_width) < 9) {
+        bits = (bs->data[byte_offset] >> (8 - bit_offset - bit_width)) & bitstream_bitmask_list[bit_width];
+        bit_offset += bit_width;
+    } else {
+        register int len = 8 - bit_offset;
+        bits = bs->data[byte_offset] & bitstream_bitmask_list[len];
+        bit_offset += len;
+        bit_width -= len;
+        bits <<= bit_width;
+        while (1) {
+            if (bit_width < 9) {
+                bits |= ((bs->data[++byte_offset] >> (8 - bit_width))) & bitstream_bitmask_list[bit_width];
+                bit_offset += bit_width - 8;
+                break;
+            } else {
+                bits |= bs->data[++byte_offset];
+                bit_width -= 8;
+                bits <<= 8;
+            }
+        }
+    }
+    bitstream_setpos(bs, byte_offset, bit_offset);
+    return bits;
+}
+#else // SWFED_BITOPERATION_OPTIMIZE
+unsigned long
+bitstream_getbits(bitstream_t *bs, int bit_width) {
+    register int i, bit;
+    register unsigned long bits = 0;
     for (i=0 ; i < bit_width ; i++) {
         bit = bitstream_getbit(bs);
         if (bit == -1) {
@@ -322,13 +351,14 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     }
     return bits;
 }
+#endif // SWFED_BITOPERATION_OPTIMIZE
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
-    signed long bits = bitstream_getbits(bs, bit_width);
+    register signed long bits = bitstream_getbits(bs, bit_width);
     register signed long msb =  bits & (1 << (bit_width - 1));
     if (msb) {
-        register signed long bitmask = (2 * msb) - 1;
+        register signed long bitmask = (msb << 1) - 1;
         bits = - (bits ^ bitmask) - 1;
     }
     return bits;
@@ -349,15 +379,20 @@ bitstream_align(bitstream_t *bs) {
 int
 bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
                   signed long bit_incr) {
-    while (bit_incr < 0) {
-        bit_incr += 8;
-        byte_incr --;
+    register signed long byte_offset, bit_offset;
+    if (bit_incr < 0) {
+        byte_offset = bs->byte_offset - ((-bit_incr + 7) >> 3);
+        bit_offset = bs->bit_offset + (bit_incr % 8) + 8;
+    } else {
+        byte_offset = bs->byte_offset + byte_incr;
+        bit_offset = bs->bit_offset + bit_incr;
     }
-    bs->byte_offset += byte_incr;
-    bs->bit_offset += bit_incr;
-    while (bs->bit_offset >= 8) {
-        bs->bit_offset -= 8;
-        bs->byte_offset ++;
+    if (bit_offset < 8) {
+        bs->byte_offset = byte_offset;
+        bs->bit_offset = bit_offset;
+    } else {
+        bs->byte_offset = byte_offset + (bit_offset >> 3);
+        bs->bit_offset = bit_offset & 7;
     }
     return 0;
 }
@@ -404,7 +439,7 @@ bitstream_length(bitstream_t *bs) {
 
 signed long
 bitstream_unsigned2signed(unsigned long num, int size) {
-    unsigned long sig_bit = 1 << (size - 1);
+    register unsigned long sig_bit = 1 << (size - 1);
     if ((sig_bit & num) == 0) {
         return (signed long) num;
     } else {
@@ -426,7 +461,7 @@ bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
 
 int
 bitstream_need_bits_unsigned(unsigned long n) {
-    int i;
+    register int i;
     for (i = 0 ; n ; i++) {
         n >>= 1;
     }
@@ -435,12 +470,12 @@ bitstream_need_bits_unsigned(unsigned long n) {
 
 int
 bitstream_need_bits_signed(signed long n) {
-    int i;
-    int ret;
+    register int ret;
     if (n < -1) {
         n = -1 - n;
     }
     if (n >= 0) {
+        register int i;
         for (i = 0 ; n ; i++) {
             n >>= 1;
         }
@@ -473,7 +508,7 @@ bitstream_printerror(bitstream_t *bs) {
 
 void
 bitstream_hexdump(bitstream_t *bs, int length) {
-    unsigned long i, j;
+    register unsigned long i, j;
     for ( i = bs->byte_offset ; i < bs->byte_offset + length ; i++) {
         if ((i == bs->byte_offset) || (i%16) == 0) {
             printf("%08lu: ", i);
