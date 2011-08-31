@@ -224,7 +224,8 @@ bitstream_putbytesBE(bitstream_t *bs, unsigned long bytes, int byte_width) {
 unsigned long
 bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
     register int i;
-    register unsigned long byte, bytes = 0;
+    register int byte;
+    register unsigned long bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         byte = bitstream_getbyte(bs);
         if (byte == -1) {
@@ -239,7 +240,8 @@ bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
 unsigned long
 bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
     register int i;
-    register unsigned long byte, bytes = 0;
+    register int byte;
+    register unsigned long bytes = 0;
     for (i=0 ; i < byte_width ; i++) {
         bytes <<= 8;
         byte = bitstream_getbyte(bs);
