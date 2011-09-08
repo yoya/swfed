@@ -95,7 +95,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     int bpp, color_type;
     png_uint_32 png_width = 0, png_height = 0;
     volatile png_bytepp png_image_data = NULL;
-    png_uint_32 x, y;
+    register png_uint_32 x, y;
     void *image_data = NULL;
     png_color *palette = NULL;
     int palette_num = 0;
@@ -190,7 +190,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
      * image copy
      */
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
-        int i;
+        register int i;
         unsigned char *indices_data;
         *colormap_count = palette_num;
         if (num_trans == 0) {
@@ -227,6 +227,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
                 free(*colormap);
                 *colormap = NULL;
                 free(indices_data);
+                // free png image datas
                 return NULL;
             }
             bitstream_input(bs, png_image_data[y], png_width);
@@ -346,7 +347,7 @@ pngconv_lossless2png(void *image_data,
                  PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                  PNG_FILTER_TYPE_DEFAULT);
     if (format == 3) {
-        int i;
+        register int i;
         if (index_data_count == 0) {
             fprintf(stderr, "jpegconv_lossless2png: index_data_count == 0 at line(%d)\n", __LINE__);
             png_destroy_write_struct((png_structpp) &png_ptr,
@@ -387,8 +388,7 @@ pngconv_lossless2png(void *image_data,
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
         swf_xrgb_t *xrgb_list = image_data;
         for (y=0 ; y < png_height ; y++) {
-            png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr)) \
-                ;
+            png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
             for (x=0 ; x < png_width ; x++) {
                 png_image_data[y][3*x]   =  xrgb_list[x+y*png_width].red;
                 png_image_data[y][3*x+1] =  xrgb_list[x+y*png_width].green;
