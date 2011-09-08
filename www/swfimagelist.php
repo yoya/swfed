@@ -70,7 +70,7 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
 	echo "<td>
 <object width='240' height='240'>
 <param name='movie' value='./swfshape.php?id=$id&shape_id=$cid&ext=$ext'>
-<embed src='./swfshape.php?id=$id&shape_id=$cid&ext=$ext' width='240' height='240'>
+<embed src='./swfshape.php?id=$id&shape_id=$cid&ext=$ext' width='240' height='240' type='application/x-shockwave-flash'>
 </embed>
 </object>
 </td>";
