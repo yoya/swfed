@@ -1389,6 +1389,7 @@ PHP_METHOD(swfed, setActionVariables) {
     zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(arr), &pos);
     while (zend_hash_get_current_data_ex(Z_ARRVAL_P(arr), (void **)&entry, &
                                          pos) == SUCCESS) {
+        convert_to_string_ex(entry);
         str_value = Z_STRVAL_PP(entry);
         str_value_len = Z_STRLEN_PP(entry);
         ret = zend_hash_get_current_key_ex(Z_ARRVAL_P(arr), &str_key, &
@@ -1432,6 +1433,7 @@ PHP_METHOD(swfed, replaceActionStrings) {
     zend_hash_internal_pointer_reset_ex(Z_ARRVAL_P(arr), &pos);
     while (zend_hash_get_current_data_ex(Z_ARRVAL_P(arr), (void **)&entry, &
                                          pos) == SUCCESS) {
+        convert_to_string_ex(entry);
         str_value = Z_STRVAL_PP(entry);
         str_value_len = Z_STRLEN_PP(entry);
         ret = zend_hash_get_current_key_ex(Z_ARRVAL_P(arr), &str_key, &
