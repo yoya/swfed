@@ -1147,8 +1147,8 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     swf_tag_t *tag, *prev = NULL;
     swf_tag_t *action_tag = NULL, *prev_tag = NULL;
     int ret, done = 0;
-    if (swf == NULL) {
-        fprintf(stderr, "swf_object_insert_action_setvariables: swf == NULL\n");
+    if ((swf == NULL) || (swf->tag_head == NULL)) {
+        fprintf(stderr, "swf_object_insert_action_setvariables: swf or swf->tag_head is NULL\n");
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
