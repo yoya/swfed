@@ -91,7 +91,6 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     volatile png_structp png_ptr = NULL;
     volatile png_infop png_info_ptr = NULL;
     my_png_buffer png_buff;
-    int is_png;
     int bpp, color_type;
     png_uint_32 png_width = 0, png_height = 0;
     volatile png_bytepp png_image_data = NULL;
@@ -107,8 +106,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         fprintf(stderr, "pngconv_png2lossless: png_data == NULL\n");
         return NULL;
     }
-    is_png = png_check_sig((png_bytep)png_data, 8);
-    if (! is_png) {
+    if (png_sig_cmp((png_bytep)png_data, 0, 8)) { // bad signature
         fprintf(stderr, "pngconv_png2lossless: is not PNG!\n");
         return NULL;
     }
