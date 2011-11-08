@@ -506,3 +506,30 @@ swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
     }
     return 0;
 }
+
+int
+swf_tag_jpeg_replace_bitmap_data(void *detail, int image_id,
+                                 unsigned char *bitmap_data,
+                                 unsigned long bitmap_data_len,
+                                 swf_tag_t *tag) {
+    swf_tag_jpeg_detail_t *swf_tag_jpeg = (swf_tag_jpeg_detail_t *) detail;
+    if (detail == NULL) {
+        fprintf(stderr, "swf_tag_jpeg_replace_jpeg_data: detail == NULL\n");
+        return 1;
+    }
+    swf_tag_jpeg->image_id = image_id;
+    tag->code = 21; // DefineBitsJPEG2
+    if (bitmap_data && bitmap_data_len) { // fail safe
+            free(swf_tag_jpeg->jpeg_data);
+            swf_tag_jpeg->jpeg_data = malloc(bitmap_data_len);
+            memcpy(swf_tag_jpeg->jpeg_data, bitmap_data, bitmap_data_len);
+            swf_tag_jpeg->jpeg_data_len = bitmap_data_len;
+    } else {
+        fprintf(stderr, "swf_tag_jpeg_replace_bitmap_data: jpeg_data == NULL or jpeg_data_len == 0\n");
+            return 1;
+    }
+    free(swf_tag_jpeg->alpha_data);
+    swf_tag_jpeg->alpha_data = NULL;
+    swf_tag_jpeg->alpha_data_len = 0;
+    return 0;
+}

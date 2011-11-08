@@ -865,7 +865,8 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             unsigned char *jpeg_data,
                             unsigned long jpeg_data_len,
                             unsigned char *alpha_data,
-                            unsigned long alpha_data_len) {
+                            unsigned long alpha_data_len,
+                            int without_converting) {
     int result = 1;
     swf_tag_t *tag;
     int old_width, old_height, new_width, new_height;
@@ -884,7 +885,8 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
     }
     result = swf_tag_replace_jpeg_data(tag, image_id,
                                        jpeg_data, jpeg_data_len,
-                                       alpha_data, alpha_data_len);
+                                       alpha_data, alpha_data_len,
+                                       without_converting);
     if (result) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf_tag_replace_jpeg_data failed\n");
         return result;

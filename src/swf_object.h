@@ -104,7 +104,8 @@ extern int swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                                        unsigned char *jpeg_data,
                                        unsigned long jpeg_data_len,
                                        unsigned char *alpha_data,
-                                       unsigned long alpha_data_len);
+                                       unsigned long alpha_data_len,
+                                       int without_converting);
 extern unsigned char *swf_object_get_pngdata(swf_object_t *swf, unsigned long *length, int image_id);
 extern int swf_object_replace_pngdata(swf_object_t *swf, int image_id,
                                       unsigned char *png_data,

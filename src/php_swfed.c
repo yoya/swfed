@@ -963,7 +963,8 @@ PHP_METHOD(swfed, replaceJpegData) {
                                          (unsigned char *)data,
                                          (unsigned long) data_len,
                                          (unsigned char *)alpha_data,
-                                         (unsigned long) alpha_data_len);
+                                         (unsigned long) alpha_data_len,
+                                         0);
     if (result) {
         RETURN_FALSE;
     }
@@ -1083,6 +1084,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
     int bitmap_format;
     int width = -1, height = -1;
     int red = -1, green = -1, blue = -1;
+    int without_converting = 0;
     switch (ZEND_NUM_ARGS()) {
       default:
         WRONG_PARAM_COUNT;
@@ -1112,6 +1114,18 @@ PHP_METHOD(swfed, replaceBitmapData) {
             RETURN_FALSE;
         }
         break;
+    case 4:
+        if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                     ZEND_NUM_ARGS() TSRMLS_CC, "lssb", &image_id, &data, &data_len, &alpha_data, &alpha_data_len, &without_converting) == SUCCESS) {
+            ; // OK
+        } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
+                                            ZEND_NUM_ARGS() TSRMLS_CC, "assb", &image_info, &data, &data_len, &alpha_data, &alpha_data_len, &without_converting) == SUCCESS) {
+            ; // OK
+        } else {
+            php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
+            RETURN_FALSE;
+        }
+        break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     
@@ -1132,29 +1146,48 @@ PHP_METHOD(swfed, replaceBitmapData) {
     }
 
     bitmap_format = detect_bitmap_format((unsigned char*) data, data_len);
-    switch (bitmap_format) {
-    case BITMAP_UTIL_FORMAT_JPEG:
-        result = swf_object_replace_jpegdata(swf, image_id,
-                                             (unsigned char *)data,
-                                             (unsigned long) data_len,
-                                             (unsigned char *)alpha_data,
-                                             (unsigned long) alpha_data_len);
-        break;
-    case BITMAP_UTIL_FORMAT_PNG:
-        result = swf_object_replace_pngdata(swf, image_id,
-                                            (unsigned char *)data,
-                                            (unsigned long) data_len);
-        
-        break;
-    case BITMAP_UTIL_FORMAT_GIF:
-        result = swf_object_replace_gifdata(swf, image_id,
-                                            (unsigned char *)data,
-                                            (unsigned long) data_len);
-        
-        break;
-    default:
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
-        RETURN_FALSE;
+    if (without_converting) { // for v8 JPEG Tag
+        switch (bitmap_format) {
+        case BITMAP_UTIL_FORMAT_JPEG:
+        case BITMAP_UTIL_FORMAT_PNG:
+        case BITMAP_UTIL_FORMAT_GIF:
+            result = swf_object_replace_jpegdata(swf, image_id,
+                                                 (unsigned char *)data,
+                                                 (unsigned long) data_len,
+                                                 (unsigned char *) 0,
+                                                 (unsigned long) 0,
+                                                 1);
+            break;
+        default:
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
+            RETURN_FALSE;
+        }
+    } else {
+        switch (bitmap_format) {
+        case BITMAP_UTIL_FORMAT_JPEG:
+            result = swf_object_replace_jpegdata(swf, image_id,
+                                                 (unsigned char *)data,
+                                                 (unsigned long) data_len,
+                                                 (unsigned char *)alpha_data,
+                                                 (unsigned long) alpha_data_len,
+                                                 0);
+            break;
+        case BITMAP_UTIL_FORMAT_PNG:
+            result = swf_object_replace_pngdata(swf, image_id,
+                                                (unsigned char *)data,
+                                                (unsigned long) data_len);
+            
+            break;
+        case BITMAP_UTIL_FORMAT_GIF:
+            result = swf_object_replace_gifdata(swf, image_id,
+                                                (unsigned char *)data,
+                                                (unsigned long) data_len);
+            
+            break;
+        default:
+            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
+            RETURN_FALSE;
+        }
     }
     
     if (result) {

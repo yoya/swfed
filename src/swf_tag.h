@@ -70,7 +70,8 @@ extern int swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                                      unsigned char *jpeg_data,
                                      unsigned long jpeg_data_len,
                                      unsigned char *alpha_data,
-                                     unsigned long alpha_data_len);
+                                     unsigned long alpha_data_len,
+                                     int without_converting);
 
 extern unsigned char *swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id);
 extern int swf_tag_replace_png_data(swf_tag_t *tag, int image_id,

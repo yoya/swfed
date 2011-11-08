@@ -597,7 +597,8 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                           unsigned char *jpeg_data,
                           unsigned long jpeg_data_len,
                           unsigned char *alpha_data,
-                          unsigned long alpha_data_len) {
+                          unsigned long alpha_data_len,
+                          int without_converting) {
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t * detail_handler = NULL;
     int result;
@@ -633,10 +634,16 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     if (tag->detail == NULL) {
         tag->detail = detail_handler->create();
     }
-    
-    result= swf_tag_jpeg_replace_jpeg_data(tag->detail, image_id,
-                                           jpeg_data, jpeg_data_len,
-                                           alpha_data, alpha_data_len, tag);
+
+    if (without_converting) {
+        result= swf_tag_jpeg_replace_bitmap_data(tag->detail, image_id,
+                                                 jpeg_data, jpeg_data_len,
+                                                 tag);
+    } else {
+        result= swf_tag_jpeg_replace_jpeg_data(tag->detail, image_id,
+                                               jpeg_data, jpeg_data_len,
+                                               alpha_data, alpha_data_len, tag);
+    }
     if (result == 0) {
         free(tag->data);
         tag->data = NULL;

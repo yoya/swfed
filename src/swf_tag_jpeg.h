@@ -11,7 +11,7 @@
 
 typedef struct swf_tag_jpeg_detail_ {
     int image_id;
-    unsigned char *jpeg_data;
+    unsigned char *jpeg_data; // jpeg or png or gif
     unsigned long  jpeg_data_len;
     unsigned long  offset_to_alpha;
     unsigned char *alpha_data;
@@ -55,5 +55,9 @@ extern int swf_tag_jpeg_replace_jpeg_data(void *detail, int image_id,
                                           unsigned char *alpha_data,
                                           unsigned long alpha_data_len,
                                           swf_tag_t *tag);
+extern int swf_tag_jpeg_replace_bitmap_data(void *detail, int image_id,
+                                            unsigned char *bitmapg_data,
+                                            unsigned long bitmap_data_len,
+                                            swf_tag_t *tag);
 
 #endif /* __SWF_TAG_JPEG__H__ */
