@@ -881,7 +881,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
     }
     if (swf->shape_adjust_mode) {
         swf_tag_get_bitmap_size(tag, &old_width, &old_height);
-        jpeg_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
+        bitmap_size(jpeg_data, jpeg_data_len, &new_width, &new_height);
     }
     result = swf_tag_replace_jpeg_data(tag, image_id,
                                        jpeg_data, jpeg_data_len,
