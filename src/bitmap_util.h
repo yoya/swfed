@@ -22,6 +22,9 @@ extern int gif_size(unsigned char *data, unsigned long data_len,
 
 extern int detect_bitmap_format(unsigned char *data, unsigned long data_len);
 
+extern int bitmap_size(unsigned char *data, unsigned long data_len,
+                     int *width, int *height);
+
 #define BITMAP_UTIL_FORMAT_UNKNOWN 0
 #define BITMAP_UTIL_FORMAT_JPEG    1
 #define BITMAP_UTIL_FORMAT_PNG     2

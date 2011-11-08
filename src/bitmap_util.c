@@ -96,6 +96,23 @@ detect_bitmap_format(unsigned char *data, unsigned long data_len) {
     return BITMAP_UTIL_FORMAT_UNKNOWN;
 }
 
+int
+bitmap_size(unsigned char *data, unsigned long data_len,
+                    int *width, int *height) {
+    int format = detect_bitmap_format(data, data_len);
+    switch (format) {
+    case BITMAP_UTIL_FORMAT_JPEG:
+        return jpeg_size(data, data_len, width, height);
+    case BITMAP_UTIL_FORMAT_PNG:
+        return png_size(data, data_len, width, height);
+    case BITMAP_UTIL_FORMAT_GIF:
+        return git_size(data, data_len, width, height);
+    }
+    fprintf(stderr, "bitmap_size: illegal format\n");
+    return 1;
+}
+
+
 #ifdef __BITMAP_UTIL_DEBUG__  /* for component debug */
 
 #include <sys/stat.h>
