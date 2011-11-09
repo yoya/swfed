@@ -106,7 +106,7 @@ bitmap_size(unsigned char *data, unsigned long data_len,
     case BITMAP_UTIL_FORMAT_PNG:
         return png_size(data, data_len, width, height);
     case BITMAP_UTIL_FORMAT_GIF:
-        return git_size(data, data_len, width, height);
+        return gif_size(data, data_len, width, height);
     }
     fprintf(stderr, "bitmap_size: illegal format\n");
     return 1;
