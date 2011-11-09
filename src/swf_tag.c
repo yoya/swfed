@@ -793,6 +793,43 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
 
 #endif /* HAVE_GIF */
 
+int
+swf_tag_convert_bitmap_data_tojpegtag(swf_tag_t *tag) {
+    int tag_code;
+    int image_id;
+    unsigned char *bitmap_data;
+    unsigned long bitmap_data_len;
+    swf_tag_lossless_detail_t *swf_tag_lossless;
+    int ret;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: tag == NULL\n");
+        return 1;
+    }
+    tag_code = tag->code;
+    if ((tag_code != 20) && (tag_code != 36)) {
+        return 1;
+    }
+    if (tag->detail == NULL) {
+        swf_tag_lossless = (swf_tag_lossless_detail_t *) swf_tag_create_input_detail(tag, NULL);
+    } else {
+        swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+    }
+    image_id= swf_tag_lossless->image_id;
+    bitmap_data = swf_tag_lossless_get_png_data(swf_tag_lossless, &bitmap_data_len, image_id, tag);
+    if (bitmap_data == NULL) {
+        fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: failed to swf_tag_get_png_data image_id=%d\n", image_id);
+        return 1;
+    }
+    ret = swf_tag_replace_jpeg_data(tag, image_id,
+                                    bitmap_data, bitmap_data_len, NULL, 0, 1);
+    free(bitmap_data);
+    if (ret) {
+        fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: failed to swf_tag_replace_jpeg_data image_id=%d\n", image_id);
+        return ret;
+    }
+    return 0;
+}
+
 /*
  * DefineSound
  */

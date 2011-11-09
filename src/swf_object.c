@@ -1009,6 +1009,19 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
 
 #endif /* HAVE_GIF */
 
+int
+swf_object_convert_bitmapdata_tojpegtag(swf_object_t *swf) {
+    swf_tag_t *tag;
+    if (swf == NULL) {
+        fprintf(stderr, "swf_object_convert_bitmapdata_tojpegtag: swf == NULL\n");
+        return 1;
+    }
+    for (tag=swf->tag_head ; tag ; tag=tag->next) {
+        swf_tag_convert_bitmap_data_tojpegtag(tag);
+    }
+    return 0;
+}
+
 unsigned char *
 swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id) {
     swf_tag_t *tag;

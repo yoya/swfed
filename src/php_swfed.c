@@ -85,6 +85,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  replacePNGData, NULL, 0)
     PHP_ME(swfed,  replaceGIFData, NULL, 0)
     PHP_ME(swfed,  replaceBitmapData, NULL, 0)
+    PHP_ME(swfed,  convertBitmapDataToJpegTag, NULL, 0)
     PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
     PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
     PHP_ME(swfed,  getSoundData, NULL, 0)
@@ -1191,6 +1192,17 @@ PHP_METHOD(swfed, replaceBitmapData) {
     }
     
     if (result) {
+        RETURN_FALSE;
+    }
+    RETURN_TRUE;
+}
+
+PHP_METHOD(swfed, convertBitmapDataToJpegTag) {
+    swf_object_t *swf = NULL;
+    int ret;
+    swf = get_swf_object(getThis() TSRMLS_CC);
+    ret = swf_object_convert_bitmapdata_tojpegtag(swf);
+    if (ret) {
         RETURN_FALSE;
     }
     RETURN_TRUE;

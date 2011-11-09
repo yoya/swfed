@@ -80,6 +80,8 @@ extern int swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
 extern int swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                                     unsigned char *gif_data,
                                     unsigned long gif_data_len);
+extern int swf_tag_convert_bitmap_data_tojpegtag(swf_tag_t *tag);
+
 /* sound */
 extern unsigned char *swf_tag_get_sound_data(swf_tag_t *tag,
                                              unsigned long *length,

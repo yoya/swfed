@@ -113,6 +113,8 @@ extern int swf_object_replace_pngdata(swf_object_t *swf, int image_id,
 extern int swf_object_replace_gifdata(swf_object_t *swf, int image_id,
                                       unsigned char *gif_data,
                                       unsigned long gif_data_len);
+extern int swf_object_convert_bitmapdata_tojpegtag(swf_object_t *swf);
+
 extern unsigned char *swf_object_get_sounddata(swf_object_t *swf, unsigned long *length, int sound_id);
 extern int swf_object_replace_melodata(swf_object_t *swf, int sound_id,
                                        unsigned char *melo_data,
