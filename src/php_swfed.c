@@ -1307,14 +1307,19 @@ PHP_METHOD(swfed, getEditString) {
     swf_object_t *swf = NULL;
     char *data = NULL, *new_buff = NULL;
     int str_len = 0;
+    int error = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
                               &var_name, &var_name_len) == FAILURE) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    data = swf_object_get_editstring(swf, var_name, var_name_len);
+    data = swf_object_get_editstring(swf, var_name, var_name_len, &error);
     if (data == NULL) {
-        RETURN_FALSE;
+        if (error) {
+            RETURN_FALSE;
+        } else {
+            RETURN_NULL();
+        }
     }
     str_len = strlen(data);
     new_buff = emalloc(str_len);

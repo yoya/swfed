@@ -92,6 +92,7 @@ extern int swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
 extern char *swf_tag_get_edit_string(swf_tag_t *tag,
                                      char *variable_name,
                                      int variable_name_len,
+                                     int *error,
                                      struct swf_object_ *swf);
 extern int swf_tag_replace_edit_string(swf_tag_t *tag,
                                        char *variable_name,

@@ -1061,8 +1061,8 @@ swf_object_replace_melodata(swf_object_t *swf, int sound_id,
 
 char *
 swf_object_get_editstring(swf_object_t *swf,
-                          char *variable_name,
-                          int variable_name_len) {
+                          char *variable_name, int variable_name_len,
+                          int *error) {
     swf_tag_t *tag;
     char *data = NULL;
     if (swf == NULL) {
@@ -1075,8 +1075,8 @@ swf_object_get_editstring(swf_object_t *swf,
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         data = swf_tag_get_edit_string(tag, variable_name,
-                                       variable_name_len, swf);
-        if (data) {
+                                       variable_name_len, error, swf);
+        if (data || (*error == 0)) {
             break;
         }
     }

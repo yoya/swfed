@@ -859,7 +859,8 @@ swf_tag_replace_melo_data(swf_tag_t *tag, int sound_id,
 char *
 swf_tag_get_edit_string(swf_tag_t *tag,
                         char *variable_name, int variable_name_len,
-                        struct swf_object_ *swf) {
+                        int *error, struct swf_object_ *swf) {
+    *error = 1;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_get_edit_string: tag == NULL\n");
         return NULL;
@@ -876,7 +877,7 @@ swf_tag_get_edit_string(swf_tag_t *tag,
         return NULL;
     }
     return swf_tag_edit_get_string(tag->detail,
-                                   variable_name, variable_name_len);
+                                   variable_name, variable_name_len, error);
 }
 
 int

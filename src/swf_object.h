@@ -119,7 +119,8 @@ extern int swf_object_replace_melodata(swf_object_t *swf, int sound_id,
                                        unsigned long melo_data_len);
 extern char *swf_object_get_editstring(swf_object_t *swf,
                                        char *variable_name,
-                                       int variable_name_len);
+                                       int variable_name_len,
+                                       int *error);
 extern int swf_object_replace_editstring(swf_object_t *swf,
                                          char *variable_name,
                                          int variable_name_len,

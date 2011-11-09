@@ -63,7 +63,8 @@ extern void swf_tag_edit_destroy_detail(swf_tag_t *tag);
 
 extern char *swf_tag_edit_get_string(void *detail,
                                      char *variable_name,
-                                     int variable_name_len);
+                                     int variable_name_len,
+                                     int *error);
 extern int swf_tag_edit_replace_string(void *detail,
                                        char *variable_name,
                                        int variable_name_len,
