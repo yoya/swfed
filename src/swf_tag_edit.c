@@ -279,7 +279,7 @@ swf_tag_edit_get_string(void *detail,
     int initial_text_len = 0;
     *error = 0;
 
-    if ((strlen(swf_tag_edit->edit_variable_name) != variable_name_len) || strncmp(swf_tag_edit->edit_variable_name, variable_name, variable_name_len)) {
+    if ((strlen(swf_tag_edit->edit_variable_name) != (unsigned)variable_name_len) || strncmp(swf_tag_edit->edit_variable_name, variable_name, variable_name_len)) {
         if (atoi(variable_name) != swf_tag_edit->edit_id) {
             *error = 1;
             return NULL;
