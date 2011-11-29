@@ -363,12 +363,31 @@ pngconv_lossless2png(void *image_data,
             }
         } else {
             swf_rgba_t *rgba_list  = index_data;
+            png_bytep trans = NULL;
+            int num_trans = 0;
+            png_color_16p trans_values = NULL;
             for (i=0 ; i < index_data_count ; i++) {
                 png_palette[i].red   = rgba_list[i].red;
                 png_palette[i].green = rgba_list[i].green;
                 png_palette[i].blue  = rgba_list[i].blue;
-//                png_palette[i].alpha = rgba_list[i].alpha;
             }
+            // scanning to end of transparent pixel
+            for (i = index_data_count - 1 ; 0 <= i ; i--) {
+                if (rgba_list[i].alpha < 254) { // 254 XXX
+                    break;
+                }
+            }
+            num_trans = i + 1;
+            if (num_trans > 0) {
+                trans = malloc(num_trans);
+                for (i = 0 ; i < index_data_count ; i++) {
+                    trans[i] = rgba_list[i].alpha;
+                }
+                png_set_tRNS(png_ptr, png_info_ptr, trans, num_trans,
+                             trans_values);
+                free(trans);
+            }
+
         }
         png_set_PLTE( png_ptr, png_info_ptr, png_palette, index_data_count);
         free(png_palette);
