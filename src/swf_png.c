@@ -380,7 +380,7 @@ pngconv_lossless2png(void *image_data,
             num_trans = i + 1;
             if (num_trans > 0) {
                 trans = malloc(num_trans);
-                for (i = 0 ; i < index_data_count ; i++) {
+                for (i = 0 ; i < num_trans ; i++) {
                     trans[i] = rgba_list[i].alpha;
                 }
                 png_set_tRNS(png_ptr, png_info_ptr, trans, num_trans,
