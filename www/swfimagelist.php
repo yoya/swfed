@@ -1,3 +1,5 @@
+<html>
+<body bgcolor="#f0f0ff">
 <?php
 
 require_once('define.php');
@@ -70,7 +72,8 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
 	echo "<td>
 <object width='240' height='240'>
 <param name='movie' value='./swfshape.php?id=$id&shape_id=$cid&ext=$ext'>
-<embed src='./swfshape.php?id=$id&shape_id=$cid&ext=$ext' width='240' height='240' type='application/x-shockwave-flash'>
+<param name='wmode' value='transparent'>
+<embed src='./swfshape.php?id=$id&shape_id=$cid&ext=$ext' width='240' height='240' type='application/x-shockwave-flash' wmode='transparent'>
 </embed>
 </object>
 </td>";
