@@ -39,7 +39,7 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 </head>
-<body>
+<body bgcolor="#f0fff0">
 <form enctype="multipart/form-data" action="" method="POST">
     <input type="hidden" name="MAX_FILE_SIZE" value="<?php echo $upload_max_filesize_bytes ?>" />
     SWF ファイルをアップロード: <input name="swffile" type="file" />

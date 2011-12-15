@@ -56,7 +56,7 @@ echo <<< FORM
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 </head>
-<body>
+<body bgcolor="#fff0f0">
 <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
 codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">
 <param name="movie" value="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext">
@@ -76,7 +76,7 @@ echo <<< FORM
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 </head>
-<body>
+<body bgcolor="#fff0f0">
 <form enctype="multipart/form-data" action="" method="POST">
     <input type="hidden" name="MAX_FILE_SIZE" value="$upload_max_filesize_bytes;
 
