@@ -66,6 +66,7 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
     echo "<td> $name($tag) </td> ";
     echo "<td> $cid (ext=$ext)</td>\n";
 
+    echo "<a name=\"$cid\" />";
     if (($ext == '.jpg') || ($ext == '.png')) {
 	echo "<td> <img src=\"./swfimage.php?id=$id&image_id=$cid&ext=$ext\"> </td>";
     } elseif ($ext == '.shape') { // shape
