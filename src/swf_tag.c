@@ -684,7 +684,7 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
 int
 swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
                          unsigned char *png_data,
-                         unsigned long png_data_len) {
+                         unsigned long png_data_len, int rgb15) {
     swf_tag_info_t *tag_info = NULL;
     swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
@@ -722,7 +722,8 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     }
     
     result= swf_tag_lossless_replace_png_data(tag->detail, image_id,
-                                              png_data, png_data_len, tag);
+                                              png_data, png_data_len,
+                                              rgb15, tag);
     if (result == 0) {
         free(tag->data);
         tag->data = NULL;

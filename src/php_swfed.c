@@ -1011,6 +1011,9 @@ PHP_METHOD(swfed, replacePNGData) {
     char *data = NULL;
     int data_len = 0;
     int image_id = 0;
+    zval *opts = NULL;
+    HashTable *opts_table = NULL;
+    int rgb15 = -1;
     swf_object_t *swf;
     int result = 0;
     switch (ZEND_NUM_ARGS()) {
@@ -1020,13 +1023,26 @@ PHP_METHOD(swfed, replacePNGData) {
       case 2:
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
+            
+        }
+        break;
+      case 3:
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lsa", &image_id, &data, &data_len, &opts) == FAILURE) {
+            RETURN_FALSE;
         }
         break;
     }
+    if (opts) {
+        opts_table = Z_ARRVAL_P(opts);
+        get_zend_hash_value_long(opts_table, "rgb15",  rgb15);
+    }
+    
     swf = get_swf_object(getThis() TSRMLS_CC);
+
     result = swf_object_replace_pngdata(swf, image_id,
                                         (unsigned char *)data,
-                                        (unsigned long) data_len);
+                                        (unsigned long) data_len,
+                                        rgb15);
     if (result) {
         RETURN_FALSE;
     }
@@ -1085,6 +1101,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
     int bitmap_format;
     int width = -1, height = -1;
     int red = -1, green = -1, blue = -1;
+    int rgb15 = -1;
     int without_converting = 0;
     switch (ZEND_NUM_ARGS()) {
       default:
@@ -1137,6 +1154,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
         get_zend_hash_value_long(image_info_table, "red",    red);
         get_zend_hash_value_long(image_info_table, "green",  green);
         get_zend_hash_value_long(image_info_table, "blue",   blue);
+        get_zend_hash_value_long(image_info_table, "rgb15",  rgb15);
         image_id = swf_object_search_cid_by_bitmap_condition(swf, width, height,
                                                              red, green, blue);
         if (image_id <= 0) {
@@ -1176,7 +1194,8 @@ PHP_METHOD(swfed, replaceBitmapData) {
         case BITMAP_UTIL_FORMAT_PNG:
             result = swf_object_replace_pngdata(swf, image_id,
                                                 (unsigned char *)data,
-                                                (unsigned long) data_len);
+                                                (unsigned long) data_len,
+                                                rgb15);
             
             break;
         case BITMAP_UTIL_FORMAT_GIF:

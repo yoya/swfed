@@ -930,7 +930,7 @@ swf_object_get_pngdata(swf_object_t *swf, unsigned long *length, int image_id) {
 int
 swf_object_replace_pngdata(swf_object_t *swf, int image_id,
                             unsigned char *png_data,
-                            unsigned long png_data_len) {
+                            unsigned long png_data_len, int rgb15) {
     int result = 1;
     swf_tag_t *tag;
     int old_width, old_height, new_width, new_height;
@@ -952,7 +952,7 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
         png_size(png_data, png_data_len, &new_width, &new_height);
     }
     result = swf_tag_replace_png_data(tag, image_id,
-                                      png_data, png_data_len);
+                                      png_data, png_data_len, rgb15);
     if (result) {
         fprintf(stderr, "swf_object_replace_pngdata: swf_tag_replace_png_data failed\n");
         return result;
