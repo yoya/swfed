@@ -145,6 +145,11 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
                  NULL, NULL, NULL);
     *width = (unsigned short) png_width;
     *height = (unsigned short) png_height;
+
+    if ((rgb15 > 0) && (color_type !=  PNG_COLOR_TYPE_RGB)) { // warning
+        fprintf(stderr, "rgb15 is %d but color_type is not PNG24\n", rgb15);
+    }
+
     switch(color_type) {
     case PNG_COLOR_TYPE_PALETTE:
         *format = 3;
