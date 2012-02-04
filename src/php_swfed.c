@@ -1021,20 +1021,15 @@ PHP_METHOD(swfed, replacePNGData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
-            RETURN_FALSE;
-            
-        }
-        break;
       case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lsa", &image_id, &data, &data_len, &opts) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls|a", &image_id, &data, &data_len, &opts) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
     if (opts) {
         opts_table = Z_ARRVAL_P(opts);
-        get_zend_hash_value_long(opts_table, "rgb15",  rgb15);
+        get_zend_hash_value_boolean(opts_table, "rgb15",  rgb15);
     }
     
     swf = get_swf_object(getThis() TSRMLS_CC);
@@ -1081,7 +1076,6 @@ PHP_METHOD(swfed, replaceGIFData) {
 #endif /* HAVE_GIF */
 }
 
-
 #define get_zend_hash_value_long(table, key, value) do { \
         zval **tmp = NULL; \
         if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
@@ -1090,71 +1084,59 @@ PHP_METHOD(swfed, replaceGIFData) {
         } \
     } while (0);
 
+#define get_zend_hash_value_boolean(table, key, value) do { \
+        zval **tmp = NULL; \
+        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
+            convert_to_boolean_ex(tmp); \
+            value = Z_LVAL_PP(tmp); \
+        } \
+    } while (0);
+
 PHP_METHOD(swfed, replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
     int data_len = 0 , alpha_data_len = 0;
+    zval *arg1 = NULL, *arg4 = NULL;
     int image_id = 0;
-    zval *image_info = NULL;
     HashTable *image_info_table = NULL;
+    int width = -1, height = -1;
+    int red = -1, green = -1, blue = -1;
+    HashTable *opts_table = NULL;
+    int without_converting = 0;
+    int rgb15 = -1;
     swf_object_t *swf = NULL;
     int result = 0;
     int bitmap_format;
-    int width = -1, height = -1;
-    int red = -1, green = -1, blue = -1;
-    int rgb15 = -1;
-    int without_converting = 0;
     switch (ZEND_NUM_ARGS()) {
       default:
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-          if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                       ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == SUCCESS) {
-              ; // OK
-          } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                              ZEND_NUM_ARGS() TSRMLS_CC, "as", &image_info, &data, &data_len) == SUCCESS) {
-              ; // OK
-          } else {
-              php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
-              
-              RETURN_FALSE;
-          }
-          break;
-    case 3:
+      case 3:
+      case 4:
+      case 5:
         if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                     ZEND_NUM_ARGS() TSRMLS_CC, "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == SUCCESS) {
-            ; // OK
-        } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                            ZEND_NUM_ARGS() TSRMLS_CC, "ass", &image_info, &data, &data_len, &alpha_data, &alpha_data_len) == SUCCESS) {
+                                     ZEND_NUM_ARGS() TSRMLS_CC, "zs|sz", &arg1, &data, &data_len, &alpha_data, &alpha_data_len, &arg4) == SUCCESS) {
             ; // OK
         } else {
-            php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
-            RETURN_FALSE;
-        }
-        break;
-    case 4:
-        if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                     ZEND_NUM_ARGS() TSRMLS_CC, "lssb", &image_id, &data, &data_len, &alpha_data, &alpha_data_len, &without_converting) == SUCCESS) {
-            ; // OK
-        } else if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                            ZEND_NUM_ARGS() TSRMLS_CC, "assb", &image_info, &data, &data_len, &alpha_data, &alpha_data_len, &without_converting) == SUCCESS) {
-            ; // OK
-        } else {
-            php_error(E_WARNING, "%s() expects parameter 1 to be long or array given", get_active_function_name(TSRMLS_C));
+            php_error(E_WARNING, "%s() expects parameter 2 to be string given", get_active_function_name(TSRMLS_C));
             RETURN_FALSE;
         }
         break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    
-    if (image_info) {
-        image_info_table = Z_ARRVAL_P(image_info);
+
+    if (Z_TYPE_P(arg1) != IS_ARRAY) { // image_id (integer)
+        if (Z_TYPE_P(arg1) != IS_LONG) {
+            convert_to_long(arg1);
+        }
+        image_id = (int) Z_LVAL_P(arg1);
+    } else { // or image_info (array)
+        image_info_table = Z_ARRVAL_P(arg1);
         get_zend_hash_value_long(image_info_table, "width",  width);
         get_zend_hash_value_long(image_info_table, "height", height);
         get_zend_hash_value_long(image_info_table, "red",    red);
         get_zend_hash_value_long(image_info_table, "green",  green);
         get_zend_hash_value_long(image_info_table, "blue",   blue);
-        get_zend_hash_value_long(image_info_table, "rgb15",  rgb15);
         image_id = swf_object_search_cid_by_bitmap_condition(swf, width, height,
                                                              red, green, blue);
         if (image_id <= 0) {
@@ -1163,7 +1145,16 @@ PHP_METHOD(swfed, replaceBitmapData) {
             RETURN_FALSE;
         }
     }
-
+    if (Z_TYPE_P(arg4) != IS_ARRAY) { // without_converting (boolean)
+        if (Z_TYPE_P(arg4) != IS_BOOL) {
+            convert_to_boolean(arg4);
+        }
+        without_converting = (int) Z_LVAL_P(arg4);
+    } else { // or opts (array)
+        opts_table = Z_ARRVAL_P(arg4);
+        get_zend_hash_value_boolean(opts_table, "without_converting",  without_converting);
+        get_zend_hash_value_boolean(opts_table, "rgb15", rgb15);
+    }
     bitmap_format = detect_bitmap_format((unsigned char*) data, data_len);
     if (without_converting) { // for v8 JPEG Tag
         switch (bitmap_format) {
