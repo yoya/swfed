@@ -295,12 +295,21 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         if (tag->code == 20) { // Lossless
             bitmap_size = swf_tag_lossless->width * swf_tag_lossless->height;
             if (swf_tag_lossless->format == 4) {
-                for (i=0 ; i < bitmap_size ; i++) {
-                    swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
-                    bitstream_putbit(bs, 0);
-                    bitstream_putbits(bs, xrgb->red >> 3, 5);
-                    bitstream_putbits(bs, xrgb->green >> 3, 5);
-                    bitstream_putbits(bs, xrgb->blue >> 3, 5);
+                int x, y;
+                int width_padding = (swf_tag_lossless->width%2)?1:0;
+                i = 0;
+                for (y = 0 ; y < swf_tag_lossless->height ; y++) {
+                    for (x = 0 ; x < swf_tag_lossless->width ; x++) {
+                        swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
+                        bitstream_putbit(bs2, 0);
+                        bitstream_putbits(bs2, xrgb->red >> 3, 5);
+                        bitstream_putbits(bs2, xrgb->green >> 3, 5);
+                        bitstream_putbits(bs2, xrgb->blue >> 3, 5);
+                        i++;
+                    }
+                    if (width_padding) {
+                        bitstream_putstring(bs2, "\0\0", 2);
+                    }
                 }
             }  else {
                 for (i=0 ; i < bitmap_size ; i++) {
