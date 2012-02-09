@@ -75,5 +75,6 @@ if test "$PHP_SWFED" != "no"; then
 	swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
 	swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
 	swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
+	swf_tag_button.c swf_button_record.c swf_button_condaction.c \
 	, $ext_shared)
 fi
