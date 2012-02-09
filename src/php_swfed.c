@@ -1145,15 +1145,17 @@ PHP_METHOD(swfed, replaceBitmapData) {
             RETURN_FALSE;
         }
     }
-    if (Z_TYPE_P(arg4) != IS_ARRAY) { // without_converting (boolean)
-        if (Z_TYPE_P(arg4) != IS_BOOL) {
-            convert_to_boolean(arg4);
+    if (arg4 != NULL) {
+        if (Z_TYPE_P(arg4) != IS_ARRAY) { // without_converting (boolean)
+            if (Z_TYPE_P(arg4) != IS_BOOL) {
+                convert_to_boolean(arg4);
+            }
+            without_converting = (int) Z_LVAL_P(arg4);
+        } else { // or opts (array)
+            opts_table = Z_ARRVAL_P(arg4);
+            get_zend_hash_value_boolean(opts_table, "without_converting",  without_converting);
+            get_zend_hash_value_boolean(opts_table, "rgb15", rgb15);
         }
-        without_converting = (int) Z_LVAL_P(arg4);
-    } else { // or opts (array)
-        opts_table = Z_ARRVAL_P(arg4);
-        get_zend_hash_value_boolean(opts_table, "without_converting",  without_converting);
-        get_zend_hash_value_boolean(opts_table, "rgb15", rgb15);
     }
     bitmap_format = detect_bitmap_format((unsigned char*) data, data_len);
     if (without_converting) { // for v8 JPEG Tag
@@ -1200,7 +1202,6 @@ PHP_METHOD(swfed, replaceBitmapData) {
             RETURN_FALSE;
         }
     }
-    
     if (result) {
         RETURN_FALSE;
     }
