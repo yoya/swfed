@@ -55,23 +55,26 @@ swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     bs = bitstream_open();
     bitstream_input(bs, data, length);
 
-    if (tag->code != 34) { // not ButtonObject2
-        fprintf(stderr, "swf_tag_button_input_detail: tag->code != 34\n");
-        return 1; // failed
-    }
     swf_tag_button->button_id = bitstream_getbytesLE(bs, 2);
-    bitstream_getbits(bs, 7); // reserved flags : always 0
-    swf_tag_button->track_as_menu = bitstream_getbit(bs);
-    offset_of_action_offset = bitstream_getbytepos(bs);
-    swf_tag_button->action_offset = bitstream_getbytesLE(bs, 2);
+    if (tag->code == 34) { // DefineButton2
+        bitstream_getbits(bs, 7); // reserved flags : always 0
+        swf_tag_button->track_as_menu = bitstream_getbit(bs);
+        offset_of_action_offset = bitstream_getbytepos(bs);
+        swf_tag_button->action_offset = bitstream_getbytesLE(bs, 2);
+    }
     // Characters
     swf_tag_button->characters = swf_button_record_list_create();
-    swf_button_record_list_parse(bs, swf_tag_button->characters);
+    swf_button_record_list_parse(bs, swf_tag_button->characters, tag);
     // Actions
-    if (swf_tag_button->action_offset) {
-        bitstream_setpos(bs, offset_of_action_offset + swf_tag_button->action_offset, 0);
-        swf_tag_button->actions = swf_button_condaction_list_create();
-        swf_button_condaction_list_parse(bs, swf_tag_button->actions);
+    if (tag->code == 7) { // DefineButton
+        swf_tag_button->actions = swf_action_list_create();
+        swf_action_list_parse(bs, swf_tag_button->actions);
+    } else {
+        if (swf_tag_button->action_offset) {
+            bitstream_setpos(bs, offset_of_action_offset + swf_tag_button->action_offset, 0);
+            swf_tag_button->condactions = swf_button_condaction_list_create();
+            swf_button_condaction_list_parse(bs, swf_tag_button->condactions);
+        }
     }
     return 0;
 }
@@ -171,25 +174,27 @@ swf_tag_button_output_detail(swf_tag_t *tag, unsigned long *length,
     int offset_of_actions;
     //
     bs = bitstream_open();
-    if (tag->code != 34) { // not ButtonObject2
-        fprintf(stderr, "swf_tag_button_input_detail: tag->code != 34\n");
-        return NULL; // failed
-    }
     bitstream_putbytesLE(bs, swf_tag_button->button_id, 2);
-    bitstream_putbits(bs, 0, 7); // reserved flags : always 0
-    bitstream_putbit(bs, swf_tag_button->track_as_menu);
-    offset_of_action_offset = bitstream_getbytepos(bs);
-    bitstream_putbytesLE(bs, 0, 2); // action_offset dummy;
+    if (tag->code == 34) { // DefineButton2
+        bitstream_putbits(bs, 0, 7); // reserved flags : always 0
+        bitstream_putbit(bs, swf_tag_button->track_as_menu);
+        offset_of_action_offset = bitstream_getbytepos(bs);
+        bitstream_putbytesLE(bs, 0, 2); // action_offset dummy;
+    }
     // Characters
-    swf_button_record_list_build(bs, swf_tag_button->characters);
+    swf_button_record_list_build(bs, swf_tag_button->characters, tag);
     // Actions
-    if (swf_tag_button->actions) {
-        offset_of_actions = bitstream_getbytepos(bs);
-        swf_tag_button->action_offset = offset_of_actions - offset_of_action_offset;
-        bitstream_setpos(bs, offset_of_action_offset, 0);
-        bitstream_putbytesLE(bs, swf_tag_button->action_offset, 2);
-        bitstream_setpos(bs, offset_of_actions, 0);
-        swf_button_condaction_list_build(bs, swf_tag_button->actions);
+    if (tag->code == 7) { // DefineButton
+        swf_action_list_build(bs, swf_tag_button->actions);
+    } else {
+        if (swf_tag_button->condactions) {
+            offset_of_actions = bitstream_getbytepos(bs);
+            swf_tag_button->action_offset = offset_of_actions - offset_of_action_offset;
+            bitstream_setpos(bs, offset_of_action_offset, 0);
+            bitstream_putbytesLE(bs, swf_tag_button->action_offset, 2);
+            bitstream_setpos(bs, offset_of_actions, 0);
+            swf_button_condaction_list_build(bs, swf_tag_button->condactions);
+        }
     }
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
@@ -207,14 +212,25 @@ swf_tag_button_print_detail(swf_tag_t *tag,
            swf_tag_button->action_offset);
     print_indent(indent_depth);
     printf("characters:\n");
-    swf_button_record_list_print(swf_tag_button->characters, indent_depth+1);
-    print_indent(indent_depth);
-    printf("actions:\n");
-    if (swf_tag_button->actions) {
-        swf_button_condaction_list_print(swf_tag_button->actions, indent_depth+1);
-    } else {
-        print_indent(indent_depth + 1);
-        printf("(no actions)\n");
+    swf_button_record_list_print(swf_tag_button->characters, indent_depth+1, tag);
+    if (tag->code == 7) { // DefineButton
+        print_indent(indent_depth);
+        printf("actions:\n");
+        if (swf_tag_button->actions) {
+            swf_action_list_print(swf_tag_button->actions, indent_depth+1);
+        } else {
+            print_indent(indent_depth + 1);
+            printf("(no actions)\n");
+        }
+    } else { // DefineButton2
+        print_indent(indent_depth);
+        printf("condactions:\n");
+        if (swf_tag_button->condactions) {
+            swf_button_condaction_list_print(swf_tag_button->condactions, indent_depth+1);
+        } else {
+            print_indent(indent_depth + 1);
+            printf("(no condactions)\n");
+        }
     }
 }
 
@@ -226,10 +242,14 @@ swf_tag_button_destroy_detail(swf_tag_t *tag) {
             swf_button_record_list_destroy(swf_tag_button->characters);
             swf_tag_button->characters = NULL;
         }
-        if (swf_tag_button->actions) {
-            swf_button_condaction_list_destroy(swf_tag_button->actions);
+        if (swf_tag_button->actions) { // DefineButton
+            swf_action_list_destroy(swf_tag_button->actions);
             swf_tag_button->actions = NULL;
-         }
+        }
+        if (swf_tag_button->condactions) { // DefineButton2
+            swf_button_condaction_list_destroy(swf_tag_button->condactions);
+            swf_tag_button->condactions = NULL;
+        }
         free(swf_tag_button);
         tag->detail = NULL;
     }

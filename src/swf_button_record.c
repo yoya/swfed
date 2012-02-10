@@ -9,7 +9,8 @@
 #include "swf_button_record.h"
 
 int
-swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record) {
+swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
+    swf_tag_t *tag) {
     int ret;
     ret = bitstream_getbits(bs, 2); // reserved bits, always 0
     if (ret) {
@@ -30,16 +31,20 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record) {
         fprintf(stderr, "swf_button_record_parse: swf_matrix_parse failed\n");
         return ret;
     }
-    ret = swf_cxformwithalpha_parse(bs, &(button_record->color_transform));
-    if (ret) {
-        fprintf(stderr, "swf_button_record_parse: swf_matrix_parse failed\n");
-        return ret;
+    if (tag->code == 34) { // DefineButton2
+        ret = swf_cxformwithalpha_parse(bs, &(button_record->color_transform));
+        if (ret) {
+            fprintf(stderr, "swf_button_record_parse: swf_matrix_parse failed\n");
+            return ret;
+        }
     }
+    // FilterList, BlendMode
     return 0;
 }
 
 int
-swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record) {
+swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record,
+    swf_tag_t *tag) {
     int ret;
     bitstream_putbits(bs, 0, 2);
     bitstream_putbit(bs, button_record->button_has_blend_mode);
@@ -56,16 +61,20 @@ swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record) {
         fprintf(stderr, "swf_button_record_build: swf_matrix_build failed\n");
         return ret;
     }
-    ret = swf_cxformwithalpha_build(bs, &(button_record->color_transform));
-    if (ret) {
-        fprintf(stderr, "swf_button_record_build: swf_matrix_build failed\n");
-        return ret;
+    if (tag->code == 34) { // DefineButton2
+        ret = swf_cxformwithalpha_build(bs, &(button_record->color_transform));
+        if (ret) {
+            fprintf(stderr, "swf_button_record_build: swf_matrix_build failed\n");
+            return ret;
+        }
     }
+    // FilterList, BlendMode
     return 0;
 }
 
 int
-swf_button_record_print(swf_button_record_t *button_record, int indent_depth) {
+swf_button_record_print(swf_button_record_t *button_record, int indent_depth,
+    swf_tag_t *tag) {
     print_indent(indent_depth);
     printf("has_blend_mode=%d has_filter_list=%u\n",
            button_record->button_has_blend_mode,
@@ -80,7 +89,9 @@ swf_button_record_print(swf_button_record_t *button_record, int indent_depth) {
     printf("character_id=%d place_depth=%d\n",
            button_record->character_id, button_record->place_depth);
     swf_matrix_print(&(button_record->place_matrix), indent_depth);
-    swf_cxformwithalpha_print(&(button_record->color_transform), indent_depth);
+    if (tag->code == 34) { // DefineButton2
+        swf_cxformwithalpha_print(&(button_record->color_transform), indent_depth);
+    }
 }
 
 /*
@@ -102,13 +113,13 @@ swf_button_record_list_create(void) {
 }
 
 int
-swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_record_list) {
+swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_record_list, swf_tag_t *tag) {
     swf_button_record_t *prev_button_record = NULL;
     while (bitstream_getbyte(bs)) { // endflag is 0
         bitstream_incrpos(bs, -1, 0); // 1 byte back
         swf_button_record_t *button_record = malloc(sizeof(*button_record));
         button_record->next = NULL;
-        if (swf_button_record_parse(bs, button_record)) {
+        if (swf_button_record_parse(bs, button_record, tag)) {
             fprintf(stderr, "swf_button_record_list_parse: swf_button_record_parse failed\n");
             free(button_record);
             break;
@@ -123,10 +134,10 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
 }
 
 int
-swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list) {
+swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list, swf_tag_t *tag) {
     swf_button_record_t *button_record = NULL;
     for (button_record = button_record_list->head ; button_record ; button_record = button_record->next) {
-        swf_button_record_build(bs, button_record);
+        swf_button_record_build(bs, button_record, tag);
     }
     bitstream_putbyte(bs, 0); //endflag
 }
@@ -146,10 +157,13 @@ swf_button_record_list_destroy(swf_button_record_list_t *button_record_list) {
 }
 
 int
-swf_button_record_list_print(swf_button_record_list_t *button_record_list, int indent_depth) {
+swf_button_record_list_print(swf_button_record_list_t *button_record_list, int indent_depth, swf_tag_t *tag) {
     swf_button_record_t *button_record = NULL;
     for (button_record = button_record_list->head ; button_record ; button_record = button_record->next) {
-        swf_button_record_print(button_record, indent_depth);
+        swf_button_record_print(button_record, indent_depth, tag);
     }
+
+
+
 }
 

@@ -9,6 +9,7 @@
 
 #include "swf_matrix.h"
 #include "swf_cxformwithalpha.h"
+#include "swf_tag.h"
 
 typedef struct swf_button_record_ {
     // char align;
@@ -32,15 +33,15 @@ typedef struct swf_button_record_list_ {
     swf_button_record_t *head, *tail;
 } swf_button_record_list_t;
 
-extern int swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record);
-extern int swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record);
-extern int swf_button_record_print(swf_button_record_t *button_record, int indent_depth);
+extern int swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
+extern int swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
+extern int swf_button_record_print(swf_button_record_t *button_record, int indent_depth, swf_tag_t *tag);
 
 extern swf_button_record_list_t *swf_button_record_list_create(void);
-extern int swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_record_list);
-extern int swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list_);
+extern int swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_record_list, swf_tag_t *tag);
+extern int swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list, swf_tag_t *tag);
 extern void swf_button_record_list_destroy(swf_button_record_list_t *button_record_list);
-extern int swf_button_record_list_print(swf_button_record_list_t *button_record_list, int indent_depth_list);
+extern int swf_button_record_list_print(swf_button_record_list_t *button_record_list, int indent_depth_list, swf_tag_t *tag);
 
 #endif /* __SWF_BUTTON_RECORD_H__ */
 
