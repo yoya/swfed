@@ -40,16 +40,17 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record) {
 
 int
 swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record) {
+    int ret;
     bitstream_putbits(bs, 0, 2);
-    bitstream_getbit(bs, button_record->button_has_blend_mode);
-    bitstream_getbit(bs, button_record->button_has_filter_list);
-    bitstream_getbit(bs, button_record->button_state_hittest);
-    bitstream_getbit(bs, button_record->button_state_down);
-    bitstream_getbit(bs, button_record->button_state_over);
-    bitstream_getbit(bs, button_record->button_state_up);
+    bitstream_putbit(bs, button_record->button_has_blend_mode);
+    bitstream_putbit(bs, button_record->button_has_filter_list);
+    bitstream_putbit(bs, button_record->button_state_hittest);
+    bitstream_putbit(bs, button_record->button_state_down);
+    bitstream_putbit(bs, button_record->button_state_over);
+    bitstream_putbit(bs, button_record->button_state_up);
     //
-    bitstream_getbytesLE(bs, button_record->character_id, 2);
-    bitstream_getbytesLE(bs, button_record->place_depth, 2);
+    bitstream_putbytesLE(bs, button_record->character_id, 2);
+    bitstream_putbytesLE(bs, button_record->place_depth, 2);
     ret = swf_matrix_build(bs, &(button_record->place_matrix));
     if (ret) {
         fprintf(stderr, "swf_button_record_build: swf_matrix_build failed\n");
@@ -122,7 +123,7 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
 }
 
 int
-swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list_) {
+swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_record_list) {
     swf_button_record_t *button_record = NULL;
     for (button_record = button_record_list->head ; button_record ; button_record = button_record->next) {
         swf_button_record_build(bs, button_record);
