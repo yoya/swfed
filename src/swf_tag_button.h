@@ -15,8 +15,8 @@ typedef struct swf_tag_button_detail_ {
     int button_id;
     int track_as_menu;
     int action_offset;
-    swf_button_record_t *button_record;
-    swf_button_condaction_t *actions;
+    swf_button_record_list_t *characters;
+    swf_button_condaction_list_t *actions;
 } swf_tag_button_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_button_detail_handler(void);
