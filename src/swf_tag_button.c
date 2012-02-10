@@ -102,6 +102,65 @@ int swf_tag_button_replace_cid_detail(swf_tag_t *tag, int id) {
     return 0; // always 0
 }
 
+int *
+swf_tag_button_character_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
+    swf_tag_button_detail_t *swf_tag_button;
+    int *cid_list, cid_list_alloc;
+    swf_button_record_t *button_record = NULL;
+    int ret;
+    if (tag == NULL) {
+        fprintf(stderr, "swf_tag_button_character_get_refcid: tag == NULL\n");
+        return NULL;
+    }
+    if (! isButtonTag(tag->code)) {
+        fprintf(stderr, "swf_tag_button_character_get_refcid: ! isButtonTag(%d)\n",
+                tag->code);
+        return NULL;
+    }
+    if (tag->detail) {
+        swf_tag_button = (swf_tag_button_detail_t *) tag->detail;
+    } else {
+        tag->detail = swf_tag_button_create_detail();
+        swf_tag_button = (swf_tag_button_detail_t *) tag->detail;
+        ret = swf_tag_button_input_detail(tag, NULL);
+        if (ret) {
+            swf_tag_button_destroy_detail(tag);
+            return NULL; // no button character
+        }
+    }
+    *cid_list_num = 0;
+    cid_list_alloc = 10;
+    cid_list = malloc(sizeof(int) * cid_list_alloc);
+
+    for (button_record = swf_tag_button->characters->head ; button_record ; button_record = button_record->next) {
+        if (button_record->character_id > 0) {
+            if (cid_list_alloc <= *cid_list_num) {
+                int *tmp;
+                cid_list_alloc *= 2;
+                tmp = realloc(cid_list, cid_list_alloc);
+                if (tmp == NULL) {
+                    fprintf(stderr, "swf_tag_shape_bitmap_get_refcid_list: Can't realloc memory (%p, %d)\n", cid_list, cid_list_alloc);
+                    free(cid_list);
+                    return NULL;
+                }
+                cid_list = tmp;
+            }
+            cid_list[*cid_list_num] = button_record->character_id;
+            *cid_list_num = (*cid_list_num) + 1;
+        }
+    }
+    if (*cid_list_num == 0) {
+        free(cid_list);
+        return NULL; // not found
+    }
+    return cid_list;
+}
+
+int
+swf_tag_button_character_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid) {
+    ;
+}
+
 unsigned char *
 swf_tag_button_output_detail(swf_tag_t *tag, unsigned long *length,
                              struct swf_object_ *swf) {

@@ -25,7 +25,8 @@ extern void *swf_tag_button_create_detail(void);
 extern int swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
 extern int swf_tag_button_get_cid_detail(swf_tag_t *tag);
 extern int swf_tag_button_replace_cid_detail(swf_tag_t *tag, int id);
-
+extern int *swf_tag_button_character_get_refcid_list(swf_tag_t *tag, int *cid_list_num);
+extern int swf_tag_button_character_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid);
 extern unsigned char *swf_tag_button_output_detail(swf_tag_t *tag,
                                                    unsigned long *length,
                                                    struct swf_object_ *swf);
