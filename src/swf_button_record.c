@@ -134,7 +134,7 @@ swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_r
 void
 swf_button_record_list_destroy(swf_button_record_list_t *button_record_list) {
     swf_button_record_t *button_record = NULL, *next_button_record = NULL;
-    if (free(button_record_list)) {
+    if (button_record_list) {
         for (button_record = button_record_list->head ; button_record ; button_record = next_button_record) {
             next_button_record = button_record->next;
             swf_button_record_destroy(button_record);
