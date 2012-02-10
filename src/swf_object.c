@@ -15,6 +15,7 @@
 #include "swf_tag_jpeg.h"
 #include "swf_tag_lossless.h"
 #include "swf_tag_shape.h"
+#include "swf_tag_button.h"
 #include "swf_tag_place.h"
 #include "swf_tag_sprite.h"
 #include "swf_action.h"
@@ -294,6 +295,16 @@ swf_object_purge_contents(swf_object_t *swf) {
                     }
                     free(bitmap_id_list);
                 }
+            } else if (isButtonTag(tag->code)) {
+                int *character_id_list, character_id_list_num;
+                character_id_list = swf_tag_button_character_get_refcid_list(tag, &character_id_list_num);
+                if (character_id_list) {
+                    int i;
+                    for (i = 0 ; i < character_id_list_num; i++) {
+                        trans_table_set(refcid_trans_table, character_id_list[i], TRANS_TABLE_RESERVE_ID);
+                    }
+                    free(character_id_list);
+                }
             } else if (isSpriteTag(tag->code)) {
                 swf_tag_t *t;
                 swf_tag_sprite_detail_t *tag_sprite;
@@ -302,9 +313,21 @@ swf_object_purge_contents(swf_object_t *swf) {
                     fprintf(stderr, "swf_object_purge_contents: tag_sprite == NULL\n");
                 } else {
                     for (t = tag_sprite->tag ; t ; t = t->next) {
-                        int rid = swf_tag_get_refcid(t);
-                        if (rid > 0) {
-                            trans_table_set(refcid_trans_table, rid, TRANS_TABLE_RESERVE_ID);
+                        if (isButtonTag(tag->code)) {
+                            int *character_id_list, character_id_list_num;
+                            character_id_list = swf_tag_button_character_get_refcid_list(tag, &character_id_list_num);
+                            if (character_id_list) {
+                                int i;
+                                for (i = 0 ; i < character_id_list_num; i++) {
+                                    trans_table_set(refcid_trans_table, character_id_list[i], TRANS_TABLE_RESERVE_ID);
+                                }
+                                free(character_id_list);
+                            }
+                        } else {
+                            int rid = swf_tag_get_refcid(t);
+                            if (rid > 0) {
+                                trans_table_set(refcid_trans_table, rid, TRANS_TABLE_RESERVE_ID);
+                            }
                         }
                     }
                 }
