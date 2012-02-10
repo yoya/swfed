@@ -401,7 +401,7 @@ bitstream_incrpos(bitstream_t *bs, signed long byte_incr,
 int
 bitstream_setpos(bitstream_t *bs, unsigned long byte_offset,
 		     unsigned long bit_offset) {
-    if (bs->data_len <= byte_offset ) {
+    if (bs->data_len < byte_offset ) {
         fprintf(stderr, "bitstream_setpos: bs->data_len(%lu) <= byte_offset(%lu)\n",
                 bs->data_len, byte_offset);
     }
