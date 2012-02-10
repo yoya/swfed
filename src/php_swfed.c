@@ -108,7 +108,7 @@ zend_function_entry swfed_functions[] = {
 };
 /* }}} */
 
-#define SWFED_VERSION "0.52a"
+#define SWFED_VERSION "0.52"
 
 /* {{{ swfed_module_entry
  */
