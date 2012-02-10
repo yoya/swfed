@@ -125,6 +125,7 @@ swf_button_condaction_list_parse(bitstream_t *bs, swf_button_condaction_list_t *
             break; // OK
         }
         bitstream_setpos(bs, offset_of_action + button_condaction->cond_action_size, 0);
+        prev_button_condaction = button_condaction;
     }
     return 0;
 }
