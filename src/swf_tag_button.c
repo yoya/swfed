@@ -106,7 +106,35 @@ unsigned char *
 swf_tag_button_output_detail(swf_tag_t *tag, unsigned long *length,
                              struct swf_object_ *swf) {
     swf_tag_button_detail_t *swf_tag_button = (swf_tag_button_detail_t *) tag->detail;
-    ;
+    bitstream_t *bs;
+    unsigned char *data;
+    int offset_of_action_offset;
+    int offset_of_actions;
+    //
+    bs = bitstream_open();
+    if (tag->code != 34) { // not ButtonObject2
+        fprintf(stderr, "swf_tag_button_input_detail: tag->code != 34\n");
+        return NULL; // failed
+    }
+    bitstream_putbytesLE(bs, swf_tag_button->button_id, 2);
+    bitstream_putbits(bs, 0, 7); // reserved flags : always 0
+    bitstream_putbit(bs, swf_tag_button->track_as_menu);
+    offset_of_action_offset = bitstream_getbytepos(bs);
+    bitstream_putbytesLE(bs, 0, 2); // action_offset dummy;
+    // Characters
+    swf_button_record_list_build(bs, swf_tag_button->characters);
+    // Actions
+    if (swf_tag_button->actions) {
+        offset_of_actions = bitstream_getbytepos(bs);
+        swf_tag_button->action_offset = offset_of_actions - offset_of_action_offset;
+        bitstream_setpos(bs, offset_of_action_offset, 0);
+        bitstream_putbytesLE(bs, swf_tag_button->action_offset, 2);
+        bitstream_setpos(bs, offset_of_actions, 0);
+        swf_button_condaction_list_build(bs, swf_tag_button->actions);
+    }
+    data = bitstream_steal(bs, length);
+    bitstream_close(bs);
+    return data;
 }
 
 void
