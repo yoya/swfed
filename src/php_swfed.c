@@ -284,7 +284,11 @@ PHP_METHOD(swfed, __construct) {
     if (swf == NULL) {
         php_error_docref(NULL TSRMLS_CC, E_ERROR, "Couldn't create swf object");
     }
+#if (PHP_MAJOR_VERSION == 5 && PHP_MINOR_VERSION > 3) || (PHP_MAJOR_VERSION > 5)
     ret = zend_list_insert(swf, le_swfed TSRMLS_CC);
+#else
+    ret = zend_list_insert(swf, le_swfed);
+#endif
     object_init_ex(getThis(), swfeditor_ce);
     add_property_resource(getThis(), "swfed", ret);
     zend_list_addref(ret);
