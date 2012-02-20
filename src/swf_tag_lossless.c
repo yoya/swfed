@@ -308,7 +308,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                         i++;
                     }
                     if (width_padding) {
-                        bitstream_putstring(bs2, "\0\0", 2);
+                        bitstream_putstring(bs2, (unsigned char *)"\0\0", 2);
                     }
                 }
             }  else {
