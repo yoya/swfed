@@ -42,6 +42,24 @@
 #include "swf_tag.h"
 #include "swf_object.h"
 
+#define SWFED_VERSION "0.53a"
+
+#define get_zend_hash_value_long(table, key, value) do { \
+        zval **tmp = NULL; \
+        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
+            convert_to_long_ex(tmp); \
+            value = Z_LVAL_PP(tmp); \
+        } \
+    } while (0);
+
+#define get_zend_hash_value_boolean(table, key, value) do { \
+        zval **tmp = NULL; \
+        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
+            convert_to_boolean_ex(tmp); \
+            value = Z_LVAL_PP(tmp); \
+        } \
+    } while (0);
+
 /* If you declare any globals in php_swfed.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
 */
@@ -107,8 +125,6 @@ zend_function_entry swfed_functions[] = {
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
 /* }}} */
-
-#define SWFED_VERSION "0.53a"
 
 /* {{{ swfed_module_entry
  */
@@ -1079,22 +1095,6 @@ PHP_METHOD(swfed, replaceGIFData) {
     RETURN_TRUE;
 #endif /* HAVE_GIF */
 }
-
-#define get_zend_hash_value_long(table, key, value) do { \
-        zval **tmp = NULL; \
-        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
-            convert_to_long_ex(tmp); \
-            value = Z_LVAL_PP(tmp); \
-        } \
-    } while (0);
-
-#define get_zend_hash_value_boolean(table, key, value) do { \
-        zval **tmp = NULL; \
-        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
-            convert_to_boolean_ex(tmp); \
-            value = Z_LVAL_PP(tmp); \
-        } \
-    } while (0);
 
 PHP_METHOD(swfed, replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
