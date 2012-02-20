@@ -675,7 +675,7 @@ PHP_METHOD(swfed, getTagDataByCID) {
         fprintf(stderr, "getTagDataByCID: Can't get_tagdata_bycid\n");
         RETURN_FALSE;
     }
-    RETURN_STRINGL(data_ref, data_len, 1);
+    RETURN_STRINGL((char *) data_ref, data_len, 1);
 }
 
 PHP_METHOD(swfed, replaceTagDataByCID) {
@@ -718,7 +718,7 @@ PHP_METHOD(swfed, getTagContentsByCID) {
         fprintf(stderr, "getTagContentsByCID: Can't get_tagcontents_bycid\n");
         RETURN_FALSE;
     }
-    RETURN_STRINGL(data_ref, data_len, 1);
+    RETURN_STRINGL((char *)data_ref, data_len, 1);
 }
 
 PHP_METHOD(swfed, replaceTagContentsByCID) {
@@ -813,7 +813,7 @@ PHP_METHOD(swfed, getShapeData) {
     new_buff = emalloc(data_len);
     memcpy(new_buff, data, data_len);
     free(data);
-    RETURN_STRINGL(new_buff, data_len, 0);
+    RETURN_STRINGL((char *)new_buff, data_len, 0);
 }
 
 PHP_METHOD(swfed, replaceShapeData) {
