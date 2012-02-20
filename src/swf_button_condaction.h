@@ -23,7 +23,7 @@ typedef struct swf_button_condaction_ {
     unsigned char cond_idle_to_overup      :1;
     //
     int cond_keypress;
-    char cond_overdown_to_idle;
+    unsigned char cond_overdown_to_idle;
     //
     swf_action_list_t *actions;
     //

@@ -21,7 +21,6 @@ swf_button_condaction_create(void) {
 
 int
 swf_button_condaction_parse(bitstream_t *bs, swf_button_condaction_t *button_condaction) {
-    int ret;
     button_condaction->cond_action_size = bitstream_getbytesLE(bs, 2);
     //
     button_condaction->cond_idle_to_overdown    = bitstream_getbit(bs);
@@ -38,6 +37,7 @@ swf_button_condaction_parse(bitstream_t *bs, swf_button_condaction_t *button_con
     //
     button_condaction->actions = swf_action_list_create();
     swf_action_list_parse(bs, button_condaction->actions);
+    return 0;
 }
 
 int
@@ -57,6 +57,7 @@ swf_button_condaction_build(bitstream_t *bs, swf_button_condaction_t *button_con
     bitstream_putbit(bs, button_condaction->cond_overdown_to_idle);
     //
     swf_action_list_build(bs, button_condaction->actions);
+    return 0;
 }
 
 int
@@ -76,10 +77,11 @@ swf_button_condaction_print(swf_button_condaction_t *button_condaction, int inde
            button_condaction->cond_overup_to_idle,
            button_condaction->cond_idle_to_overup);
     print_indent(indent_depth);
-    printf("keypress=%d overdown_to_idle\n",
+    printf("keypress=%d overdown_to_idle=%u\n",
            button_condaction->cond_keypress,
            button_condaction->cond_overdown_to_idle);
     swf_action_list_print(button_condaction->actions, indent_depth+1);
+    return 0;
 }
 
 void
@@ -113,7 +115,8 @@ swf_button_condaction_list_parse(bitstream_t *bs, swf_button_condaction_list_t *
         swf_button_condaction_t *button_condaction = malloc(sizeof(*button_condaction));
         button_condaction->next = NULL;
         offset_of_action = bitstream_getbytepos(bs);
-        if (ret = swf_button_condaction_parse(bs, button_condaction)) {
+        ret = swf_button_condaction_parse(bs, button_condaction);
+        if (ret) {
             return ret;
         }
         if (prev_button_condaction) {
