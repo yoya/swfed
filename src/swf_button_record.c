@@ -38,14 +38,21 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
             return ret;
         }
     }
+    //
     // FilterList, BlendMode
+    //
     return 0;
 }
 
 void
 swf_button_record_destroy(swf_button_record_t *button_record) {
     (void) button_record;
-    // FilterList free
+    if (button_record) {
+        //
+        // FilterList free
+        //
+        free(button_record);
+    }
     return ;
 }
 
@@ -75,7 +82,9 @@ swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record,
             return ret;
         }
     }
+    //
     // FilterList, BlendMode
+    //
     return 0;
 }
 
@@ -99,6 +108,9 @@ swf_button_record_print(swf_button_record_t *button_record, int indent_depth,
     if (tag->code == 34) { // DefineButton2
         swf_cxformwithalpha_print(&(button_record->color_transform), indent_depth);
     }
+    //
+    // FilterList, BlendMode
+    //
     return 0;
 }
 
@@ -158,9 +170,8 @@ swf_button_record_list_destroy(swf_button_record_list_t *button_record_list) {
     if (button_record_list) {
         for (button_record = button_record_list->head ; button_record ; button_record = next_button_record) {
             next_button_record = button_record->next;
-            swf_button_record_destroy(button_record);
             button_record->next = NULL; // fail safe
-            free(button_record);
+            swf_button_record_destroy(button_record);
         }
         free(button_record_list);
     }
