@@ -42,6 +42,13 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
     return 0;
 }
 
+void
+swf_button_record_destroy(swf_button_record_t *button_record) {
+    (void) button_record;
+    // FilterList free
+    return ;
+}
+
 int
 swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record,
     swf_tag_t *tag) {
@@ -92,6 +99,7 @@ swf_button_record_print(swf_button_record_t *button_record, int indent_depth,
     if (tag->code == 34) { // DefineButton2
         swf_cxformwithalpha_print(&(button_record->color_transform), indent_depth);
     }
+    return 0;
 }
 
 /*
@@ -131,6 +139,7 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
         }
         prev_button_record = button_record;
     }
+    return 0;
 }
 
 int
@@ -140,6 +149,7 @@ swf_button_record_list_build(bitstream_t *bs, swf_button_record_list_t *button_r
         swf_button_record_build(bs, button_record, tag);
     }
     bitstream_putbyte(bs, 0); //endflag
+    return 0;
 }
 
 void
@@ -162,8 +172,6 @@ swf_button_record_list_print(swf_button_record_list_t *button_record_list, int i
     for (button_record = button_record_list->head ; button_record ; button_record = button_record->next) {
         swf_button_record_print(button_record, indent_depth, tag);
     }
-
-
-
+    return 0;
 }
 

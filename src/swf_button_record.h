@@ -35,6 +35,7 @@ typedef struct swf_button_record_list_ {
 
 extern int swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
 extern int swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
+extern void swf_button_record_destroy(swf_button_record_t *button_record);
 extern int swf_button_record_print(swf_button_record_t *button_record, int indent_depth, swf_tag_t *tag);
 
 extern swf_button_record_list_t *swf_button_record_list_create(void);
