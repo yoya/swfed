@@ -45,8 +45,7 @@ swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     unsigned char *data  = tag->data;
     unsigned long length = tag->length;
     bitstream_t *bs = NULL;
-    int ret;
-    int offset_of_action_offset;
+    int offset_of_action_offset = 0;
     (void) swf;
     if (swf_tag_button == NULL) {
         fprintf(stderr, "ERROR: swf_tag_button_input_detail: swf_tag_place == NULL\n");
@@ -161,7 +160,8 @@ swf_tag_button_character_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
 
 int
 swf_tag_button_character_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid) {
-    ;
+    fprintf(stderr, "swf_tag_button_character_replace_refcid_list: not implemented yet.\n");
+    return 1;
 }
 
 unsigned char *
@@ -170,8 +170,9 @@ swf_tag_button_output_detail(swf_tag_t *tag, unsigned long *length,
     swf_tag_button_detail_t *swf_tag_button = (swf_tag_button_detail_t *) tag->detail;
     bitstream_t *bs;
     unsigned char *data;
-    int offset_of_action_offset;
-    int offset_of_actions;
+    int offset_of_action_offset = 0;
+    int offset_of_actions = 0;
+    (void) swf;
     //
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_button->button_id, 2);
