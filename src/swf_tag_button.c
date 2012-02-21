@@ -75,6 +75,7 @@ swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
             swf_button_condaction_list_parse(bs, swf_tag_button->condactions);
         }
     }
+    bitstream_close(bs);
     return 0;
 }
 
