@@ -35,6 +35,10 @@ swf_object_open(void) {
 #ifdef MALLOC_DEBUG
     malloc_debug_start(); /* DEBUG XXX */
 #endif // MALLOC_DEBUG
+#ifdef BITSTREAM_DEBUG /* bitstream debug */
+    bitstream_debug_start();
+#endif // BITSTREAM_DEBUG
+
     swf = (swf_object_t *) calloc(sizeof(*swf), 1);
     swf->tag_head = NULL;
     swf->tag_tail = NULL;
@@ -65,6 +69,9 @@ swf_object_close(swf_object_t *swf) {
 #ifdef MALLOC_DEBUG
     malloc_debug_end(); /* DEBUG XXX */
 #endif // MALLOC_DEBUG
+#ifdef BITSTREAM_DEBUG /* bitstream debug */
+    bitstream_debug_end();
+#endif // BITSTREAM_DEBUG
     return ;
 }
 
