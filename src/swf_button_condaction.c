@@ -156,9 +156,12 @@ swf_button_condaction_list_build(bitstream_t *bs, swf_button_condaction_list_t *
 void
 swf_button_condaction_list_destroy(swf_button_condaction_list_t *button_condaction_list) {
     swf_button_condaction_t *button_condaction = NULL, *next_button_condaction = NULL;    
-    for (button_condaction = button_condaction_list->head ; button_condaction ; button_condaction = next_button_condaction) {
-        next_button_condaction = button_condaction->next;
-        swf_button_condaction_destroy(button_condaction);
+    if (button_condaction_list) {
+        for (button_condaction = button_condaction_list->head ; button_condaction ; button_condaction = next_button_condaction) {
+            next_button_condaction = button_condaction->next;
+            swf_button_condaction_destroy(button_condaction);
+        }
+        free(button_condaction_list);
     }
 }
 
