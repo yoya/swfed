@@ -1553,8 +1553,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
             }
             // extract tag before SpriteTag
             prev_sprite_tag->next = swf_tag_move(tag);
+            prev_sprite_tag->next->prev = prev_sprite_tag;
             prev_sprite_tag = prev_sprite_tag->next;
             prev_sprite_tag->next = sprite_tag;
+            sprite_tag->prev = prev_sprite_tag;
             break;
             // Control Tag
           case 0: // End
