@@ -141,6 +141,7 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
                 next_tag = tag->next;
                 swf_tag_destroy(tag);
             }
+            swf->tag_head = NULL;
             bitstream_close(bs);
             return 1; // FAILURE
         }
