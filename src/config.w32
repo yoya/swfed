@@ -36,6 +36,6 @@ if (PHP_SWFED == "yes") {
 	PHP_INSTALL_HEADERS("ext/swfed/", "php_swfed.h");
 	if (!PHP_SWFED_SHARED) {
 		ADD_DEF_FILE("ext\\zlib\\php_zlib.def");
-//		ADD_DEF_FILE("ext\\swfed\\giflib.def");
+		ADD_DEF_FILE("ext\\swfed\\giflib.def");
 	}
 }
