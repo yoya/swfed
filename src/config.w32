@@ -5,7 +5,7 @@ ARG_ENABLE("swfed", "SWFEditor support", "yes,shared");
 
 if (PHP_SWFED == "yes") {
 	CHECK_LIB("libpng_a.lib;libpng.lib", "swfed", PHP_SWFED);
-	CHECK_LIB("libgif_a_dll.lib;giflib.lib", "swfed", PHP_SWFED);
+	CHECK_LIB("giflib_a.lib;giflib.lib", "swfed", PHP_SWFED);
 
 	EXTENSION("swfed", "php_swfed.c", null, "-Iext/swfed/libswfed", "php_swfed.dll");
 
@@ -22,7 +22,8 @@ if (PHP_SWFED == "yes") {
 		swf_shape_record_edge.c swf_gradient.c  swf_gradient_record.c \
 		swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
 		swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
-		swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c", "swfed");
+		swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
+		swf_tag_button.c swf_button_record.c swf_button_condaction.c", "swfed");
 	AC_DEFINE("HAVE_PHP_SWFED", 1, "SWFEditor support");
 
 	ADD_FLAG("CFLAGS_SWFED", " \
