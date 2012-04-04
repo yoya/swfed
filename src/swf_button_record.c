@@ -137,8 +137,8 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
     swf_button_record_t *prev_button_record = NULL;
     while (bitstream_getbyte(bs)) { // endflag is 0
         swf_button_record_t *button_record = malloc(sizeof(*button_record));
-        bitstream_incrpos(bs, -1, 0); // 1 byte back
         button_record->next = NULL;
+        bitstream_incrpos(bs, -1, 0); // 1 byte back
         if (swf_button_record_parse(bs, button_record, tag)) {
             fprintf(stderr, "swf_button_record_list_parse: swf_button_record_parse failed\n");
             free(button_record);
