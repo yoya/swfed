@@ -966,7 +966,7 @@ swf_tag_replace_edit_string(swf_tag_t *tag,
 }
 
 int
-swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
+swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id, int bitmap_id,
                                   double scale_x, double scale_y,
                                   double rotate_rad,
                                   signed int trans_x, signed int trans_y,
@@ -989,9 +989,10 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
         return 1;
     }
     result = swf_tag_shape_apply_matrix_factor(tag->detail, shape_id,
-                                                     scale_x, scale_y,
-                                                     rotate_rad,
-                                                     trans_x, trans_y);
+                                               bitmap_id,
+                                               scale_x, scale_y,
+                                               rotate_rad,
+                                               trans_x, trans_y);
     if (result == 0) {
         free(tag->data);
         tag->data = NULL;
@@ -1001,7 +1002,7 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id,
 }
 
 int
-swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
+swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id, int bitmap_id,
                                   double scale_x, double scale_y,
                                   signed int trans_x, signed int trans_y,
                                   struct swf_object_ *swf) {
@@ -1022,7 +1023,7 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
         fprintf(stderr, "swf_tag_apply_shape_rect_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
-    result = swf_tag_shape_apply_rect_factor(tag->detail, shape_id,
+    result = swf_tag_shape_apply_rect_factor(tag->detail, shape_id, bitmap_id,
                                              scale_x, scale_y,
                                              trans_x, trans_y);
     if (result == 0) {
@@ -1034,7 +1035,7 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id,
 }
 
 int
-swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
+swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id, int bitmap_id,
                                 struct swf_object_ *swf) {
     int result;
     if (tag == NULL) {
@@ -1053,7 +1054,7 @@ swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id,
         fprintf(stderr, "swf_tag_apply_shape_rect_factor: swf_tag_create_input_detail failed\n");
         return 1;
     }
-    result = swf_tag_shape_apply_type_tilled(tag->detail, shape_id);
+    result = swf_tag_shape_apply_type_tilled(tag->detail, shape_id, bitmap_id);
     if (result == 0) {
         free(tag->data);
         tag->data = NULL;

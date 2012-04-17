@@ -490,7 +490,7 @@ swf_tag_shape_destroy_detail(swf_tag_t *tag) {
 }
 
 int
-swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
+swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                                   double scale_x, double scale_y,
                                   double rotate_rad,
                                   signed int trans_x,
@@ -511,16 +511,21 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
           case 0x10: // linear gradient fill
           case 0x12: // radial gradient fill
           case 0x13: // focal  gradient fill
-              swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
+              if (bitmap_id < 0) {
+                  swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
                                       rotate_rad, trans_x, trans_y);
+              }
               break;
           case 0x40: // tilled  bitmap fill with smoothed edges
           case 0x41: // clipped bitmap fill with smoothed edges
           case 0x42: // tilled  bitmap fill with hard edges
           case 0x43: // clipped bitmap fill with hard edges
-              swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
-                                      scale_x, scale_y, rotate_rad,
-                                      trans_x, trans_y);
+              if ((bitmap_id < 0) ||
+                  (bitmap_id == fill_style->bitmap.bitmap_ref)) {
+                  swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
+                                          scale_x, scale_y, rotate_rad,
+                                          trans_x, trans_y);
+              }
               break;
           default:
             fprintf(stderr, "swf_tag_shape_apply_matrix_factor: unknown fill_style->type=%d\n",
@@ -532,7 +537,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id,
 }
 
 int
-swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
+swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
                                 double scale_x, double scale_y,
                                 signed int trans_x,
                                 signed int trans_y) {
@@ -545,16 +550,17 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id,
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
+    // XXX: fix me.
     swf_rect_apply_factor(&(swf_tag_shape->rect),
                           scale_x, scale_y, trans_x, trans_y);
-    
+    // TODO: bitmap_ref check
     swf_shape_record_edge_apply_factor(&(swf_tag_shape->shape_with_style.shape_records),
                                        scale_x, scale_y, trans_x, trans_y);
     return 0;
 }
 
 int
-swf_tag_shape_apply_type_tilled(void *detail, int shape_id) {
+swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
     int i, count;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
     if (detail == NULL) {
@@ -571,10 +577,14 @@ swf_tag_shape_apply_type_tilled(void *detail, int shape_id) {
         swf_fill_style_t *fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
         switch (fill_style->type) {
           case 0x41: // clipped bitmap fill with smoothed edges
-            fill_style->type = 0x40; // tilled  bitmap fill with smoothed edges
+            if ((bitmap_id < 0) || (bitmap_id == fill_style->bitmap.bitmap_ref)) {
+                fill_style->type = 0x40; // tilled  bitmap fill with smoothed edges
+            }
             break;
           case 0x43: // clipped bitmap fill with hard edges
-            fill_style->type = 0x42; // tilled  bitmap fill with hard edges
+            if ((bitmap_id < 0) || (bitmap_id == fill_style->bitmap.bitmap_ref)) {
+                fill_style->type = 0x42; // tilled  bitmap fill with hard edges
+            }
             break;
         }
     }

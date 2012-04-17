@@ -1254,7 +1254,7 @@ PHP_METHOD(swfed, applyShapeMatrixFactor) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    result = swf_object_apply_shapematrix_factor(swf, shape_id,
+    result = swf_object_apply_shapematrix_factor(swf, shape_id, -1,
                                                  scale_x, scale_y, rotate_rad,
                                                  trans_x, trans_y);
     if (result) {
@@ -1280,7 +1280,7 @@ PHP_METHOD(swfed, applyShapeRectFactor) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    result = swf_object_apply_shaperect_factor(swf, shape_id,
+    result = swf_object_apply_shaperect_factor(swf, shape_id, -1,
                                                  scale_x, scale_y,
                                                  trans_x, trans_y);
     if (result) {
