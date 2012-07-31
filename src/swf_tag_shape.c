@@ -497,7 +497,10 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                                   signed int trans_y) {
     int i;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    swf_fill_style_array_t *fill_styles;
     swf_fill_style_t *fill_style;
+    swf_shape_record_t *shape_record = NULL;
+
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
         return 1;
@@ -505,32 +508,60 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
-    for (i = 0 ; i < swf_tag_shape->shape_with_style.styles.fill_styles.count ; i++) {
-        fill_style = &(swf_tag_shape->shape_with_style.styles.fill_styles.fill_style[i]);
-        switch (fill_style->type) {
-          case 0x10: // linear gradient fill
-          case 0x12: // radial gradient fill
-          case 0x13: // focal  gradient fill
-              if (bitmap_id < 0) {
-                  swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
-                                      rotate_rad, trans_x, trans_y);
-              }
-              break;
-          case 0x40: // tilled  bitmap fill with smoothed edges
-          case 0x41: // clipped bitmap fill with smoothed edges
-          case 0x42: // tilled  bitmap fill with hard edges
-          case 0x43: // clipped bitmap fill with hard edges
-              if ((bitmap_id < 0) ||
-                  (bitmap_id == fill_style->bitmap.bitmap_ref)) {
-                  swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
-                                          scale_x, scale_y, rotate_rad,
-                                          trans_x, trans_y);
-              }
-              break;
-          default:
-            fprintf(stderr, "swf_tag_shape_apply_matrix_factor: unknown fill_style->type=%d\n",
-                    fill_style->type);
-            return 1;
+    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
+
+    if (! swf_tag_shape->is_morph) {
+        shape_record = &(swf_tag_shape->shape_with_style.shape_records);
+    }
+
+    while (fill_styles) {
+        for (i = 0 ; i < fill_styles->count ; i++) {
+            fill_style = &(fill_styles->fill_style[i]);
+            switch (fill_style->type) {
+            case 0x10: // linear gradient fill
+            case 0x12: // radial gradient fill
+            case 0x13: // focal  gradient fill
+                if (bitmap_id < 0) {
+                    swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
+                                            rotate_rad, trans_x, trans_y);
+                }
+                break;
+            case 0x40: // tilled  bitmap fill with smoothed edges
+            case 0x41: // clipped bitmap fill with smoothed edges
+            case 0x42: // tilled  bitmap fill with hard edges
+            case 0x43: // clipped bitmap fill with hard edges
+                if ((bitmap_id < 0) ||
+                    (bitmap_id == fill_style->bitmap.bitmap_ref)) {
+                    swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
+                                            scale_x, scale_y, rotate_rad,
+                                            trans_x, trans_y);
+                }
+                break;
+            default:
+                fprintf(stderr, "swf_tag_shape_apply_matrix_factor: unknown fill_style->type=%d\n",
+                        fill_style->type);
+                return 1;
+            }
+        }
+        fill_styles = NULL;
+        while (shape_record) {
+            int first_bit = (shape_record->first_6bits >> 5) & 1;
+            int next_5bits = shape_record->first_6bits & 0x1f;
+            if (first_bit == 0) {
+                if ((next_5bits == 0)) { // end record
+                    shape_record = NULL;
+                    break; // end
+                } else { // setup record
+                    if (shape_record->shape.shape_setup.shape_has_new_styles) {
+                        fill_styles = &(shape_record->shape.shape_setup.styles.fill_styles);
+                        shape_record = shape_record->next;
+                        break; // next loop
+                    }
+                    shape_record = shape_record->next;
+                }
+            } else { // edge record
+                shape_record = shape_record->next;
+            }
         }
     }
     return 0;
