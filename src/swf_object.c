@@ -1547,6 +1547,15 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
                 free(tag->data);
                 tag->data = NULL;
+            } else {
+                int refcid, to_refcid;                
+                refcid = swf_tag_get_refcid(tag);
+                if (refcid > 0) {
+                    to_refcid = trans_table_get(cid_trans_table, refcid);
+                    if (refcid != to_refcid) {
+                        swf_tag_replace_refcid(tag, to_refcid);
+                    }
+                }
             }
             // extract tag before SpriteTag
             prev_sprite_tag->next = swf_tag_move(tag);

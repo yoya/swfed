@@ -417,6 +417,14 @@ swf_tag_get_refcid(swf_tag_t *tag) {
             return -1;
         }
         return swf_tag_place->character_id;
+    } else if (tag->code == 37) { // DefineEditText
+        swf_tag_edit_detail_t *swf_tag_edit;
+        swf_tag_edit = swf_tag_create_input_detail(tag, NULL);
+        if (swf_tag_edit == NULL) {
+            fprintf(stderr, "swf_tag_get_refcid: swf_tag_edit swf_tag_create_input_detail failed\n");
+            return -1;
+        }
+        return swf_tag_edit->edit_font_id_ref;
     }
     return -1; // no cid tag
 }
@@ -435,6 +443,14 @@ swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
             return 1; // failure
         }
         swf_tag_place->character_id = cid;
+    } else if (tag->code == 37) { // DefineEditText
+        swf_tag_edit_detail_t *swf_tag_edit;
+        swf_tag_edit = swf_tag_create_input_detail(tag, NULL);
+        if (swf_tag_edit == NULL) {
+            fprintf(stderr, "swf_tag_get_refcid: swf_tag_edit swf_tag_create_input_detail failed\n");
+            return -1;
+        }
+        swf_tag_edit->edit_font_id_ref = cid;
     }
     if (tag->data) {
         free(tag->data);
