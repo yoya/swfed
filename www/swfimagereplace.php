@@ -29,7 +29,7 @@ function detect_image_ext(&$imagedata) {
 if (! empty($_FILES['imagefile']['tmp_name'])) {
     $filename = $_FILES['imagefile']['tmp_name'];
     $imagedata = file_get_contents($filename);
-    if ($imagedata > $upload_max_filesize_bytes) {
+    if (strlen($imagedata) > $upload_max_filesize_bytes) {
         echo " $upload_max_filesize Bytes 以内のファイルしか受け付けません。\n";
         exit(0);
     }
