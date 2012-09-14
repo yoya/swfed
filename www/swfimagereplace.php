@@ -61,6 +61,7 @@ echo <<< FORM
 codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">
 <param name="movie" value="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext">
 <param name="quality" value="high">
+<embed src="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext" width="100%" height="100%" type="application/x-shockwave-flash" wmode="transparent">
 </object>
 </body>
 </html>
