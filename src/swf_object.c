@@ -1267,7 +1267,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isActionTag(tag->code)) {
+        if (isActionTag(tag->code) || isButtonTag(tag->code)) {
             ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
             if (ret) {
                 fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
@@ -1286,7 +1286,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                 int modified = 0;
                 swf_tag_t *t;
                 for (t = tag_sprite->tag ; t ; t = t->next) {
-                    if (isActionTag(t->code)) {
+                    if (isActionTag(t->code) || isButtonTag(tag->code)) {
                         ret = swf_tag_replace_action_strings(t, kv, &m, swf);
                         if (ret) {
                             fprintf(stderr, "swf_object_replace_action_strings: replace_action_string failed\n");
@@ -1297,7 +1297,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                             t->data = NULL;
                         }
                         modified = 1; // action tag modified
-                    }    
+                    }
                 }
                 if (modified) { // sprite tag rebuild
                     if (tag->data) {

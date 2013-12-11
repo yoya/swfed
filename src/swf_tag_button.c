@@ -257,3 +257,26 @@ swf_tag_button_destroy_detail(swf_tag_t *tag) {
     }
     return ;
 }
+
+int
+swf_tag_button_replace_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                          int *modified) {
+    int ret = 1;
+    swf_tag_button_detail_t *swf_tag_button = (swf_tag_button_detail_t *) tag->detail;
+    if ((tag->code == 7) && swf_tag_button->actions) { // DefineButton
+        ret = swf_action_list_replace_strings(swf_tag_button->actions, modified, kv);
+    }
+    if ((tag->code == 34) && swf_tag_button->condactions) { // DebineButton2
+        swf_button_condaction_t *button_condaction;
+        for (button_condaction = swf_tag_button->condactions->head ; button_condaction ; button_condaction = button_condaction->next) {
+            if (button_condaction->actions) {
+                ret = swf_action_list_replace_strings(button_condaction->actions, modified, kv);
+                if (ret) {
+                    fprintf(stderr, "swf_tag_button_replace_strings: swf_action_list_replace_strings failed:\n");
+                    return ret;
+                }
+            }
+        }
+    }
+    return 0;
+}

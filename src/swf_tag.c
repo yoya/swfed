@@ -1142,7 +1142,7 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
 int
 swf_tag_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
                                int *modified, struct swf_object_ *swf) {
-    int ret;
+    int ret = 1;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_action_string: tag == NULL\n");
         return 1; // NG
@@ -1159,9 +1159,18 @@ swf_tag_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
         fprintf(stderr, "swf_tag_replace_action_string: swf_tag_create_input_detail failed\n");
         return 1; // NG
     }
-    ret = swf_tag_action_replace_strings(tag, kv, modified);
-    if (ret) {
-      fprintf(stderr, "swf_tag_replace_action_string: swf_tag_action_replace_strings failed\n");
+    if (isActionTag(tag->code)) {
+        ret = swf_tag_action_replace_strings(tag, kv, modified);
+        if (ret) {
+            fprintf(stderr, "swf_tag_replace_action_string: swf_tag_action_replace_strings failed\n");
+        }
+    } else if (isButtonTag(tag->code)) {
+        ret = swf_tag_button_replace_strings(tag, kv, modified);
+        if (ret) {
+            fprintf(stderr, "swf_tag_replace_action_string: swf_tag_button_replace_strings failed\n");
+        }
+    } else {
+        fprintf(stderr, "swf_tag_replace_action_string: action or button tag needed.\n");
     }
     return ret;
 }

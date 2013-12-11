@@ -36,4 +36,7 @@ extern void swf_tag_button_print_detail(swf_tag_t *tag,
                                        int indent_depth);
 extern void swf_tag_button_destroy_detail(swf_tag_t *tag);
 
+extern int swf_tag_button_replace_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                          int *modified);
+
 #endif /* __SWF_TAG_BUTTON__H__ */
