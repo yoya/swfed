@@ -1,195 +1,195 @@
 /*
-  +----------------------------------------------------------------------+
-  | PHP Version 5                                                        |
-  +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2008 The PHP Group                                |
-  +----------------------------------------------------------------------+
-  | This source file is subject to version 3.01 of the PHP license,      |
-  | that is bundled with this package in the file LICENSE, and is        |
-  | available through the world-wide-web at the following url:           |
-  | http://www.php.net/license/3_01.txt                                  |
-  | If you did not receive a copy of the PHP license and are unable to   |
-  | obtain it through the world-wide-web, please send a note to          |
-  | license@php.net so we can mail you a copy immediately.               |
-  +----------------------------------------------------------------------+
-  | Author: Yoshihiro Yamazaki <yoya@awm.jp>                             |
-  +----------------------------------------------------------------------+
-*/
+/*   +----------------------------------------------------------------------+ */
+/*   | PHP Version 5                                                        | */
+/*   +----------------------------------------------------------------------+ */
+/*   | Copyright (c) 1997-2008 The PHP Group                                | */
+/*   +----------------------------------------------------------------------+ */
+/*   | This source file is subject to version 3.01 of the PHP license,      | */
+/*   | that is bundled with this package in the file LICENSE, and is        | */
+/*   | available through the world-wide-web at the following url:           | */
+/*   | http://www.php.net/license/3_01.txt                                  | */
+/*   | If you did not receive a copy of the PHP license and are unable to   | */
+/*   | obtain it through the world-wide-web, please send a note to          | */
+/*   | license@php.net so we can mail you a copy immediately.               | */
+/*   +----------------------------------------------------------------------+ */
+/*   | Author: Yoshihiro Yamazaki <yoya@awm.jp>                             | */
+/*   +----------------------------------------------------------------------+ */
+/* *\/ */
 
-/* $Id:$ */
+/* /\* $Id:$ *\/ */
 
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+/* #ifdef HAVE_CONFIG_H */
+/* #include "config.h" */
+/* #endif */
 
-#include "php.h"
-#include "php_ini.h"
-#include "ext/standard/info.h"
-#include "php_swfed.h"
+/* #include "php.h" */
+/* #include "php_ini.h" */
+/* #include "ext/standard/info.h" */
+/* #include "php_swfed.h" */
 
-#include "swf_define.h"
-#include "y_keyvalue.h"
-#include "bitmap_util.h"
+/* #include "swf_define.h" */
+/* #include "y_keyvalue.h" */
+/* #include "bitmap_util.h" */
 
-#include "swf_tag_jpeg.h"
-#include "swf_tag_lossless.h"
-#include "swf_tag_edit.h"
-#include "swf_tag_sound.h"
-#include "swf_tag_action.h"
-#include "swf_tag_sprite.h"
-#include "swf_tag_shape.h"
-#include "swf_tag_place.h"
-#include "swf_tag.h"
-#include "swf_object.h"
+/* #include "swf_tag_jpeg.h" */
+/* #include "swf_tag_lossless.h" */
+/* #include "swf_tag_edit.h" */
+/* #include "swf_tag_sound.h" */
+/* #include "swf_tag_action.h" */
+/* #include "swf_tag_sprite.h" */
+/* #include "swf_tag_shape.h" */
+/* #include "swf_tag_place.h" */
+/* #include "swf_tag.h" */
+/* #include "swf_object.h" */
 
-#define SWFED_VERSION "0.62a"
+/* #define SWFED_VERSION "0.62a" */
 
-#define get_zend_hash_value_long(table, key, value) do { \
-        zval **tmp = NULL; \
-        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
-            convert_to_long_ex(tmp); \
-            value = Z_LVAL_PP(tmp); \
-        } \
-    } while (0);
+/* #define get_zend_hash_value_long(table, key, value) do { \ */
+/*         zval **tmp = NULL; \ */
+/*         if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \ */
+/*             convert_to_long_ex(tmp); \ */
+/*             value = Z_LVAL_PP(tmp); \ */
+/*         } \ */
+/*     } while (0); */
 
-#define get_zend_hash_value_boolean(table, key, value) do { \
-        zval **tmp = NULL; \
-        if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \
-            convert_to_boolean_ex(tmp); \
-            value = Z_LVAL_PP(tmp); \
-        } \
-    } while (0);
+/* #define get_zend_hash_value_boolean(table, key, value) do { \ */
+/*         zval **tmp = NULL; \ */
+/*         if (zend_hash_find(table, key, sizeof(key), (void**)&tmp) == SUCCESS) { \ */
+/*             convert_to_boolean_ex(tmp); \ */
+/*             value = Z_LVAL_PP(tmp); \ */
+/*         } \ */
+/*     } while (0); */
 
-static int
-param_is_null(int n TSRMLS_DC) {
-    zval *p;
-    zend_parse_parameters(n TSRMLS_CC, "z", &p);
-    if(Z_TYPE_P(p) == IS_NULL) {
-        return 1; // true
-    }
-    return 0; // false
-}
-
-
-/* If you declare any globals in php_swfed.h uncomment this:
-ZEND_DECLARE_MODULE_GLOBALS(swfed)
-*/
-
-/* True global resources - no need for thread safety here */
-static int le_swfed;
-
-/* {{{ swfed_functions[]
- *
- * Every user visible function must have an entry in swfed_functions[].
- */
-zend_function_entry swfed_functions[] = {
-    PHP_ME(swfed,  __construct, NULL, 0)
-    PHP_ME(swfed,  input, NULL, 0)
-    PHP_ME(swfed,  output, NULL, 0)
-    PHP_ME(swfed,  swfInfo, NULL, 0)
-    PHP_ME(swfed,  _destroy_and_exit, NULL, 0) // for debug
-
-    PHP_ME(swfed,  getHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  setHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  getTagList, NULL, 0)
-    PHP_ME(swfed,  getTagDetail, NULL, 0)
-    PHP_ME(swfed,  getTagData, NULL, 0)
-    PHP_ME(swfed,  replaceTagData, NULL, 0)
-    PHP_ME(swfed,  getTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  removeTag, NULL, 0)
-    PHP_ME(swfed,  printTagData, NULL, 0)
-
-    PHP_ME(swfed,  getShapeData, NULL, 0)
-    PHP_ME(swfed,  replaceShapeData, NULL, 0)
-    PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
-    PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
-    PHP_ME(swfed,  getBitmapSize, NULL, 0)
-    PHP_ME(swfed,  getJpegData, NULL, 0)
-    PHP_ME(swfed,  getJpegAlpha, NULL, 0)
-    PHP_ME(swfed,  replaceJpegData, NULL, 0)
-    PHP_ME(swfed,  getPNGData, NULL, 0)
-    PHP_ME(swfed,  replacePNGData, NULL, 0)
-    PHP_ME(swfed,  replaceGIFData, NULL, 0)
-    PHP_ME(swfed,  replaceBitmapData, NULL, 0)
-    PHP_ME(swfed,  convertBitmapDataToJpegTag, NULL, 0)
-    PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
-    PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
-    PHP_ME(swfed,  getSoundData, NULL, 0)
-    PHP_ME(swfed,  replaceMLDData, NULL, 0)
-    PHP_ME(swfed,  getEditString, NULL, 0)
-    PHP_ME(swfed,  replaceEditString, NULL, 0)
-    PHP_ME(swfed,  getActionData, NULL, 0)
-    PHP_ME(swfed,  disasmActionData, NULL, 0)
-    PHP_ME(swfed,  setActionVariables, NULL, 0)
-    PHP_ME(swfed,  replaceActionStrings, NULL, 0)
-    PHP_ME(swfed,  replaceMovieClip, NULL, 0)
-
-    PHP_ME(swfed,  setCompressLevel, NULL, 0)
-    PHP_ME(swfed,  rebuild, NULL, 0)
-    PHP_ME(swfed,  purgeUselessContents, NULL, 0)
-
-    PHP_ME(swfed,  isShapeTagData, NULL, 0)
-    PHP_ME(swfed,  isBitmapTagData, NULL, 0)
-    {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
-};
-/* }}} */
-
-/* {{{ swfed_module_entry
- */
-zend_module_entry swfed_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
-#endif
-	"swfed",
-	NULL, // no global functions
-	PHP_MINIT(swfed),
-	PHP_MSHUTDOWN(swfed),
-	PHP_RINIT(swfed),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
-	PHP_MINFO(swfed),
-#if ZEND_MODULE_API_NO >= 20010901
-	SWFED_VERSION, /* Replace with version number for your extension */
-#endif
-	STANDARD_MODULE_PROPERTIES
-};
-/* }}} */
-
-#ifdef COMPILE_DL_SWFED
-ZEND_GET_MODULE(swfed)
-#endif
-
-/* {{{ PHP_INI
- */
-/* Remove comments and fill if you need to have entries in php.ini
-PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("swfed.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_swfed_globals, swfed_globals)
-    STD_PHP_INI_ENTRY("swfed.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_swfed_globals, swfed_globals)
-PHP_INI_END()
-*/
-/* }}} */
-
-/* {{{ php_swfed_init_globals
- */
-/* Uncomment this function if you have INI entries
-static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
-{
-	swfed_globals->global_value = 0;
-	swfed_globals->global_string = NULL;
-}
-*/
-/* }}} */
+/* static int */
+/* param_is_null(int n TSRMLS_DC) { */
+/*     zval *p; */
+/*     zend_parse_parameters(n TSRMLS_CC, "z", &p); */
+/*     if(Z_TYPE_P(p) == IS_NULL) { */
+/*         return 1; // true */
+/*     } */
+/*     return 0; // false */
+/* } */
 
 
-static void free_swfed_resource(zend_rsrc_list_entry *resource TSRMLS_DC);
-static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC);
+/* /\* If you declare any globals in php_swfed.h uncomment this: */
+/* ZEND_DECLARE_MODULE_GLOBALS(swfed) */
+/* *\/ */
 
-/* {{{ PHP_MINIT_FUNCTION
- */
-PHP_MINIT_FUNCTION(swfed)
-{
+/* /\* True global resources - no need for thread safety here *\/ */
+/* static int le_swfed; */
+
+/* /\* {{{ swfed_functions[] */
+/*  * */
+/*  * Every user visible function must have an entry in swfed_functions[]. */
+/*  *\/ */
+/* zend_function_entry swfed_functions[] = { */
+/*     PHP_ME(swfed,  __construct, NULL, 0) */
+/*     PHP_ME(swfed,  input, NULL, 0) */
+/*     PHP_ME(swfed,  output, NULL, 0) */
+/*     PHP_ME(swfed,  swfInfo, NULL, 0) */
+/*     PHP_ME(swfed,  _destroy_and_exit, NULL, 0) // for debug */
+
+/*     PHP_ME(swfed,  getHeaderInfo, NULL, 0) */
+/*     PHP_ME(swfed,  setHeaderInfo, NULL, 0) */
+/*     PHP_ME(swfed,  getTagList, NULL, 0) */
+/*     PHP_ME(swfed,  getTagDetail, NULL, 0) */
+/*     PHP_ME(swfed,  getTagData, NULL, 0) */
+/*     PHP_ME(swfed,  replaceTagData, NULL, 0) */
+/*     PHP_ME(swfed,  getTagDataByCID, NULL, 0) */
+/*     PHP_ME(swfed,  replaceTagDataByCID, NULL, 0) */
+/*     PHP_ME(swfed,  getTagContentsByCID, NULL, 0) */
+/*     PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0) */
+/*     PHP_ME(swfed,  removeTag, NULL, 0) */
+/*     PHP_ME(swfed,  printTagData, NULL, 0) */
+
+/*     PHP_ME(swfed,  getShapeData, NULL, 0) */
+/*     PHP_ME(swfed,  replaceShapeData, NULL, 0) */
+/*     PHP_ME(swfed,  setShapeAdjustMode, NULL, 0) */
+/*     PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0) */
+/*     PHP_ME(swfed,  getBitmapSize, NULL, 0) */
+/*     PHP_ME(swfed,  getJpegData, NULL, 0) */
+/*     PHP_ME(swfed,  getJpegAlpha, NULL, 0) */
+/*     PHP_ME(swfed,  replaceJpegData, NULL, 0) */
+/*     PHP_ME(swfed,  getPNGData, NULL, 0) */
+/*     PHP_ME(swfed,  replacePNGData, NULL, 0) */
+/*     PHP_ME(swfed,  replaceGIFData, NULL, 0) */
+/*     PHP_ME(swfed,  replaceBitmapData, NULL, 0) */
+/*     PHP_ME(swfed,  convertBitmapDataToJpegTag, NULL, 0) */
+/*     PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0) */
+/*     PHP_ME(swfed,  applyShapeRectFactor, NULL, 0) */
+/*     PHP_ME(swfed,  getSoundData, NULL, 0) */
+/*     PHP_ME(swfed,  replaceMLDData, NULL, 0) */
+/*     PHP_ME(swfed,  getEditString, NULL, 0) */
+/*     PHP_ME(swfed,  replaceEditString, NULL, 0) */
+/*     PHP_ME(swfed,  getActionData, NULL, 0) */
+/*     PHP_ME(swfed,  disasmActionData, NULL, 0) */
+/*     PHP_ME(swfed,  setActionVariables, NULL, 0) */
+/*     PHP_ME(swfed,  replaceActionStrings, NULL, 0) */
+/*     PHP_ME(swfed,  replaceMovieClip, NULL, 0) */
+
+/*     PHP_ME(swfed,  setCompressLevel, NULL, 0) */
+/*     PHP_ME(swfed,  rebuild, NULL, 0) */
+/*     PHP_ME(swfed,  purgeUselessContents, NULL, 0) */
+
+/*     PHP_ME(swfed,  isShapeTagData, NULL, 0) */
+/*     PHP_ME(swfed,  isBitmapTagData, NULL, 0) */
+/*     {NULL, NULL, NULL}	/\* Must be the last line in swfed_functions[] *\/ */
+/* }; */
+/* /\* }}} *\/ */
+
+/* /\* {{{ swfed_module_entry */
+/*  *\/ */
+/* zend_module_entry swfed_module_entry = { */
+/* #if ZEND_MODULE_API_NO >= 20010901 */
+/* 	STANDARD_MODULE_HEADER, */
+/* #endif */
+/* 	"swfed", */
+/* 	NULL, // no global functions */
+/* 	PHP_MINIT(swfed), */
+/* 	PHP_MSHUTDOWN(swfed), */
+/* 	PHP_RINIT(swfed),		/\* Replace with NULL if there's nothing to do at request start *\/ */
+/* 	PHP_RSHUTDOWN(swfed),	/\* Replace with NULL if there's nothing to do at request end *\/ */
+/* 	PHP_MINFO(swfed), */
+/* #if ZEND_MODULE_API_NO >= 20010901 */
+/* 	SWFED_VERSION, /\* Replace with version number for your extension *\/ */
+/* #endif */
+/* 	STANDARD_MODULE_PROPERTIES */
+/* }; */
+/* /\* }}} *\/ */
+
+/* #ifdef COMPILE_DL_SWFED */
+/* ZEND_GET_MODULE(swfed) */
+/* #endif */
+
+/* /\* {{{ PHP_INI */
+/*  *\/ */
+/* /\* Remove comments and fill if you need to have entries in php.ini */
+/* PHP_INI_BEGIN() */
+/*     STD_PHP_INI_ENTRY("swfed.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_swfed_globals, swfed_globals) */
+/*     STD_PHP_INI_ENTRY("swfed.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_swfed_globals, swfed_globals) */
+/* PHP_INI_END() */
+/* *\/ */
+/* /\* }}} *\/ */
+
+/* /\* {{{ php_swfed_init_globals */
+/*  *\/ */
+/* /\* Uncomment this function if you have INI entries */
+/* static void php_swfed_init_globals(zend_swfed_globals *swfed_globals) */
+/* { */
+/* 	swfed_globals->global_value = 0; */
+/* 	swfed_globals->global_string = NULL; */
+/* } */
+/* *\/ */
+/* /\* }}} *\/ */
+
+
+/* static void free_swfed_resource(zend_rsrc_list_entry *resource TSRMLS_DC); */
+/* static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC); */
+
+/* /\* {{{ PHP_MINIT_FUNCTION */
+/*  *\/ */
+/* PHP_MINIT_FUNCTION(swfed) */
+/* { */
 	/* If you have INI entries, uncomment these lines 
 	ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
 	REGISTER_INI_ENTRIES();
@@ -511,7 +511,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_place_detail_t    *tag_place;
         swf_action_t   *action;
         int action_list_count;
-	zval *data = NULL;
+        zval *data = NULL;
         int *bitmap_id_list, bitmap_id_list_num;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
@@ -594,17 +594,17 @@ PHP_METHOD(swfed, getTagDetail) {
         add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
         add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
 //        tag_shape->shape_with_style.shape_records
-	bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-	if (bitmap_id_list) {
-	    int i;
-	    ALLOC_INIT_ZVAL(data);
-	    array_init(data);
-	    for (i = 0 ; i < bitmap_id_list_num ; i++) {
-	        add_index_long(data, i , bitmap_id_list[i]);
-	    }
-	    add_assoc_zval(return_value, "bitmap_ref", data);
-	    free(bitmap_id_list);
-	}
+        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+        if (bitmap_id_list) {
+            int i;
+            ALLOC_INIT_ZVAL(data);
+            array_init(data);
+            for (i = 0 ; i < bitmap_id_list_num ; i++) {
+                add_index_long(data, i , bitmap_id_list[i]);
+            }
+            add_assoc_zval(return_value, "bitmap_ref", data);
+            free(bitmap_id_list);
+        }
         break;
       case 4: // PlaceObject
       case 26: // PlaceObject2
@@ -707,8 +707,8 @@ PHP_METHOD(swfed, replaceTagDataByCID) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_tagdata_bycid(swf, cid,
-					      (unsigned char *)data,
-					      data_len);
+                                              (unsigned char *)data,
+                                              data_len);
     if (result) {
         RETURN_FALSE;
     }
@@ -881,19 +881,19 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     for (tag = swf->tag_head ; tag ; tag=tag->next) {
         register int tag_code = tag->code;
         if (isShapeTag(tag_code)) {
-	    bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-	    if (bitmap_id_list) {
-	        int j;
-		for (j=0 ; j < bitmap_id_list_num ; j++) {
-		    if (bitmap_id_list[j] == bitmap_id) {
-		        swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-			add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
-			i++;
-			break;
-		    }
-		}
-		free(bitmap_id_list);
-	    }
+            bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+            if (bitmap_id_list) {
+                int j;
+                for (j=0 ; j < bitmap_id_list_num ; j++) {
+                    if (bitmap_id_list[j] == bitmap_id) {
+                        swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                        add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
+                        i++;
+                        break;
+                    }
+                }
+                free(bitmap_id_list);
+            }
         }
     }
 }
@@ -1576,19 +1576,19 @@ PHP_METHOD(swfed, replaceMovieClip) {
         RETURN_FALSE; /* XXX */
       case 2:
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
-				  &instance_name, &instance_name_len,
-				  &swf_data, &swf_data_len) == FAILURE) {
-	  RETURN_FALSE;
-	}
+                                  &instance_name, &instance_name_len,
+                                  &swf_data, &swf_data_len) == FAILURE) {
+          RETURN_FALSE;
+        }
       break;
       case 3:
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssb",
-				  &instance_name, &instance_name_len,
-				  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
+                                  &instance_name, &instance_name_len,
+                                  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
             // unused_cid_purge は無視します。
-	  RETURN_FALSE;
-	}
-	break;
+          RETURN_FALSE;
+        }
+        break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);    
     result = swf_object_replace_movieclip(swf, instance_name,
@@ -1660,7 +1660,7 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
     int id = 0, type = 0;
 /* XXX: zend_read_property 
     data = zend_read_property(Z_OBJCE_P(obj), obj, "swf_object",
-							  strlen("swf_object"), 1 TSRMLS_CC);
+                                                          strlen("swf_object"), 1 TSRMLS_CC);
 */
     if (zend_hash_find(Z_OBJPROP_P(obj), "swfed", strlen("swfed") + 1,
                        (void **)&tmp) == FAILURE) {
