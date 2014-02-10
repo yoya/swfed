@@ -24,7 +24,7 @@
 
 * demo
 
- - http://awm.jp/~yoya/php/swfed/
+ - http://app.awm.jp/swfed/
  - http://diary.awm.jp/~yoya/?20080331#200803311 replace jpeg
  - http://diary.awm.jp/~yoya/?20080514#200805141 replace alpha
  - http://diary.awm.jp/~yoya/?20101027#201010270 adjust bitmap
