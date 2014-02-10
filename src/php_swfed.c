@@ -649,7 +649,7 @@ PHP_METHOD(swfed, getTagData) {
 
 PHP_METHOD(swfed, replaceTagData) {
     char *data = NULL;
-    unsigned long data_len = 0;
+    int data_len = 0;
     long tag_seqno = 0;
     swf_object_t *swf = NULL;
     int result = 0;
@@ -665,7 +665,8 @@ PHP_METHOD(swfed, replaceTagData) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_tagdata(swf, tag_seqno,
-                                        (unsigned char *)data, data_len);
+                                        (unsigned char *)data, 
+                                        (unsigned long) data_len);
     if (result) {
         RETURN_FALSE;
     }
@@ -786,7 +787,7 @@ PHP_METHOD(swfed, removeTag) {
 
 PHP_METHOD(swfed, printTagData) {
     char *data = NULL;
-    unsigned long data_len = 0;
+    int data_len = 0;
     swf_object_t *swf = NULL;
     int ret = 0;
     switch (ZEND_NUM_ARGS()) {
@@ -800,7 +801,8 @@ PHP_METHOD(swfed, printTagData) {
         break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
-    ret = swf_object_print_tagdata(swf, (unsigned char *)data, data_len);
+    ret = swf_object_print_tagdata(swf, (unsigned char *)data,
+                                   (unsigned long) data_len);
     if (ret) {
         RETURN_FALSE;
     }
@@ -829,7 +831,7 @@ PHP_METHOD(swfed, getShapeData) {
 
 PHP_METHOD(swfed, replaceShapeData) {
     char *data = NULL;
-    unsigned long data_len = 0;
+    int data_len = 0;
     long cid = 0;
     swf_object_t *swf = NULL;
     int result = 0;
@@ -846,7 +848,7 @@ PHP_METHOD(swfed, replaceShapeData) {
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_shapedata(swf, cid,
                                           (unsigned char *)data,
-                                          data_len);
+                                          (unsigned long)data_len);
     if (result) {
         RETURN_FALSE;
     }
@@ -866,7 +868,7 @@ PHP_METHOD(swfed, setShapeAdjustMode) {
 }
 
 PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
-    int bitmap_id;
+    long bitmap_id;
     int *bitmap_id_list, bitmap_id_list_num;
     swf_object_t *swf = NULL;
     swf_tag_t *tag = NULL;
@@ -972,7 +974,7 @@ PHP_METHOD(swfed, getJpegAlpha) {
 PHP_METHOD(swfed, replaceJpegData) {
     char *data = NULL, *alpha_data = NULL;
     int data_len = 0 , alpha_data_len = 0;
-    int image_id = 0;
+    long image_id = 0;
     swf_object_t *swf = NULL;
     int result = 0;
     switch (ZEND_NUM_ARGS()) {
@@ -1039,9 +1041,9 @@ PHP_METHOD(swfed, replacePNGData) {
     fprintf(stderr, "replacePNGData: no png library\n");
     RETURN_FALSE;
 #else  /* HAVE_PNG */
+    long image_id = 0;
     char *data = NULL;
     int data_len = 0;
-    int image_id = 0;
     zval *opts = NULL;
     HashTable *opts_table = NULL;
     int rgb15 = -1;
@@ -1081,9 +1083,9 @@ PHP_METHOD(swfed, replaceGIFData) {
     fprintf(stderr, "replaceGIFData: no gif library\n");
     RETURN_FALSE;
 #else /* HAVE_GIF */
+    long image_id = 0;
     char *data = NULL;
     int data_len = 0;
-    int image_id = 0;
     swf_object_t *swf = NULL;
     int result = 0;
     switch (ZEND_NUM_ARGS()) {
@@ -1330,9 +1332,9 @@ PHP_METHOD(swfed, getSoundData) {
 }
 
 PHP_METHOD(swfed, replaceMLDData) {
+    long sound_id = 0;
     char *data = NULL;
     int data_len = 0;
-    int sound_id = 0;
     swf_object_t *swf = NULL;
     int result = 0;
     if (param_is_null(1 TSRMLS_CC)) {
@@ -1564,7 +1566,7 @@ PHP_METHOD(swfed, replaceMovieClip) {
     char *instance_name = NULL, *swf_data = NULL;
     int  instance_name_len = 0, swf_data_len = 0;
     swf_object_t *swf = NULL;
-    int unused_cid_purge = 1; // デフォルト on
+    zend_bool unused_cid_purge = 1; // デフォルト on
     int result = 0;
     if (param_is_null(1 TSRMLS_CC)) {
         php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
@@ -1591,9 +1593,11 @@ PHP_METHOD(swfed, replaceMovieClip) {
         break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);    
-    result = swf_object_replace_movieclip(swf, instance_name,
+    result = swf_object_replace_movieclip(swf,
+                                          (unsigned char *)instance_name,
                                           instance_name_len,
-                                          swf_data, swf_data_len);
+                                          (unsigned char *)swf_data,
+                                          swf_data_len);
     if (result) {
         RETURN_FALSE;
     }
@@ -1633,7 +1637,8 @@ PHP_METHOD(swfed, isShapeTagData) {
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
-    if (swf_object_is_shape_tagdata(data, data_len) == 0) {
+    if (swf_object_is_shape_tagdata((unsigned char *)data,
+                                    data_len) == 0) {
         RETURN_FALSE;
     }
     RETURN_TRUE;      
@@ -1646,7 +1651,8 @@ PHP_METHOD(swfed, isBitmapTagData) {
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
-    if (swf_object_is_bitmap_tagdata(data, data_len) == 0) {
+    if (swf_object_is_bitmap_tagdata((unsigned char *)data,
+                                     data_len) == 0) {
         RETURN_FALSE;
     }
     RETURN_TRUE;      
