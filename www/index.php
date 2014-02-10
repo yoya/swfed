@@ -12,12 +12,18 @@ function multiply_unit($str) {
 $upload_max_filesize  = ini_get('upload_max_filesize');
 $upload_max_filesize_bytes = multiply_unit($upload_max_filesize);
 
-
-if (! empty($_FILES['swffile']['tmp_name'])) {
+if (isset($_FILES['swffile']['tmp_name'])) {
     $filename = $_FILES['swffile']['tmp_name'];
     $swfdata = file_get_contents($filename);
+    $swfdata_len = strlen($swfdata);
+    if ($swfdata_len === 0) {
+	header("Content-Type: text/html; charset=utf-8");
+        echo "ファイルのサイズを見直して下さい。\n";
+        exit(0);
+    }
     $upload_max_filesize  = ini_get('upload_max_filesize');
-    if (strlen($swfdata) > $upload_max_filesize_bytes) {
+    if ($swfdata_len > $upload_max_filesize_bytes) {
+	header("Content-Type: text/html; charset=utf-8");
         echo "$upload_max_filesize Bytes 以内のファイルしか受け付けません。\n";
         exit(0);
     }
@@ -26,7 +32,9 @@ if (! empty($_FILES['swffile']['tmp_name'])) {
     $tmp_filename = "$tmp_prefix$id.swf";
     if ((! is_readable($tmp_filename)) &&
         (! file_put_contents($tmp_filename, $swfdata))) {
-        fprintf(stderr, "index.php: file_put_contents failed. zero size?\n");
+	header("Content-Type: text/html; charset=utf-8");
+        echo "ごめんなさい。内部エラーです。";
+        fprintf(STDERR, "index.php: file_put_contents failed. zero size?\n");
         unlink($tmp_filename);
         exit(0);
     }
