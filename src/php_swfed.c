@@ -141,19 +141,19 @@ zend_function_entry swfed_functions[] = {
  */
 zend_module_entry swfed_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
+        STANDARD_MODULE_HEADER,
 #endif
-	"swfed",
-	NULL, // no global functions
-	PHP_MINIT(swfed),
-	PHP_MSHUTDOWN(swfed),
-	PHP_RINIT(swfed),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
-	PHP_MINFO(swfed),
+        "swfed",
+        NULL, // no global functions
+        PHP_MINIT(swfed),
+        PHP_MSHUTDOWN(swfed),
+        PHP_RINIT(swfed),		/* Replace with NULL if there's nothing to do at request start */
+        PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
+        PHP_MINFO(swfed),
 #if ZEND_MODULE_API_NO >= 20010901
-	SWFED_VERSION, /* Replace with version number for your extension */
+        SWFED_VERSION, /* Replace with version number for your extension */
 #endif
-	STANDARD_MODULE_PROPERTIES
+        STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
 
@@ -176,8 +176,8 @@ PHP_INI_END()
 /* Uncomment this function if you have INI entries
 static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
 {
-	swfed_globals->global_value = 0;
-	swfed_globals->global_string = NULL;
+        swfed_globals->global_value = 0;
+        swfed_globals->global_string = NULL;
 }
 */
 /* }}} */
@@ -190,24 +190,24 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC);
  */
 PHP_MINIT_FUNCTION(swfed)
 {
-	/* If you have INI entries, uncomment these lines 
-	ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
-	REGISTER_INI_ENTRIES();
-	*/
-	zend_class_entry ce;
-	INIT_CLASS_ENTRY(ce, "SWFEditor", swfed_functions);
-	swfeditor_ce = zend_register_internal_class(&ce TSRMLS_CC);
-	le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
+        /* If you have INI entries, uncomment these lines 
+        ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
+        REGISTER_INI_ENTRIES();
+        */
+        zend_class_entry ce;
+        INIT_CLASS_ENTRY(ce, "SWFEditor", swfed_functions);
+        swfeditor_ce = zend_register_internal_class(&ce TSRMLS_CC);
+        le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
     
-	zend_declare_property_stringl(swfeditor_ce,
-				"swf_object", strlen("swf_object"),
-				"", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
+        zend_declare_property_stringl(swfeditor_ce,
+                                "swf_object", strlen("swf_object"),
+                                "", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
         // class const
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
         REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_TYPE_TILLED", SWFED_SHAPE_BITMAP_TYPE_TILLED);
-	return SUCCESS;
+        return SUCCESS;
 }
 
 /* }}} */
@@ -216,10 +216,10 @@ PHP_MINIT_FUNCTION(swfed)
  */
 PHP_MSHUTDOWN_FUNCTION(swfed)
 {
-	/* uncomment this line if you have INI entries
-	UNREGISTER_INI_ENTRIES();
-	*/
-	return SUCCESS;
+        /* uncomment this line if you have INI entries
+        UNREGISTER_INI_ENTRIES();
+        */
+        return SUCCESS;
 }
 /* }}} */
 
@@ -228,7 +228,7 @@ PHP_MSHUTDOWN_FUNCTION(swfed)
  */
 PHP_RINIT_FUNCTION(swfed)
 {
-	return SUCCESS;
+        return SUCCESS;
 }
 /* }}} */
 
@@ -237,7 +237,7 @@ PHP_RINIT_FUNCTION(swfed)
  */
 PHP_RSHUTDOWN_FUNCTION(swfed)
 {
-	return SUCCESS;
+        return SUCCESS;
 }
 /* }}} */
 
@@ -245,24 +245,24 @@ PHP_RSHUTDOWN_FUNCTION(swfed)
  */
 PHP_MINFO_FUNCTION(swfed)
 {
-	int gif_support = 0;
-	int png_support = 0;
-	php_info_print_table_start();
-	php_info_print_table_header(2, "SWF Editor support", "enabled");
+        int gif_support = 0;
+        int png_support = 0;
+        php_info_print_table_start();
+        php_info_print_table_header(2, "SWF Editor support", "enabled");
         php_info_print_table_row(2, "SWF Editor version", SWFED_VERSION);
 #ifdef HAVE_PNG
-	png_support = 1;
+        png_support = 1;
 #endif
 #ifdef HAVE_GIF
-	gif_support = 1;
+        gif_support = 1;
 #endif
-	php_info_print_table_row(2, "SWF Editor PNG support", png_support?"yes":"no");
-	php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
-	php_info_print_table_end();
+        php_info_print_table_row(2, "SWF Editor PNG support", png_support?"yes":"no");
+        php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
+        php_info_print_table_end();
 
-	/* Remove comments if you have entries in php.ini
-	DISPLAY_INI_ENTRIES();
-	*/
+        /* Remove comments if you have entries in php.ini
+        DISPLAY_INI_ENTRIES();
+        */
 }
 /* }}} */
 
@@ -276,16 +276,16 @@ PHP_MINFO_FUNCTION(swfed)
    Return a string to confirm that the module is compiled in */
 PHP_FUNCTION(confirm_swfed_compiled)
 {
-	char *arg = NULL;
-	int arg_len, len;
-	char string[256];
+        char *arg = NULL;
+        int arg_len, len;
+        char string[256];
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
-		return;
-	}
+        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
+                return;
+        }
 
-	len = sprintf(string, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "swfed", arg);
-// 	RETURN_STRINGL(string, len, 0);
+        len = sprintf(string, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "swfed", arg);
+//         RETURN_STRINGL(string, len, 0);
     RETURN_STRINGL(string, len, 1);
 }
 /* }}} */
@@ -511,7 +511,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_place_detail_t    *tag_place;
         swf_action_t   *action;
         int action_list_count;
-	zval *data = NULL;
+        zval *data = NULL;
         int *bitmap_id_list, bitmap_id_list_num;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
@@ -594,17 +594,17 @@ PHP_METHOD(swfed, getTagDetail) {
         add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
         add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
 //        tag_shape->shape_with_style.shape_records
-	bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-	if (bitmap_id_list) {
-	    int i;
-	    ALLOC_INIT_ZVAL(data);
-	    array_init(data);
-	    for (i = 0 ; i < bitmap_id_list_num ; i++) {
-	        add_index_long(data, i , bitmap_id_list[i]);
-	    }
-	    add_assoc_zval(return_value, "bitmap_ref", data);
-	    free(bitmap_id_list);
-	}
+        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+        if (bitmap_id_list) {
+            int i;
+            ALLOC_INIT_ZVAL(data);
+            array_init(data);
+            for (i = 0 ; i < bitmap_id_list_num ; i++) {
+                add_index_long(data, i , bitmap_id_list[i]);
+            }
+            add_assoc_zval(return_value, "bitmap_ref", data);
+            free(bitmap_id_list);
+        }
         break;
       case 4: // PlaceObject
       case 26: // PlaceObject2
@@ -707,8 +707,8 @@ PHP_METHOD(swfed, replaceTagDataByCID) {
     }
     swf = get_swf_object(getThis() TSRMLS_CC);
     result = swf_object_replace_tagdata_bycid(swf, cid,
-					      (unsigned char *)data,
-					      data_len);
+                                              (unsigned char *)data,
+                                              data_len);
     if (result) {
         RETURN_FALSE;
     }
@@ -881,19 +881,19 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     for (tag = swf->tag_head ; tag ; tag=tag->next) {
         register int tag_code = tag->code;
         if (isShapeTag(tag_code)) {
-	    bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-	    if (bitmap_id_list) {
-	        int j;
-		for (j=0 ; j < bitmap_id_list_num ; j++) {
-		    if (bitmap_id_list[j] == bitmap_id) {
-		        swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
-			add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
-			i++;
-			break;
-		    }
-		}
-		free(bitmap_id_list);
-	    }
+            bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+            if (bitmap_id_list) {
+                int j;
+                for (j=0 ; j < bitmap_id_list_num ; j++) {
+                    if (bitmap_id_list[j] == bitmap_id) {
+                        swf_tag_shape_detail_t *swf_tag_shape = tag->detail;
+                        add_index_long(return_value, i, (long) swf_tag_shape->shape_id);
+                        i++;
+                        break;
+                    }
+                }
+                free(bitmap_id_list);
+            }
         }
     }
 }
@@ -1576,19 +1576,19 @@ PHP_METHOD(swfed, replaceMovieClip) {
         RETURN_FALSE; /* XXX */
       case 2:
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
-				  &instance_name, &instance_name_len,
-				  &swf_data, &swf_data_len) == FAILURE) {
-	  RETURN_FALSE;
-	}
+                                  &instance_name, &instance_name_len,
+                                  &swf_data, &swf_data_len) == FAILURE) {
+          RETURN_FALSE;
+        }
       break;
       case 3:
         if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssb",
-				  &instance_name, &instance_name_len,
-				  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
+                                  &instance_name, &instance_name_len,
+                                  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
             // unused_cid_purge は無視します。
-	  RETURN_FALSE;
-	}
-	break;
+          RETURN_FALSE;
+        }
+        break;
     }
     swf = get_swf_object(getThis() TSRMLS_CC);    
     result = swf_object_replace_movieclip(swf, instance_name,
@@ -1660,7 +1660,7 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
     int id = 0, type = 0;
 /* XXX: zend_read_property 
     data = zend_read_property(Z_OBJCE_P(obj), obj, "swf_object",
-							  strlen("swf_object"), 1 TSRMLS_CC);
+                                                          strlen("swf_object"), 1 TSRMLS_CC);
 */
     if (zend_hash_find(Z_OBJPROP_P(obj), "swfed", strlen("swfed") + 1,
                        (void **)&tmp) == FAILURE) {
