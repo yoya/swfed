@@ -551,7 +551,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
             int first_bit = (shape_record->first_6bits >> 5) & 1;
             int next_5bits = shape_record->first_6bits & 0x1f;
             if (first_bit == 0) {
-                if ((next_5bits == 0)) { // end record
+                if (next_5bits == 0) { // end record
                     shape_record = NULL;
                     break; // end
                 } else { // setup record
@@ -637,7 +637,7 @@ swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
             int first_bit = (shape_record->first_6bits >> 5) & 1;
             int next_5bits = shape_record->first_6bits & 0x1f;
             if (first_bit == 0) {
-                if ((next_5bits == 0)) { // end record
+                if (next_5bits == 0) { // end record
                     shape_record = NULL;
                     break; // end
                 } else { // setup record
