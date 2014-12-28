@@ -143,7 +143,11 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     }
     if (DGifSlurp(GifFile) == GIF_ERROR) {
         fprintf(stderr, "gifconv_gif2lossless: DGifSlurp failed\n");
+#if GIFLIB_MAJOR >= 5
         DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
         return NULL;
     }
     Image = GifFile->SavedImages[0];
@@ -156,7 +160,11 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     bpp = ColorMap->BitsPerPixel;
     if (bpp > 8) {
         fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented. accept only bpp <= 8\n", bpp);
+#if GIFLIB_MAJOR >= 5
         DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
         return NULL;
     }
     palette_num = ColorMap->ColorCount;
@@ -220,7 +228,11 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
      * destruct
      */
     if (GifFile) {
+#if GIFLIB_MAJOR >= 5
         DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
     }
     return image_data;
 }
@@ -310,7 +322,11 @@ gifconv_lossless2gif(void *image_data,
     free(gif_image_data);
 
     if (GifFile) {
+#if GIFLIB_MAJOR >= 5
         EGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
     }
     *length = gif_buff.data_offset;
     return gif_buff.data;
