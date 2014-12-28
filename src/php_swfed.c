@@ -42,7 +42,7 @@
 #include "swf_tag.h"
 #include "swf_object.h"
 
-#define SWFED_VERSION "0.63a"
+#define SWFED_VERSION "0.63"
 
 #define get_zend_hash_value_long(table, key, value) do { \
         zval **tmp = NULL; \
