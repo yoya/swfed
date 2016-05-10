@@ -80,6 +80,11 @@ extern int swf_object_search_cid_by_bitmap_condition(swf_object_t *swf,
                                                      int width, int height,
                                                      int red, int green, int blue);
 
+extern swf_tag_t *swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
+                                                      unsigned char *target_path,
+                                                      int target_path_len,
+                                                      swf_object_t *swf);
+
 /* --- */
 
 extern unsigned char *swf_object_get_shapedata(swf_object_t *swf,
