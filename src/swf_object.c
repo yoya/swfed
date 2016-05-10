@@ -1339,7 +1339,7 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
 
 // return Sprite tag mapped target path
 static swf_tag_t *
-swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
+swf_object_saerch_sprite_by_target_path2(swf_tag_t *tag_head,
 					unsigned char *target_path,
 					int target_path_len,
 					swf_object_t *swf) {
@@ -1369,7 +1369,7 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
     }
     if (cid <= 0) {
         fprintf(stderr,
-                "swf_object_saerch_sprite_by_target_path: not found place target_path=%s (cid=%d)\n",
+                "swf_object_saerch_sprite_by_target_path2: not found place target_path=%s (cid=%d)\n",
                 target_path, cid);
         return NULL; // not found instance name;
     }
@@ -1388,13 +1388,29 @@ swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(sprite_tag, swf);
             if (tag_sprite == NULL) {
-                fprintf(stderr, "swf_object_saerch_sprite_by_target_path: tag_sprite swf_tag_create_input_detail failed\n");
+                fprintf(stderr, "swf_object_saerch_sprite_by_target_path2: tag_sprite swf_tag_create_input_detail failed\n");
             } else {
                 sprite_tag = swf_object_saerch_sprite_by_target_path(tag_sprite->tag, next_instance_name, target_path_len - instance_name_len - 1, swf);
             }
         }
     }
     return sprite_tag;
+}
+swf_tag_t *
+swf_object_saerch_sprite_by_target_path(swf_tag_t *tag_head,
+					unsigned char *target_path,
+					int target_path_len,
+					swf_object_t *swf) {
+    swf_tag_t *tag;
+    unsigned char* target_path2 = (unsigned char*)malloc(target_path_len+1);
+    memcpy(target_path2, target_path, target_path_len+1);
+
+    tag = swf_object_saerch_sprite_by_target_path2(tag_head,
+                                             target_path2,
+                                             target_path_len,
+                                             swf);
+    free(target_path2);
+    return tag;
 }
 
 int
