@@ -20,6 +20,7 @@ Make sure that the comment is aligned:
 if test "$PHP_SWFED" != "no"; then
   dnl Write more examples of tests here...
 
+  sinclude(version-lib.m4)
   sinclude(config-lib.m4)
 
   dnl # --with-swfed -> check with-path
@@ -61,7 +62,7 @@ if test "$PHP_SWFED" != "no"; then
   dnl
   PHP_SUBST(SWFED_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(swfed, php_swfed.c \
+  PHP_NEW_EXTENSION(swfed, \
 	swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
 	swf_jpeg.c jpeg_segment.c bitmap_util.c swf_png.c swf_gif.c \
 	swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
@@ -77,4 +78,9 @@ if test "$PHP_SWFED" != "no"; then
 	swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
 	swf_tag_button.c swf_button_record.c swf_button_condaction.c \
 	, $ext_shared)
+  if test  $PHP_MAJOR_VERSION -eq 5; then
+    PHP_NEW_EXTENSION(swfed, php5_swfed.c, $ext_shared)
+  else
+    PHP_NEW_EXTENSION(swfed, php_swfed.c, $ext_shared)
+  fi
 fi
