@@ -121,7 +121,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     gif_uint_32 gif_width = 0, gif_height = 0;
     gif_bytep gif_image_data_ref = NULL;
     gif_uint_32 x, y;
-    
+
     void *image_data = NULL;
     int palette_num = 0;
     int trans_index = -1;
@@ -143,7 +143,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     }
     if (DGifSlurp(GifFile) == GIF_ERROR) {
         fprintf(stderr, "gifconv_gif2lossless: DGifSlurp failed\n");
-#if GIFLIB_MAJOR >= 5
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
         DGifCloseFile(GifFile, NULL);
 #else
         DGifCloseFile(GifFile);
@@ -160,7 +160,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     bpp = ColorMap->BitsPerPixel;
     if (bpp > 8) {
         fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented. accept only bpp <= 8\n", bpp);
-#if GIFLIB_MAJOR >= 5
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
         DGifCloseFile(GifFile, NULL);
 #else
         DGifCloseFile(GifFile);
@@ -180,7 +180,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     } else {
         *tag_no = 20; // DefineBitsLossless
     }
-    
+
     /*
      * image copy
      */
@@ -219,7 +219,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         for (x=0 ; x < gif_width ; x++) {
             indices_data[i] = gif_image_data_ref[j];
             i++;
-	    j++;
+            j++;
         }
         while (i % 4) { i++; } // 4byte alignment
     }
@@ -228,7 +228,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
      * destruct
      */
     if (GifFile) {
-#if GIFLIB_MAJOR >= 5
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
         DGifCloseFile(GifFile, NULL);
 #else
         DGifCloseFile(GifFile);
@@ -264,7 +264,7 @@ gifconv_lossless2gif(void *image_data,
     gif_height = height;
     ColorCount = 256;
     Colors = calloc(sizeof(GifColorType), ColorCount);
-    
+
     gif_buff.data = NULL;
     gif_buff.data_len = 0;
     gif_buff.data_offset = 0;
@@ -282,7 +282,7 @@ gifconv_lossless2gif(void *image_data,
     GifFile->SColorResolution = bpp;
 
     gif_palette = (gif_colorp) malloc(sizeof(gif_color)*index_data_count);
-    
+
     if (tag_no == 20) {
         swf_rgb_t *rgb_list  = index_data;
         for (i=0 ; i < index_data_count ; i++) {
@@ -322,7 +322,7 @@ gifconv_lossless2gif(void *image_data,
     free(gif_image_data);
 
     if (GifFile) {
-#if GIFLIB_MAJOR >= 5
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
         EGifCloseFile(GifFile, NULL);
 #else
         EGifCloseFile(GifFile);
