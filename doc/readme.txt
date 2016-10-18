@@ -20,7 +20,8 @@
  echo $swf->output();
  
  - other sample code
-   http://git.sourceforge.jp/view?p=swfed/swfed.git;a=tree;f=sample
+   https://osdn.jp/projects/swfed/scm/git/swfed/tree/master/sample/
+
 
 * demo
 
@@ -35,8 +36,8 @@
 
 * download
 
- - http://sourceforge.jp/projects/swfed/files/ release 
- - git://git.sourceforge.jp/gitroot/swfed/swfed.git current 
+ - https://osdn.jp/projects/swfed/releases/ release 
+ - git://git.osdn.jp/gitroot/swfed/swfed.git
 
 * install
 
@@ -44,4 +45,4 @@
 
 * more information
 
- - http://sourceforge.jp/projects/swfed/wiki/
+ - https://osdn.jp/projects/swfed/wiki/
