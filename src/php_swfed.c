@@ -42,8 +42,6 @@
 #include "swf_tag.h"
 #include "swf_object.h"
 
-#define SWFED_VERSION "0.64a"
-
 #define get_zend_hash_value_long(table, key, value) do { \
         zval *tmp = NULL; \
         if ((tmp = zend_hash_str_find(table, ZEND_STRL(key))) != NULL) { \
@@ -151,7 +149,7 @@ zend_module_entry swfed_module_entry = {
         PHP_RSHUTDOWN(swfed),	/* Replace with NULL if there's nothing to do at request end */
         PHP_MINFO(swfed),
 #if ZEND_MODULE_API_NO >= 20010901
-        SWFED_VERSION, /* Replace with version number for your extension */
+        PHP_SWFED_VERSION,
 #endif
         STANDARD_MODULE_PROPERTIES
 };
@@ -250,7 +248,7 @@ PHP_MINFO_FUNCTION(swfed)
         int png_support = 0;
         php_info_print_table_start();
         php_info_print_table_header(2, "SWF Editor support", "enabled");
-        php_info_print_table_row(2, "SWF Editor version", SWFED_VERSION);
+        php_info_print_table_row(2, "SWF Editor version", PHP_SWFED_VERSION);
 #ifdef HAVE_PNG
         png_support = 1;
 #endif
