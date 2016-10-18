@@ -325,7 +325,7 @@ gifconv_lossless2gif(void *image_data,
 #if GIFLIB_MAJOR >= 5
         EGifCloseFile(GifFile, NULL);
 #else
-        DGifCloseFile(GifFile);
+        EGifCloseFile(GifFile);
 #endif
     }
     *length = gif_buff.data_offset;
