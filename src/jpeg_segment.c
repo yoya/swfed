@@ -105,9 +105,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
                 break;
             }
             fprintf(stderr, "jpeg_segment_parse: marker1=0x%02X\n", marker1);
-            jpeg_segment_destroy(jpeg_seg);
-            bitstream_close(bs);
-            return NULL;
+	    continue;
         }
         marker2 = bitstream_getbyte(bs);
         switch(marker2) {
