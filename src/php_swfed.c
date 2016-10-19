@@ -1513,14 +1513,12 @@ PHP_METHOD(swfed, setActionVariables) {
     HashTable *arr_hash;
     char            *str_key, *str_value;
     uint            str_key_len, str_value_len;
-    ulong tmp;
-    char tmp_str[17];
     int ret;
     y_keyvalue_t *kv;
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    zend_ulong loop_num_key;
     zend_string *loop_key = NULL;
     zval *loop_val;
-    ulong loop_num_key;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &arr) == FAILURE) {
         RETURN_FALSE;
@@ -1529,16 +1527,15 @@ PHP_METHOD(swfed, setActionVariables) {
 
     arr_hash = Z_ARRVAL_P(arr);
     ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(arr), loop_num_key, loop_key, loop_val) {
-        str_value = Z_STRVAL_P(loop_val);
-        str_value_len = Z_STRLEN_P(loop_val);
+        if (! loop_key) {
+            loop_key = zend_long_to_str(loop_num_key);
+        }
+        convert_to_string_ex(loop_val);
         str_key       = ZSTR_VAL(loop_key);
         str_key_len   = ZSTR_LEN(loop_key);
-        if (loop_key) {
-            y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
-        } else {
-            snprintf(tmp_str, 17, "%ld\0", tmp);
-            y_keyvalue_set(kv, tmp_str, strlen(tmp_str), str_value, str_value_len);
-        }
+        str_value     = Z_STRVAL_P(loop_val);
+        str_value_len = Z_STRLEN_P(loop_val);
+	y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
     } ZEND_HASH_FOREACH_END();
     swf_object_insert_action_setvariables(swf, kv);
     y_keyvalue_close(kv);
@@ -1550,8 +1547,6 @@ PHP_METHOD(swfed, replaceActionStrings) {
     HashTable *arr_hash;
     char            *str_key, *str_value;
     uint            str_key_len, str_value_len;
-    ulong tmp;
-    char tmp_str[17];
     int ret;
     y_keyvalue_t *kv;
     swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
@@ -1566,16 +1561,15 @@ PHP_METHOD(swfed, replaceActionStrings) {
 
     arr_hash = Z_ARRVAL_P(arr);
     ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(arr), loop_num_key, loop_key, loop_val) {
-        str_value     = Z_STRVAL_P(loop_val);
-        str_value_len = Z_STRLEN_P(loop_val);
+        if (! loop_key) {
+            loop_key = zend_long_to_str(loop_num_key);
+        }
+        convert_to_string_ex(loop_val);
         str_key       = ZSTR_VAL(loop_key);
         str_key_len   = ZSTR_LEN(loop_key);
-        if (loop_key) {
-            y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
-        } else {
-            snprintf(tmp_str, 17, "%ld\0", tmp);
-            y_keyvalue_set(kv, tmp_str, strlen(tmp_str), str_value, str_value_len);
-        }
+        str_value     = Z_STRVAL_P(loop_val);
+        str_value_len = Z_STRLEN_P(loop_val);
+        y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
     } ZEND_HASH_FOREACH_END();
 
     swf_object_replace_action_strings(swf, kv);
