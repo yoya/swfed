@@ -24,7 +24,7 @@
 extern zend_module_entry swfed_module_entry;
 #define phpext_swfed_ptr &swfed_module_entry
 
-#define PHP_SWFED_VERSION "0.65a" /* Replace with version number for your extention */
+#define PHP_SWFED_VERSION "0.65" /* Replace with version number for your extention */
 
 #ifdef PHP_WIN32
 #define PHP_SWFED_API __declspec(dllexport)
