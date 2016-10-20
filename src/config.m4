@@ -62,8 +62,7 @@ if test "$PHP_SWFED" != "no"; then
   dnl
   PHP_SUBST(SWFED_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(swfed, \
-	swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
+  SWF_OBJECT_FILES="swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
 	swf_jpeg.c jpeg_segment.c bitmap_util.c swf_png.c swf_gif.c \
 	swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
 	swf_rect.c swf_matrix.c swf_action.c \
@@ -76,11 +75,11 @@ if test "$PHP_SWFED" != "no"; then
 	swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
 	swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
 	swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
-	swf_tag_button.c swf_button_record.c swf_button_condaction.c \
-	, $ext_shared)
+	swf_tag_button.c swf_button_record.c swf_button_condaction.c"
+
   if test  $PHP_MAJOR_VERSION -eq 5; then
-    PHP_NEW_EXTENSION(swfed, php5_swfed.c, $ext_shared)
+    PHP_NEW_EXTENSION(swfed, php5_swfed.c $SWF_OBJECT_FILES, $ext_shared)
   else
-    PHP_NEW_EXTENSION(swfed, php_swfed.c, $ext_shared)
+    PHP_NEW_EXTENSION(swfed, php_swfed.c $SWF_OBJECT_FILES, $ext_shared)
   fi
 fi
