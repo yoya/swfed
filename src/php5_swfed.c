@@ -642,7 +642,7 @@ PHP_METHOD(swfed, getTagData) {
     new_buff = emalloc(data_len);
     memcpy(new_buff, data, data_len);
     free(data);
-    RETURN_STRINGL(new_buff, data_len, 0);
+    RETURN_STRINGL((char *)new_buff, data_len, 0);
 }
 
 PHP_METHOD(swfed, replaceTagData) {

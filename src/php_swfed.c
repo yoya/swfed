@@ -642,7 +642,7 @@ PHP_METHOD(swfed, getTagData) {
     new_buff = emalloc(data_len);
     memcpy(new_buff, data, data_len);
     //RETURN_STRINGL(new_buff, data_len, 0);
-    zend_string *str = zend_string_init(new_buff, data_len, 0);
+    zend_string *str = zend_string_init((char *)new_buff, data_len, 0);
     free(data);
     RETURN_STR(str);
 }
