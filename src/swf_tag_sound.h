@@ -11,7 +11,7 @@
 
 typedef struct swf_tag_sound_detail_ {
     int sound_id;
-    int sound_format:4;
+    unsigned int sound_format:4;
     int sound_rate:2;
     int sound_is_16bits:1;
     int sound_is_stereo:1;
