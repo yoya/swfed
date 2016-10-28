@@ -17,6 +17,7 @@ swf_line_style_parse(bitstream_t *bs, swf_line_style_t *line_style,
         swf_rgba_parse(bs, &(line_style->rgba_morph));
     } else if (tag->code == 83 || tag->code == 84) {
         // DefineShape4 || DefineMorphShape2
+	line_style->width = bitstream_getbytesLE(bs, 2);
         if (tag->code == 84) { // DefineMorphShape2
             line_style->width_morph = bitstream_getbytesLE(bs, 2);
         }
@@ -72,6 +73,7 @@ swf_line_style_build(bitstream_t *bs, swf_line_style_t *line_style,
         swf_rgba_build(bs, &(line_style->rgba_morph));
     } else if (tag->code == 83 || tag->code == 84) {
         // DefineShape4 || DefineMorphShape2
+        bitstream_putbytesLE(bs, line_style->width, 2);
         if (tag->code == 84) { // DefineMorphShape2
             bitstream_putbytesLE(bs, line_style->width_morph, 2);
         }
@@ -121,6 +123,8 @@ swf_line_style_print(swf_line_style_t *line_style, int indent_depth,
         swf_rgba_print(&(line_style->rgba_morph), indent_depth);
     } else if (tag->code == 83 || tag->code == 84) {
         // DefineShape4 || DefineMorphShape2
+        print_indent(indent_depth);
+        printf("width=%d\n", line_style->width);
         if (tag->code == 84) { // DefineMorphShape2
             print_indent(indent_depth);
             printf("width_morph=%d\n", line_style->width_morph);
