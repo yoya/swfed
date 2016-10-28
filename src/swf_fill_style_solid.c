@@ -9,7 +9,7 @@ swf_fill_style_solid_parse(bitstream_t *bs,
     if (tag->code == 46 || tag->code == 84) { // DefineMorphShape, DefineMorphShape2
         swf_rgba_parse(bs, &(fill_style_solid->rgba));
         swf_rgba_parse(bs, &(fill_style_solid->rgba_morph));
-    } else if (tag->code == 32) { // DefineShape3
+    } else if (tag->code >= 32) { // DefineShape3, DefineShape4
         swf_rgba_parse(bs, &(fill_style_solid->rgba));
     } else {
         swf_rgb_parse(bs, &(fill_style_solid->rgb));
