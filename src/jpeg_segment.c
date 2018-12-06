@@ -320,7 +320,7 @@ int main(int argc, char **argv) {
     data = malloc(data_len);
     if (fread(data, 1, data_len, fp) != data_len) {
         fclose(fp);
-        return 1;
+        return EXIT_FAILURE;
     }
     fclose(fp);
     jpeg_seg = jpeg_segment_parse(data, data_len, 1);
