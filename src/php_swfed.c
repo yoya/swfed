@@ -1,7 +1,5 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 7                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -26,6 +24,7 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_swfed.h"
+#include "swfed_arginfo.h"
 
 #include "swf_define.h"
 #include "y_keyvalue.h"
@@ -76,64 +75,6 @@ ZEND_DECLARE_MODULE_GLOBALS(swfed)
 /* True global resources - no need for thread safety here */
 static int le_swfed;
 
-/* {{{ swfed_functions[]
- *
- * Every user visible function must have an entry in swfed_functions[].
- */
-zend_function_entry swfed_functions[] = {
-    PHP_ME(swfed,  __construct, NULL, 0)
-    PHP_ME(swfed,  input, NULL, 0)
-    PHP_ME(swfed,  output, NULL, 0)
-    PHP_ME(swfed,  swfInfo, NULL, 0)
-    PHP_ME(swfed,  _destroy_and_exit, NULL, 0) // for debug
-
-    PHP_ME(swfed,  getHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  setHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  getTagList, NULL, 0)
-    PHP_ME(swfed,  getTagDetail, NULL, 0)
-    PHP_ME(swfed,  getTagData, NULL, 0)
-    PHP_ME(swfed,  replaceTagData, NULL, 0)
-    PHP_ME(swfed,  getTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  removeTag, NULL, 0)
-    PHP_ME(swfed,  printTagData, NULL, 0)
-
-    PHP_ME(swfed,  getShapeData, NULL, 0)
-    PHP_ME(swfed,  replaceShapeData, NULL, 0)
-    PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
-    PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
-    PHP_ME(swfed,  getBitmapSize, NULL, 0)
-    PHP_ME(swfed,  getJpegData, NULL, 0)
-    PHP_ME(swfed,  getJpegAlpha, NULL, 0)
-    PHP_ME(swfed,  replaceJpegData, NULL, 0)
-    PHP_ME(swfed,  getPNGData, NULL, 0)
-    PHP_ME(swfed,  replacePNGData, NULL, 0)
-    PHP_ME(swfed,  replaceGIFData, NULL, 0)
-    PHP_ME(swfed,  replaceBitmapData, NULL, 0)
-    PHP_ME(swfed,  convertBitmapDataToJpegTag, NULL, 0)
-    PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
-    PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
-    PHP_ME(swfed,  getSoundData, NULL, 0)
-    PHP_ME(swfed,  replaceMLDData, NULL, 0)
-    PHP_ME(swfed,  getEditString, NULL, 0)
-    PHP_ME(swfed,  replaceEditString, NULL, 0)
-    PHP_ME(swfed,  getActionData, NULL, 0)
-    PHP_ME(swfed,  disasmActionData, NULL, 0)
-    PHP_ME(swfed,  setActionVariables, NULL, 0)
-    PHP_ME(swfed,  replaceActionStrings, NULL, 0)
-    PHP_ME(swfed,  replaceMovieClip, NULL, 0)
-
-    PHP_ME(swfed,  setCompressLevel, NULL, 0)
-    PHP_ME(swfed,  rebuild, NULL, 0)
-    PHP_ME(swfed,  purgeUselessContents, NULL, 0)
-
-    PHP_ME(swfed,  isShapeTagData, NULL, 0)
-    PHP_ME(swfed,  isBitmapTagData, NULL, 0)
-    {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
-};
-/* }}} */
 
 /* {{{ swfed_module_entry
  */
