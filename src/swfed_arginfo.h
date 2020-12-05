@@ -116,18 +116,10 @@ ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 1)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_swfed_replaceBitmapData, 0, 0, 4)
-// php8
-#if ZEND_MODULE_API_NO >= 20200930
 ZEND_ARG_TYPE_INFO(0, arg1, IS_MIXED, 0)
 ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
 ZEND_ARG_TYPE_INFO(0, opts, IS_STRING, 1)
 ZEND_ARG_TYPE_INFO(0, arg4, IS_MIXED, 1)
-#else
-ZEND_ARG_INFO(0, arg1)
-ZEND_ARG_INFO(0, data)
-ZEND_ARG_INFO(0, opts)
-ZEND_ARG_INFO(0, arg4)
-#endif
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_swfed_convertBitmapDataToJpegTag, 0, 0, 0)
