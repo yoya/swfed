@@ -686,13 +686,13 @@ PHP_METHOD(swfed, replaceTagData) {
 PHP_METHOD(swfed, getTagDataByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data_ref = NULL;
+    char *data_ref = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis());
-    data_ref = swf_object_get_tagdata_bycid(swf, cid, &data_len);
+    data_ref = (char *) swf_object_get_tagdata_bycid(swf, cid, &data_len);
 
     if (data_ref == NULL) {
         fprintf(stderr, "getTagDataByCID: Can't get_tagdata_bycid\n");
@@ -732,13 +732,13 @@ PHP_METHOD(swfed, replaceTagDataByCID) {
 PHP_METHOD(swfed, getTagContentsByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data_ref = NULL;
+    char *data_ref = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
     swf = get_swf_object(getThis());
-    data_ref = swf_object_get_tagcontents_bycid(swf, cid, &data_len);
+    data_ref = (char *) swf_object_get_tagcontents_bycid(swf, cid, &data_len);
 
     if (data_ref == NULL) {
         fprintf(stderr, "getTagContentsByCID: Can't get_tagcontents_bycid\n");
@@ -829,7 +829,8 @@ PHP_METHOD(swfed, printTagData) {
 PHP_METHOD(swfed, getShapeData) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data = NULL, *new_buff;
+    unsigned char *data = NULL;
+    char *new_buff = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
