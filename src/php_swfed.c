@@ -1562,7 +1562,7 @@ PHP_METHOD(swfed, replaceActionStrings) {
     swf_object_t *swf = get_swf_object(getThis());
     zend_string *loop_key = NULL;
     zval *loop_val;
-    ulong loop_num_key;
+    zend_ulong loop_num_key;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;

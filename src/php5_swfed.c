@@ -1478,7 +1478,7 @@ PHP_METHOD(swfed, setActionVariables) {
     HashPosition    pos;
     char            *str_key, *str_value;
     uint            str_key_len, str_value_len;
-    ulong tmp;
+    zend_ulong tmp;
     char tmp_str[17];
     int ret;
     y_keyvalue_t *kv;
@@ -1522,7 +1522,7 @@ PHP_METHOD(swfed, replaceActionStrings) {
     HashPosition    pos;
     char            *str_key, *str_value;
     uint            str_key_len, str_value_len;
-    ulong tmp;
+    zend_ulong tmp;
     char tmp_str[17];
     int ret;
     y_keyvalue_t *kv;
