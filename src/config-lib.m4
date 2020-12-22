@@ -28,7 +28,7 @@ fi
       AC_MSG_ERROR([Can't find ZLIB headers under "$PHP_ZLIB_DIR"])
     fi
   else
-    for i in /usr/local /usr /usr/local/opt/zlib; do
+    for i in /usr/local /usr /opt/local /usr/local/opt/zlib; do
       if test -f "$i/include/zlib/zlib.h"; then
         PHP_ZLIB_DIR="$i"
         PHP_ZLIB_INCDIR="$i/include/zlib"
@@ -71,7 +71,7 @@ fi
       AC_MSG_ERROR([Can't find LIBPNG headers under "$PHP_PNG_DIR"])
     fi
   else
-    for i in /usr/local /usr; do
+    for i in /usr/local /usr /opt/local; do
       if test -f "$i/include/libpng/png.h"; then
 	AC_DEFINE(HAVE_PNG,1,[ ])
         PHP_PNG_DIR="$i"
@@ -116,7 +116,7 @@ fi
       AC_MSG_ERROR([Can't find GIFLIB headers under "$PHP_GIF_DIR"])
     fi
   else
-    for i in /usr/local /usr; do
+    for i in /usr/local /usr /opt/local; do
       if test -f "$i/include/giflib/gif_lib.h"; then
 	AC_DEFINE(HAVE_GIF,1,[ ])
         PHP_GIF_DIR="$i"
