@@ -60,7 +60,7 @@ if (empty($_REQUEST['id']))  {
      echo "ファイルを指定してください。($upload_max_filesize Bytes 以内に限定してます)";
      exit(0);
 }
-$id = $_REQUEST['id'];
+$id = hex_from_string($_REQUEST['id']);
 $tmp_filename = "$tmp_prefix$id.swf";
 $swfdata = file_get_contents($tmp_filename);
 

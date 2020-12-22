@@ -4,7 +4,7 @@
 
 require_once('define.php');
 
-$id = $_REQUEST['id'];
+$id = hex_from_string($_REQUEST['id']);
 
 $filename = "$tmp_prefix$id.swf";
 $swfdata = file_get_contents($filename);

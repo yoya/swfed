@@ -34,8 +34,8 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
         exit(0);
     }
     $tmp_name = sha1($imagedata, false);
-    $id = $_REQUEST['id'];
-    $image_id = $_REQUEST['image_id'];
+    $id = hex_from_string($_REQUEST['id']);
+    $image_id = dec_from_string($_REQUEST['image_id']);
     $ext = detect_image_ext($imagedata);
     if ($ext == false) {
         $image_sig = substr($imagedata, 0, 8);
@@ -70,8 +70,8 @@ FORM;
 }
 
 if (empty($_REQUEST['id_image']))  {
-    $id       = $_REQUEST['id'];
-    $image_id = $_REQUEST['image_id'];
+    $id       = hex_from_string($_REQUEST['id']);
+    $image_id = dec_from_string($_REQUEST['image_id']);
 echo <<< FORM
 <html>
 <head>
@@ -94,9 +94,9 @@ FORM;
     exit(0);
 }
 
-$id = $_REQUEST['id'];
-$image_id = $_REQUEST['image_id'];
-$id_image = $_REQUEST['id_image'];
+$id = hex_from_string($_REQUEST['id']);
+$image_id = dec_from_string($_REQUEST['image_id']);
+$id_image = hex_from_string($_REQUEST['id_image']);
 $ext = $_REQUEST['ext'];
 
 if (($ext != '.jpg') && ($ext != '.png') && ($ext != '.gif')) {

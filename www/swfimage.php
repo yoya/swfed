@@ -2,8 +2,8 @@
 
 require_once('define.php');
 
-$id       = $_REQUEST['id'];
-$image_id = $_REQUEST['image_id'];
+$id       = hex_from_string($_REQUEST['id']);
+$image_id = dec_from_string($_REQUEST['image_id']);
 $ext      = $_REQUEST['ext'];
 
 switch ($ext) {

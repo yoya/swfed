@@ -2,9 +2,13 @@
 
 require_once('define.php');
 
-$id       = $_REQUEST['id'];
-$shape_id = $_REQUEST['shape_id'];
+$id       = hex_from_string($_REQUEST['id']);
+$shape_id = dec_from_string($_REQUEST['shape_id']);
 $ext      = $_REQUEST['ext'];
+if (($ext != '.jpg') && ($ext != '.png') && ($ext != '.gif')) {
+    echo "unknown ext=($ext)..\n";
+    exit(1);
+}
 
 $shape_filename = "$tmp_prefix$id-$shape_id$ext";
 $shape_data = file_get_contents($shape_filename);
