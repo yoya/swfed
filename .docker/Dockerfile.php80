@@ -1,0 +1,15 @@
+FROM php:8.0-cli
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get -y update && \
+        apt-get install -y build-essential libpng-dev libgif-dev
+COPY . /tmp/ext
+
+WORKDIR /tmp/ext/src
+
+#RUN make clean && phpize --clean
+RUN phpize && ./configure && make
+
+CMD make test NO_INTERACTION=1 TESTS=--show-diff
+

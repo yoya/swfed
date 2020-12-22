@@ -1,7 +1,5 @@
 /*
   +----------------------------------------------------------------------+
-  | PHP Version 7                                                        |
-  +----------------------------------------------------------------------+
   | Copyright (c) 1997-2015 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
@@ -26,6 +24,10 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_swfed.h"
+// php8
+#if ZEND_MODULE_API_NO >= 20200930
+#include "swfed_arginfo.h"
+#endif
 
 #include "swf_define.h"
 #include "y_keyvalue.h"
@@ -59,9 +61,9 @@
     } while (0);
 
 static int
-param_is_null(int n TSRMLS_DC) {
+param_is_null(int n) {
     zval *p;
-    zend_parse_parameters(n TSRMLS_CC, "z", &p);
+    zend_parse_parameters(n, "z", &p);
     if(Z_TYPE_P(p) == IS_NULL) {
         return 1; // true
     }
@@ -80,6 +82,7 @@ static int le_swfed;
  *
  * Every user visible function must have an entry in swfed_functions[].
  */
+#if ZEND_MODULE_API_NO < 20200930
 zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  __construct, NULL, 0)
     PHP_ME(swfed,  input, NULL, 0)
@@ -133,6 +136,7 @@ zend_function_entry swfed_functions[] = {
     PHP_ME(swfed,  isBitmapTagData, NULL, 0)
     {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
 };
+#endif
 /* }}} */
 
 /* {{{ swfed_module_entry
@@ -156,6 +160,9 @@ zend_module_entry swfed_module_entry = {
 /* }}} */
 
 #ifdef COMPILE_DL_SWFED
+#ifdef ZTS
+ZEND_TSRMLS_CACHE_DEFINE();
+#endif
 ZEND_GET_MODULE(swfed)
 #endif
 
@@ -181,8 +188,8 @@ static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
 /* }}} */
 
 
-static void free_swfed_resource(zend_resource *resource TSRMLS_DC);
-static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC);
+static void free_swfed_resource(zend_resource *resource);
+static swf_object_t  *get_swf_object(zval *obj);
 
 /* {{{ PHP_MINIT_FUNCTION
  */
@@ -194,7 +201,7 @@ PHP_MINIT_FUNCTION(swfed)
        */
     zend_class_entry ce;
     INIT_CLASS_ENTRY(ce, "SWFEditor", swfed_functions);
-    swfeditor_ce = zend_register_internal_class(&ce TSRMLS_CC);
+    swfeditor_ce = zend_register_internal_class(&ce);
     le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
 
     //zend_declare_property_stringl(swfeditor_ce,
@@ -227,6 +234,9 @@ PHP_MSHUTDOWN_FUNCTION(swfed)
  */
 PHP_RINIT_FUNCTION(swfed)
 {
+#if defined(COMPILE_DL_EXTNAME) && defined(ZTS)
+        ZEND_TSRMLS_CACHE_UPDATE();
+#endif
         return SUCCESS;
 }
 /* }}} */
@@ -279,7 +289,7 @@ PHP_FUNCTION(confirm_swfed_compiled)
         size_t arg_len, len;
         zend_string *string = zend_string_alloc(255, 0);
 
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &arg, &arg_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
                 return;
         }
 
@@ -309,7 +319,7 @@ PHP_METHOD(swfed, __construct) {
     swf_object_t *swf = swf_object_open();
     zval *ret = 0;
     if (swf == NULL) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Couldn't create swf object");
+        php_error_docref(NULL, E_ERROR, "Couldn't create swf object");
     }
     ret = zend_list_insert(swf, le_swfed);
     //object_init_ex(getThis(), swfeditor_ce);
@@ -322,11 +332,11 @@ PHP_METHOD(swfed, input) {
     size_t data_len = 0;
     swf_object_t *swf = NULL;
     int result = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_input(swf, (unsigned char *) data, data_len);
     if (result) {
         RETURN_FALSE;
@@ -343,7 +353,7 @@ PHP_METHOD(swfed, output) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_output(swf, &len);
     new_buff = emalloc(len);
     if (new_buff == NULL) {
@@ -360,20 +370,20 @@ PHP_METHOD(swfed, output) {
 }
 
 PHP_METHOD(swfed, swfInfo) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     swf_object_print(swf);
     RETURN_TRUE;
 }
 
 PHP_METHOD(swfed, _destroy_and_exit) { // for debug
     swf_object_t *swf = NULL;
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     swf_object_close(swf);
     exit(0);
 }
 
 PHP_METHOD(swfed, getHeaderInfo) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     array_init(return_value);
     if (memcmp(swf->header.magic, "CWS", 3) == 0) {
         add_assoc_bool(return_value, "compress", 1);
@@ -395,12 +405,12 @@ PHP_METHOD(swfed, setHeaderInfo) {
     swf_object_t *swf = NULL;
     HashTable *header_table = NULL;
     zval *tmp = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                               &header_info) == FAILURE) {
-        php_error_docref(NULL TSRMLS_CC, E_ERROR, "Invalid parameters");
+        php_error_docref(NULL, E_ERROR, "Invalid parameters");
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     header_table = Z_ARRVAL_P(header_info);
 
     // FWS or CWS
@@ -449,7 +459,7 @@ PHP_METHOD(swfed, getTagList) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     array_init(return_value);
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         array_init(&data);
@@ -476,11 +486,11 @@ PHP_METHOD(swfed, getTagDetail) {
     swf_tag_t *tag = NULL;
     swf_tag_info_t *tag_info = NULL;
     int i = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     i = 0;
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
         if (i == tag_seqno) {
@@ -629,10 +639,10 @@ PHP_METHOD(swfed, getTagData) {
     unsigned char *data = NULL, *new_buff;
     unsigned long data_len = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_tagdata(swf, tag_seqno, &data_len);
 
     if (data == NULL) {
@@ -658,12 +668,12 @@ PHP_METHOD(swfed, replaceTagData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &tag_seqno, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &tag_seqno, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_tagdata(swf, tag_seqno,
                                         (unsigned char *)data,
                                         (unsigned long) data_len);
@@ -678,10 +688,10 @@ PHP_METHOD(swfed, getTagDataByCID) {
     swf_object_t *swf = NULL;
     unsigned char *data_ref = NULL;
     unsigned long data_len = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data_ref = swf_object_get_tagdata_bycid(swf, cid, &data_len);
 
     if (data_ref == NULL) {
@@ -704,12 +714,12 @@ PHP_METHOD(swfed, replaceTagDataByCID) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &cid, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &cid, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_tagdata_bycid(swf, cid,
                                               (unsigned char *)data,
                                               data_len);
@@ -724,10 +734,10 @@ PHP_METHOD(swfed, getTagContentsByCID) {
     swf_object_t *swf = NULL;
     unsigned char *data_ref = NULL;
     unsigned long data_len = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data_ref = swf_object_get_tagcontents_bycid(swf, cid, &data_len);
 
     if (data_ref == NULL) {
@@ -751,12 +761,12 @@ PHP_METHOD(swfed, replaceTagContentsByCID) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &cid, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &cid, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_tagcontents_bycid(swf, cid,
                                                   (unsigned char *)data,
                                                   data_len);
@@ -774,17 +784,17 @@ PHP_METHOD(swfed, removeTag) {
 
     switch (ZEND_NUM_ARGS()) {
       case 1:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
             RETURN_FALSE;
         }
         break;
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll", &tag_seqno, &tag_seqno_in_sprite) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &tag_seqno, &tag_seqno_in_sprite) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);
     if (ret) {
         RETURN_FALSE;
@@ -802,12 +812,12 @@ PHP_METHOD(swfed, printTagData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 1:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     ret = swf_object_print_tagdata(swf, (unsigned char *)data,
                                    (unsigned long) data_len);
     if (ret) {
@@ -821,10 +831,10 @@ PHP_METHOD(swfed, getShapeData) {
     swf_object_t *swf = NULL;
     unsigned char *data = NULL, *new_buff;
     unsigned long data_len = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &cid) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_shapedata(swf, cid, &data_len);
 
     if (data == NULL) {
@@ -851,12 +861,12 @@ PHP_METHOD(swfed, replaceShapeData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &cid, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &cid, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_shapedata(swf, cid,
                                           (unsigned char *)data,
                                           (unsigned long)data_len);
@@ -869,11 +879,11 @@ PHP_METHOD(swfed, replaceShapeData) {
 PHP_METHOD(swfed, setShapeAdjustMode) {
     swf_object_t *swf = NULL;
     zend_long mode = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &mode) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     swf_object_set_shape_adjust_mode(swf, mode);
     RETURN_TRUE;
 }
@@ -884,11 +894,11 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     swf_object_t *swf = NULL;
     swf_tag_t *tag = NULL;
     int i;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &bitmap_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     array_init(return_value);
     i = 0;
     for (tag = swf->tag_head ; tag ; tag=tag->next) {
@@ -916,11 +926,11 @@ PHP_METHOD(swfed, getBitmapSize) {
     swf_object_t *swf = NULL;
     int width, height;
     int ret;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &bitmap_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     ret = swf_object_get_bitmap_size(swf, bitmap_id, &width, &height);
     if (ret) {
         RETURN_FALSE;
@@ -936,11 +946,11 @@ PHP_METHOD(swfed, getJpegData) {
     unsigned char *data = NULL;
     char *new_buff = NULL;
     swf_object_t *swf = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_jpegdata(swf, &len, image_id);
     if (data == NULL) {
         RETURN_FALSE;
@@ -966,11 +976,11 @@ PHP_METHOD(swfed, getJpegAlpha) {
     unsigned char *data = NULL;
     char *new_buff = NULL;
     swf_object_t *swf = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_alphadata(swf, &len, image_id);
     if (data == NULL) {
         RETURN_FALSE;
@@ -1001,17 +1011,17 @@ PHP_METHOD(swfed, replaceJpegData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &image_id, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
          break;
       case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "lss", &image_id, &data, &data_len, &alpha_data, &alpha_data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_jpegdata(swf, image_id,
                                          (unsigned char *)data,
                                          (unsigned long) data_len,
@@ -1034,11 +1044,11 @@ PHP_METHOD(swfed, getPNGData) {
     unsigned char *data = NULL;
     char *new_buff = NULL;
     swf_object_t *swf = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_pngdata(swf, &len, image_id);
     if (data == NULL) {
         RETURN_FALSE;
@@ -1077,7 +1087,7 @@ PHP_METHOD(swfed, replacePNGData) {
         RETURN_FALSE; /* XXX */
       case 2:
       case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls|a", &image_id, &data, &data_len, &opts) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls|a", &image_id, &data, &data_len, &opts) == FAILURE) {
             RETURN_FALSE;
         }
         break;
@@ -1087,7 +1097,7 @@ PHP_METHOD(swfed, replacePNGData) {
         get_zend_hash_value_boolean(opts_table, "rgb15",  rgb15);
     }
 
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
 
     result = swf_object_replace_pngdata(swf, image_id,
                                         (unsigned char *)data,
@@ -1115,12 +1125,12 @@ PHP_METHOD(swfed, replaceGIFData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &image_id, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &image_id, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_gifdata(swf, image_id,
                                         (unsigned char *)data,
                                         (unsigned long) data_len);
@@ -1145,8 +1155,8 @@ PHP_METHOD(swfed, replaceBitmapData) {
     swf_object_t *swf = NULL;
     int result = 0;
     int bitmap_format;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE; /* XXX */
     }
     switch (ZEND_NUM_ARGS()) {
@@ -1158,15 +1168,15 @@ PHP_METHOD(swfed, replaceBitmapData) {
       case 4:
       case 5:
         if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                     ZEND_NUM_ARGS() TSRMLS_CC, "zs|sz", &arg1, &data, &data_len, &alpha_data, &alpha_data_len, &arg4) == SUCCESS) {
+                                     ZEND_NUM_ARGS(), "zs|sz", &arg1, &data, &data_len, &alpha_data, &alpha_data_len, &arg4) == SUCCESS) {
             ; // OK
         } else {
-            php_error(E_WARNING, "%s() expects parameter 2 to be string given", get_active_function_name(TSRMLS_C));
+            php_error(E_WARNING, "%s() expects parameter 2 to be string given", get_active_function_name());
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
 
     if (Z_TYPE_P(arg1) != IS_ARRAY) { // image_id (integer)
         if (Z_TYPE_P(arg1) != IS_LONG) {
@@ -1183,7 +1193,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
         image_id = swf_object_search_cid_by_bitmap_condition(swf, width, height,
                                                              red, green, blue);
         if (image_id <= 0) {
-            php_error(E_WARNING, "%s() cid not found by bitmap condition(width=%d height=%d red=%d green=%d blue=%d)", get_active_function_name(TSRMLS_C),
+            php_error(E_WARNING, "%s() cid not found by bitmap condition(width=%d height=%d red=%d green=%d blue=%d)", get_active_function_name(),
                       width, height, red, green, blue);
             RETURN_FALSE;
         }
@@ -1214,7 +1224,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
                                                  1);
             break;
         default:
-            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
+            php_error_docref(NULL, E_WARNING, "Unknown Bitmap Format");
             RETURN_FALSE;
         }
     } else {
@@ -1241,7 +1251,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
 
             break;
         default:
-            php_error_docref(NULL TSRMLS_CC, E_WARNING, "Unknown Bitmap Format");
+            php_error_docref(NULL, E_WARNING, "Unknown Bitmap Format");
             RETURN_FALSE;
         }
     }
@@ -1254,7 +1264,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
 PHP_METHOD(swfed, convertBitmapDataToJpegTag) {
     swf_object_t *swf = NULL;
     int ret;
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     ret = swf_object_convert_bitmapdata_tojpegtag(swf);
     if (ret) {
         RETURN_FALSE;
@@ -1268,16 +1278,16 @@ PHP_METHOD(swfed, applyShapeMatrixFactor) {
     zend_long trans_x = 0, trans_y = 0;
     swf_object_t *swf = NULL;
     int result;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE; /* XXX */
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "ldddll", &shape_id, &scale_x, &scale_y,
                               &rotate_rad, &trans_x, &trans_y) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_apply_shapematrix_factor(swf, shape_id, -1,
                                                  scale_x, scale_y, rotate_rad,
                                                  trans_x, trans_y);
@@ -1294,16 +1304,16 @@ PHP_METHOD(swfed, applyShapeRectFactor) {
     zend_long trans_x = 0, trans_y = 0;
     swf_object_t *swf = NULL;
     int result;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE; /* XXX */
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "lddll", &shape_id, &scale_x, &scale_y,
                               &trans_x, &trans_y) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_apply_shaperect_factor(swf, shape_id, -1,
                                                  scale_x, scale_y,
                                                  trans_x, trans_y);
@@ -1329,15 +1339,15 @@ PHP_METHOD(swfed, getSoundData) {
     unsigned char *data = NULL;
     char *new_buff = NULL;
     swf_object_t *swf = NULL;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE; /* XXX */
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &sound_id) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_sounddata(swf, &len, sound_id);
     if (data == NULL) {
         RETURN_FALSE;
@@ -1363,8 +1373,8 @@ PHP_METHOD(swfed, replaceMLDData) {
     size_t data_len = 0;
     swf_object_t *swf = NULL;
     int result = 0;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE;
     }
     switch (ZEND_NUM_ARGS()) {
@@ -1372,12 +1382,12 @@ PHP_METHOD(swfed, replaceMLDData) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &sound_id, &data, &data_len) == FAILURE) {
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ls", &sound_id, &data, &data_len) == FAILURE) {
             RETURN_FALSE;
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_melodata(swf, sound_id,
                                          (unsigned char *)data,
                                          (unsigned long) data_len);
@@ -1394,15 +1404,15 @@ PHP_METHOD(swfed, getEditString) {
     char *data = NULL, *new_buff = NULL;
     int str_len = 0;
     int error = 0;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE;
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                               &var_name, &var_name_len) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_editstring(swf, var_name, var_name_len, &error);
     if (data == NULL) {
         if (error) {
@@ -1432,16 +1442,16 @@ PHP_METHOD(swfed, replaceEditString) {
     size_t var_name_len = 0, ini_text_len = 0;
     swf_object_t *swf = NULL;
     int result = 0;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE;
     }
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                               &var_name, &var_name_len,
                               &ini_text, &ini_text_len) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_editstring(swf, var_name,  var_name_len,
                                            ini_text, ini_text_len);
     if (result) {
@@ -1457,10 +1467,10 @@ PHP_METHOD(swfed, getActionData) {
     char *new_buff = NULL;
     unsigned long data_len = 0;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &tag_seqno) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     data = swf_object_get_actiondata(swf, &data_len, tag_seqno);
     if (data == NULL) {
         fprintf(stderr, "getActionData: Can't get_actiondata\n");
@@ -1486,7 +1496,7 @@ PHP_METHOD(swfed, disasmActionData) {
     size_t data_len = 0;
     bitstream_t *bs = NULL;
     swf_action_list_t *action_list = NULL;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
@@ -1515,12 +1525,12 @@ PHP_METHOD(swfed, setActionVariables) {
     uint            str_key_len, str_value_len;
     int ret;
     y_keyvalue_t *kv;
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     zend_ulong loop_num_key;
     zend_string *loop_key = NULL;
     zval *loop_val;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &arr) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
     kv = y_keyvalue_open();
@@ -1549,12 +1559,12 @@ PHP_METHOD(swfed, replaceActionStrings) {
     uint            str_key_len, str_value_len;
     int ret;
     y_keyvalue_t *kv;
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     zend_string *loop_key = NULL;
     zval *loop_val;
     ulong loop_num_key;
 
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a", &arr) == FAILURE) {
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
     kv = y_keyvalue_open();
@@ -1583,8 +1593,8 @@ PHP_METHOD(swfed, replaceMovieClip) {
     swf_object_t *swf = NULL;
     zend_bool unused_cid_purge = 1; // デフォルト on
     int result = 0;
-    if (param_is_null(1 TSRMLS_CC)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name(TSRMLS_C));
+    if (param_is_null(1)) {
+        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
         RETURN_FALSE;
     }
     switch (ZEND_NUM_ARGS()) {
@@ -1592,14 +1602,14 @@ PHP_METHOD(swfed, replaceMovieClip) {
         WRONG_PARAM_COUNT;
         RETURN_FALSE; /* XXX */
       case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                                   &instance_name, &instance_name_len,
                                   &swf_data, &swf_data_len) == FAILURE) {
           RETURN_FALSE;
         }
       break;
       case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssb",
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssb",
                                   &instance_name, &instance_name_len,
                                   &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
             // unused_cid_purge は無視します。
@@ -1607,7 +1617,7 @@ PHP_METHOD(swfed, replaceMovieClip) {
         }
         break;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     result = swf_object_replace_movieclip(swf,
                                           (unsigned char *)instance_name,
                                           instance_name_len,
@@ -1620,7 +1630,7 @@ PHP_METHOD(swfed, replaceMovieClip) {
 }
 
 PHP_METHOD(swfed, rebuild) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     if (swf_object_rebuild(swf)) {
         RETURN_FALSE;
     }
@@ -1628,7 +1638,7 @@ PHP_METHOD(swfed, rebuild) {
 }
 
 PHP_METHOD(swfed, purgeUselessContents) {
-    swf_object_t *swf = get_swf_object(getThis() TSRMLS_CC);
+    swf_object_t *swf = get_swf_object(getThis());
     swf_object_purge_contents(swf);
     RETURN_TRUE;
 }
@@ -1636,11 +1646,11 @@ PHP_METHOD(swfed, purgeUselessContents) {
 PHP_METHOD(swfed, setCompressLevel) {
     zend_long compress_level = 6 ; // Z_DEFAULT_COMPRESSION
     swf_object_t *swf;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &compress_level) == FAILURE) {
         RETURN_FALSE;
     }
-    swf = get_swf_object(getThis() TSRMLS_CC);
+    swf = get_swf_object(getThis());
     swf->compress_level = compress_level;
     RETURN_TRUE;
 }
@@ -1648,7 +1658,7 @@ PHP_METHOD(swfed, setCompressLevel) {
 PHP_METHOD(swfed, isShapeTagData) {
     char *data = NULL;
     size_t data_len = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
@@ -1662,7 +1672,7 @@ PHP_METHOD(swfed, isShapeTagData) {
 PHP_METHOD(swfed, isBitmapTagData) {
     char *data = NULL;
     size_t data_len = 0;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+    if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
@@ -1674,14 +1684,14 @@ PHP_METHOD(swfed, isBitmapTagData) {
 }
 
 
-static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
+static swf_object_t  *get_swf_object(zval *obj) {
 //    zval *data, **tmp;
     zval *tmp = NULL;
     swf_object_t *swf = NULL;
     int id = 0, type = 0;
 /* XXX: zend_read_property
     data = zend_read_property(Z_OBJCE_P(obj), obj, "swf_object",
-                                                          strlen("swf_object"), 1 TSRMLS_CC);
+                                                          strlen("swf_object"), 1);
 */
     if ((tmp = zend_hash_str_find(Z_OBJPROP_P(obj), ZEND_STRL("swf_object"))) == NULL) {
         printf("coudnt found swf_object\n");
@@ -1697,7 +1707,7 @@ static swf_object_t  *get_swf_object(zval *obj TSRMLS_DC) {
     return swf;
 }
 
-static void free_swfed_resource(zend_resource *resource TSRMLS_DC)
+static void free_swfed_resource(zend_resource *resource)
 {
 //    printf("SWFEditor->destory\n");
     swf_object_close((swf_object_t *) resource->ptr);

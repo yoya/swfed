@@ -1,0 +1,14 @@
+name: php72
+
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup docker container
+      run: docker build -t swfed -f ./.docker/Dockerfile.php72 .
+    - name: run test
+      run: docker run --rm swfed
+
