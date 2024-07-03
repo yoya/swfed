@@ -519,7 +519,7 @@ PHP_METHOD(swfed, getTagDetail) {
         swf_tag_place_detail_t    *tag_place;
         swf_action_t   *action;
         int action_list_count;
-        zval *data = NULL;
+        zval data;
         int *bitmap_id_list, bitmap_id_list_num;
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
@@ -605,11 +605,11 @@ PHP_METHOD(swfed, getTagDetail) {
         bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
         if (bitmap_id_list) {
             int i;
-            array_init(data);
+            array_init(&data);
             for (i = 0 ; i < bitmap_id_list_num ; i++) {
-                add_index_long(data, i , bitmap_id_list[i]);
+                add_index_long(&data, i , bitmap_id_list[i]);
             }
-            add_assoc_zval(return_value, "bitmap_ref", data);
+            add_assoc_zval(return_value, "bitmap_ref", &data);
             free(bitmap_id_list);
         }
         break;
