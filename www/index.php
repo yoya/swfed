@@ -3,10 +3,14 @@
 require_once('define.php');
 
 function multiply_unit($str) {
-   $str = preg_replace('/(\d+)G/ei', "$1*1024*1024*1024", $str);
-   $str = preg_replace('/(\d+)M/ei', "$1*1024*1024", $str);
-   $str = preg_replace('/(\d+)K/ei', "$1*1024", $str);
-   $str = preg_replace('/(\d+)B/ei', "$1", $str);
+   $str = preg_replace_callback('/(\d+)G/i', function($m) {
+           return $m[1]*1024*1024*1024; }, $str);
+   $str = preg_replace_callback('/(\d+)M/i', function($m) {
+           return $m[1]*1024*1024; }, $str);
+   $str = preg_replace_callback('/(\d+)K/i', function($m) {
+           return $m[1]*1024; }, $str);
+   $str = preg_replace_callback('/(\d+)B/i', function($m) {
+           return $m[1]; } , $str);
    return $str;
 }
 $upload_max_filesize  = ini_get('upload_max_filesize');
