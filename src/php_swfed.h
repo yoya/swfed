@@ -125,7 +125,7 @@ ZEND_END_MODULE_GLOBALS(swfed)
 #endif
 
 #define REGISTER_SWFED_CLASS_CONST_LONG(const_name, value) \
-    zend_declare_class_constant_long(swfeditor_ce, const_name, sizeof(const_name)-1, (long)value);
+    zend_declare_class_constant_long(swfed_entry_ptr, const_name, sizeof(const_name)-1, (long)value);
 
 
 #endif	/* PHP_SWFED_H */
