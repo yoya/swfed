@@ -1,4 +1,4 @@
-name: php55
+name: php83
 
 on: [workflow_dispatch, push, pull_request]
 
@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Setup docker container
-      run: docker build -t swfed -f ./.docker/Dockerfile.php55 .
+      run: docker build -t swfed -f ./.docker/Dockerfile.php83 .
     - name: run test
       run: docker run --rm swfed
 
