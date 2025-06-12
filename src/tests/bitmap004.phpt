@@ -17,7 +17,7 @@ $obj->input($swfdata);
 $image_cond = array('width' => 108);
 $pngdata = file_get_contents($png_filename);
 $opts = array('rgb15' => true);
-$obj->replaceBitmapData($image_cond, $pngdata, null, $opts);
+$obj->replaceBitmapData($image_cond, $pngdata, '', $opts);
 echo md5($obj->output())."\n";
 ?>
 ===DONE===
