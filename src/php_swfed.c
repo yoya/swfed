@@ -24,10 +24,6 @@
 #include "php_ini.h"
 #include "ext/standard/info.h"
 #include "php_swfed.h"
-// php8
-#if ZEND_MODULE_API_NO >= 20200930
-#include "swfed_arginfo.h"
-#endif
 
 #include "swf_define.h"
 #include "y_keyvalue.h"
@@ -44,6 +40,12 @@
 #include "swf_tag.h"
 #include "swf_object.h"
 
+#if PHP_VERSION_ID < 80000
+#include "php_swfed_legacy_arginfo.h"
+#else
+#include "php_swfed_arginfo.h"
+#endif
+
 #define get_zend_hash_value_long(table, key, value) do { \
         zval *tmp = NULL; \
         if ((tmp = zend_hash_str_find(table, ZEND_STRL(key))) != NULL) { \
@@ -59,6 +61,8 @@
             value = Z_LVAL_P(tmp); \
         } \
     } while (0);
+
+static zend_class_entry *swfed_entry_ptr = NULL;
 
 static int
 param_is_null(int n) {
@@ -77,67 +81,6 @@ ZEND_DECLARE_MODULE_GLOBALS(swfed)
 
 /* True global resources - no need for thread safety here */
 static int le_swfed;
-
-/* {{{ swfed_functions[]
- *
- * Every user visible function must have an entry in swfed_functions[].
- */
-#if ZEND_MODULE_API_NO < 20200930
-zend_function_entry swfed_functions[] = {
-    PHP_ME(swfed,  __construct, NULL, 0)
-    PHP_ME(swfed,  input, NULL, 0)
-    PHP_ME(swfed,  output, NULL, 0)
-    PHP_ME(swfed,  swfInfo, NULL, 0)
-    PHP_ME(swfed,  _destroy_and_exit, NULL, 0) // for debug
-
-    PHP_ME(swfed,  getHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  setHeaderInfo, NULL, 0)
-    PHP_ME(swfed,  getTagList, NULL, 0)
-    PHP_ME(swfed,  getTagDetail, NULL, 0)
-    PHP_ME(swfed,  getTagData, NULL, 0)
-    PHP_ME(swfed,  replaceTagData, NULL, 0)
-    PHP_ME(swfed,  getTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagDataByCID, NULL, 0)
-    PHP_ME(swfed,  getTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  replaceTagContentsByCID, NULL, 0)
-    PHP_ME(swfed,  removeTag, NULL, 0)
-    PHP_ME(swfed,  printTagData, NULL, 0)
-
-    PHP_ME(swfed,  getShapeData, NULL, 0)
-    PHP_ME(swfed,  replaceShapeData, NULL, 0)
-    PHP_ME(swfed,  setShapeAdjustMode, NULL, 0)
-    PHP_ME(swfed,  getShapeIdListByBitmapRef, NULL, 0)
-    PHP_ME(swfed,  getBitmapSize, NULL, 0)
-    PHP_ME(swfed,  getJpegData, NULL, 0)
-    PHP_ME(swfed,  getJpegAlpha, NULL, 0)
-    PHP_ME(swfed,  replaceJpegData, NULL, 0)
-    PHP_ME(swfed,  getPNGData, NULL, 0)
-    PHP_ME(swfed,  replacePNGData, NULL, 0)
-    PHP_ME(swfed,  replaceGIFData, NULL, 0)
-    PHP_ME(swfed,  replaceBitmapData, NULL, 0)
-    PHP_ME(swfed,  convertBitmapDataToJpegTag, NULL, 0)
-    PHP_ME(swfed,  applyShapeMatrixFactor, NULL, 0)
-    PHP_ME(swfed,  applyShapeRectFactor, NULL, 0)
-    PHP_ME(swfed,  getSoundData, NULL, 0)
-    PHP_ME(swfed,  replaceMLDData, NULL, 0)
-    PHP_ME(swfed,  getEditString, NULL, 0)
-    PHP_ME(swfed,  replaceEditString, NULL, 0)
-    PHP_ME(swfed,  getActionData, NULL, 0)
-    PHP_ME(swfed,  disasmActionData, NULL, 0)
-    PHP_ME(swfed,  setActionVariables, NULL, 0)
-    PHP_ME(swfed,  replaceActionStrings, NULL, 0)
-    PHP_ME(swfed,  replaceMovieClip, NULL, 0)
-
-    PHP_ME(swfed,  setCompressLevel, NULL, 0)
-    PHP_ME(swfed,  rebuild, NULL, 0)
-    PHP_ME(swfed,  purgeUselessContents, NULL, 0)
-
-    PHP_ME(swfed,  isShapeTagData, NULL, 0)
-    PHP_ME(swfed,  isBitmapTagData, NULL, 0)
-    {NULL, NULL, NULL}	/* Must be the last line in swfed_functions[] */
-};
-#endif
-/* }}} */
 
 /* {{{ swfed_module_entry
  */
@@ -199,20 +142,15 @@ PHP_MINIT_FUNCTION(swfed)
        ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
        REGISTER_INI_ENTRIES();
        */
-    zend_class_entry ce;
-    INIT_CLASS_ENTRY(ce, "SWFEditor", swfed_functions);
-    swfeditor_ce = zend_register_internal_class(&ce);
+    swfed_entry_ptr = register_class_SWFEditor();
+    #if ZEND_MODULE_API_NO >= 20220829 // php 8.2
+    swfed_entry_ptr->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
+    #endif
     le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
-
-    //zend_declare_property_stringl(swfeditor_ce,
-    //        "swf_object", strlen("swf_object"),
-    //        "", 0, ZEND_ACC_PUBLIC TSRMLS_CC);
-    //zend_declare_property_null(swfeditor_ce, "swf_object", sizeof("swf_object")-1, ZEND_ACC_PUBLIC);
-    // class const
-    REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
-    REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
-    REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
-    REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_TYPE_TILLED", SWFED_SHAPE_BITMAP_TYPE_TILLED);
+    // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
+    // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
+    // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
+    // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_TYPE_TILLED", SWFED_SHAPE_BITMAP_TYPE_TILLED);
     return SUCCESS;
 }
 
@@ -314,7 +252,7 @@ PHP_FUNCTION(confirm_swfed_compiled)
  * vim<600: noet sw=4 ts=4
  */
 
-PHP_METHOD(swfed, __construct) {
+PHP_METHOD(SWFEditor, __construct) {
     //printf("__construct\n");
     swf_object_t *swf = swf_object_open();
     zval *ret = 0;
@@ -327,7 +265,7 @@ PHP_METHOD(swfed, __construct) {
     Z_ADDREF_P(ret);
 }
 
-PHP_METHOD(swfed, input) {
+PHP_METHOD(SWFEditor, input) {
     char *data = NULL;
     size_t data_len = 0;
     swf_object_t *swf = NULL;
@@ -344,7 +282,7 @@ PHP_METHOD(swfed, input) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, output) {
+PHP_METHOD(SWFEditor, output) {
     unsigned long len = 0;
     unsigned char *data = NULL;
     char *new_buff = NULL;
@@ -369,20 +307,20 @@ PHP_METHOD(swfed, output) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, swfInfo) {
+PHP_METHOD(SWFEditor, swfInfo) {
     swf_object_t *swf = get_swf_object(getThis());
     swf_object_print(swf);
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, _destroy_and_exit) { // for debug
+PHP_METHOD(SWFEditor, _destroy_and_exit) { // for debug
     swf_object_t *swf = NULL;
     swf = get_swf_object(getThis());
     swf_object_close(swf);
     exit(0);
 }
 
-PHP_METHOD(swfed, getHeaderInfo) {
+PHP_METHOD(SWFEditor, getHeaderInfo) {
     swf_object_t *swf = get_swf_object(getThis());
     array_init(return_value);
     if (memcmp(swf->header.magic, "CWS", 3) == 0) {
@@ -400,7 +338,7 @@ PHP_METHOD(swfed, getHeaderInfo) {
 
 }
 
-PHP_METHOD(swfed, setHeaderInfo) {
+PHP_METHOD(SWFEditor, setHeaderInfo) {
     zval *header_info = NULL;
     swf_object_t *swf = NULL;
     HashTable *header_table = NULL;
@@ -449,7 +387,7 @@ PHP_METHOD(swfed, setHeaderInfo) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getTagList) {
+PHP_METHOD(SWFEditor, getTagList) {
     int i = 0;
     zval data;
     swf_object_t *swf = NULL;
@@ -480,7 +418,7 @@ PHP_METHOD(swfed, getTagList) {
     }
 }
 
-PHP_METHOD(swfed, getTagDetail) {
+PHP_METHOD(SWFEditor, getTagDetail) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     swf_tag_t *tag = NULL;
@@ -633,7 +571,7 @@ PHP_METHOD(swfed, getTagDetail) {
     /* return_value */
 }
 
-PHP_METHOD(swfed, getTagData) {
+PHP_METHOD(SWFEditor, getTagData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL, *new_buff;
@@ -657,7 +595,7 @@ PHP_METHOD(swfed, getTagData) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceTagData) {
+PHP_METHOD(SWFEditor, replaceTagData) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long tag_seqno = 0;
@@ -683,7 +621,7 @@ PHP_METHOD(swfed, replaceTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getTagDataByCID) {
+PHP_METHOD(SWFEditor, getTagDataByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     char *data_ref = NULL;
@@ -703,7 +641,7 @@ PHP_METHOD(swfed, getTagDataByCID) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceTagDataByCID) {
+PHP_METHOD(SWFEditor, replaceTagDataByCID) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -729,7 +667,7 @@ PHP_METHOD(swfed, replaceTagDataByCID) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getTagContentsByCID) {
+PHP_METHOD(SWFEditor, getTagContentsByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     char *data_ref = NULL;
@@ -750,7 +688,7 @@ PHP_METHOD(swfed, getTagContentsByCID) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceTagContentsByCID) {
+PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -776,7 +714,7 @@ PHP_METHOD(swfed, replaceTagContentsByCID) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, removeTag) {
+PHP_METHOD(SWFEditor, removeTag) {
     zend_long tag_seqno = 0;
     zend_long tag_seqno_in_sprite = -1;
     swf_object_t *swf = NULL;
@@ -802,7 +740,7 @@ PHP_METHOD(swfed, removeTag) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, printTagData) {
+PHP_METHOD(SWFEditor, printTagData) {
     char *data = NULL;
     size_t data_len = 0;
     swf_object_t *swf = NULL;
@@ -826,7 +764,7 @@ PHP_METHOD(swfed, printTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getShapeData) {
+PHP_METHOD(SWFEditor, getShapeData) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
@@ -851,7 +789,7 @@ PHP_METHOD(swfed, getShapeData) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceShapeData) {
+PHP_METHOD(SWFEditor, replaceShapeData) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -877,7 +815,7 @@ PHP_METHOD(swfed, replaceShapeData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, setShapeAdjustMode) {
+PHP_METHOD(SWFEditor, setShapeAdjustMode) {
     swf_object_t *swf = NULL;
     zend_long mode = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -889,7 +827,7 @@ PHP_METHOD(swfed, setShapeAdjustMode) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
+PHP_METHOD(SWFEditor, getShapeIdListByBitmapRef) {
     zend_long bitmap_id;
     int *bitmap_id_list, bitmap_id_list_num;
     swf_object_t *swf = NULL;
@@ -922,7 +860,7 @@ PHP_METHOD(swfed, getShapeIdListByBitmapRef) {
     }
 }
 
-PHP_METHOD(swfed, getBitmapSize) {
+PHP_METHOD(SWFEditor, getBitmapSize) {
     zend_long bitmap_id;
     swf_object_t *swf = NULL;
     int width, height;
@@ -941,7 +879,7 @@ PHP_METHOD(swfed, getBitmapSize) {
     add_assoc_long(return_value, "height", (long) height);
 }
 
-PHP_METHOD(swfed, getJpegData) {
+PHP_METHOD(SWFEditor, getJpegData) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -971,7 +909,7 @@ PHP_METHOD(swfed, getJpegData) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, getJpegAlpha) {
+PHP_METHOD(SWFEditor, getJpegAlpha) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -1001,7 +939,7 @@ PHP_METHOD(swfed, getJpegAlpha) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceJpegData) {
+PHP_METHOD(SWFEditor, replaceJpegData) {
     char *data = NULL, *alpha_data = NULL;
     size_t data_len = 0 , alpha_data_len = 0;
     zend_long image_id = 0;
@@ -1035,7 +973,7 @@ PHP_METHOD(swfed, replaceJpegData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getPNGData) {
+PHP_METHOD(SWFEditor, getPNGData) {
 #ifndef HAVE_PNG
     fprintf(stderr, "replacePNGData: no png library\n");
     RETURN_FALSE;
@@ -1069,7 +1007,7 @@ PHP_METHOD(swfed, getPNGData) {
 #endif /* HAVE_PNG */
 }
 
-PHP_METHOD(swfed, replacePNGData) {
+PHP_METHOD(SWFEditor, replacePNGData) {
 #ifndef HAVE_PNG
     fprintf(stderr, "replacePNGData: no png library\n");
     RETURN_FALSE;
@@ -1111,7 +1049,7 @@ PHP_METHOD(swfed, replacePNGData) {
 #endif /* HAVE_PNG */
 }
 
-PHP_METHOD(swfed, replaceGIFData) {
+PHP_METHOD(SWFEditor, replaceGIFData) {
 #ifndef HAVE_GIF
     fprintf(stderr, "replaceGIFData: no gif library\n");
     RETURN_FALSE;
@@ -1142,7 +1080,7 @@ PHP_METHOD(swfed, replaceGIFData) {
 #endif /* HAVE_GIF */
 }
 
-PHP_METHOD(swfed, replaceBitmapData) {
+PHP_METHOD(SWFEditor, replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
     size_t data_len = 0 , alpha_data_len = 0;
     zval *arg1 = NULL, *arg4 = NULL;
@@ -1262,7 +1200,7 @@ PHP_METHOD(swfed, replaceBitmapData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, convertBitmapDataToJpegTag) {
+PHP_METHOD(SWFEditor, convertBitmapDataToJpegTag) {
     swf_object_t *swf = NULL;
     int ret;
     swf = get_swf_object(getThis());
@@ -1273,7 +1211,7 @@ PHP_METHOD(swfed, convertBitmapDataToJpegTag) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, applyShapeMatrixFactor) {
+PHP_METHOD(SWFEditor, applyShapeMatrixFactor) {
     zend_long shape_id = 0;
     double scale_x = 1, scale_y = 1, rotate_rad = 0;
     zend_long trans_x = 0, trans_y = 0;
@@ -1299,7 +1237,7 @@ PHP_METHOD(swfed, applyShapeMatrixFactor) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, applyShapeRectFactor) {
+PHP_METHOD(SWFEditor, applyShapeRectFactor) {
     zend_long shape_id = 0;
     double scale_x = 1, scale_y = 1;
     zend_long trans_x = 0, trans_y = 0;
@@ -1325,16 +1263,16 @@ PHP_METHOD(swfed, applyShapeRectFactor) {
 }
 
 /*
-PHP_METHOD(swfed, adjustShapeSizeToBitmap) {
+PHP_METHOD(SWFEditor, adjustShapeSizeToBitmap) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, adjustShapeScaleToBitmap) {
+PHP_METHOD(SWFEditor, adjustShapeScaleToBitmap) {
     RETURN_TRUE;
 }
 */
 
-PHP_METHOD(swfed, getSoundData) {
+PHP_METHOD(SWFEditor, getSoundData) {
     zend_long sound_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -1368,7 +1306,7 @@ PHP_METHOD(swfed, getSoundData) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceMLDData) {
+PHP_METHOD(SWFEditor, replaceMLDData) {
     zend_long sound_id = 0;
     char *data = NULL;
     size_t data_len = 0;
@@ -1398,7 +1336,7 @@ PHP_METHOD(swfed, replaceMLDData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getEditString) {
+PHP_METHOD(SWFEditor, getEditString) {
     char *var_name = NULL;
     size_t var_name_len = 0;
     swf_object_t *swf = NULL;
@@ -1438,7 +1376,7 @@ PHP_METHOD(swfed, getEditString) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, replaceEditString) {
+PHP_METHOD(SWFEditor, replaceEditString) {
     char *var_name = NULL, *ini_text = NULL;
     size_t var_name_len = 0, ini_text_len = 0;
     swf_object_t *swf = NULL;
@@ -1461,7 +1399,7 @@ PHP_METHOD(swfed, replaceEditString) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, getActionData) {
+PHP_METHOD(SWFEditor, getActionData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
@@ -1492,7 +1430,7 @@ PHP_METHOD(swfed, getActionData) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(swfed, disasmActionData) {
+PHP_METHOD(SWFEditor, disasmActionData) {
     char *data = NULL;
     size_t data_len = 0;
     bitstream_t *bs = NULL;
@@ -1519,7 +1457,7 @@ PHP_METHOD(swfed, disasmActionData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, setActionVariables) {
+PHP_METHOD(SWFEditor, setActionVariables) {
     zval *zid, *arr, **entry;
     HashTable *arr_hash;
     char            *str_key, *str_value;
@@ -1553,7 +1491,7 @@ PHP_METHOD(swfed, setActionVariables) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, replaceActionStrings) {
+PHP_METHOD(SWFEditor, replaceActionStrings) {
     zval *zid, *arr, **entry;
     HashTable *arr_hash;
     char            *str_key, *str_value;
@@ -1588,7 +1526,7 @@ PHP_METHOD(swfed, replaceActionStrings) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, replaceMovieClip) {
+PHP_METHOD(SWFEditor, replaceMovieClip) {
     char *instance_name = NULL, *swf_data = NULL;
     size_t instance_name_len = 0, swf_data_len = 0;
     swf_object_t *swf = NULL;
@@ -1630,7 +1568,7 @@ PHP_METHOD(swfed, replaceMovieClip) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, rebuild) {
+PHP_METHOD(SWFEditor, rebuild) {
     swf_object_t *swf = get_swf_object(getThis());
     if (swf_object_rebuild(swf)) {
         RETURN_FALSE;
@@ -1638,13 +1576,13 @@ PHP_METHOD(swfed, rebuild) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, purgeUselessContents) {
+PHP_METHOD(SWFEditor, purgeUselessContents) {
     swf_object_t *swf = get_swf_object(getThis());
     swf_object_purge_contents(swf);
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, setCompressLevel) {
+PHP_METHOD(SWFEditor, setCompressLevel) {
     zend_long compress_level = 6 ; // Z_DEFAULT_COMPRESSION
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1656,7 +1594,7 @@ PHP_METHOD(swfed, setCompressLevel) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, isShapeTagData) {
+PHP_METHOD(SWFEditor, isShapeTagData) {
     char *data = NULL;
     size_t data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1670,7 +1608,7 @@ PHP_METHOD(swfed, isShapeTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(swfed, isBitmapTagData) {
+PHP_METHOD(SWFEditor, isBitmapTagData) {
     char *data = NULL;
     size_t data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
