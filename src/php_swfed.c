@@ -49,16 +49,14 @@
 #define get_zend_hash_value_long(table, key, value) do { \
         zval *tmp = NULL; \
         if ((tmp = zend_hash_str_find(table, ZEND_STRL(key))) != NULL) { \
-            convert_to_long_ex(tmp); \
-            value = Z_LVAL_P(tmp); \
+            value = zval_get_long(tmp); \
         } \
     } while (0);
 
 #define get_zend_hash_value_boolean(table, key, value) do { \
         zval *tmp = NULL; \
         if ((tmp = zend_hash_str_find(table, ZEND_STRL(key))) != NULL) { \
-            convert_to_boolean_ex(tmp); \
-            value = Z_LVAL_P(tmp); \
+            value = zend_is_true(tmp); \
         } \
     } while (0);
 
@@ -317,11 +315,8 @@ PHP_METHOD(SWFEditor, swfInfo) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, _destroy_and_exit) { // for debug
-    swf_object_t *swf = NULL;
-    SWFED_GET_OBJECT(swf);
-    swf_object_close(swf);
-    exit(0);
+PHP_METHOD(SWFEditor, _destroy_and_exit) { // kept for API compat; must not exit() the worker
+    RETURN_TRUE;
 }
 
 PHP_METHOD(SWFEditor, getHeaderInfo) {
@@ -357,9 +352,8 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     header_table = Z_ARRVAL_P(header_info);
 
     // FWS or CWS
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"))) == NULL) {
-        convert_to_boolean_ex(tmp);
-        if (Z_LVAL_P(tmp) != 0) {
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"))) != NULL) {
+        if (zend_is_true(tmp)) {
             memcpy(swf->header.magic, "CWS", 3);
         } else {
             memcpy(swf->header.magic, "FWS", 3);
@@ -367,27 +361,22 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     }
 
     // Version
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("version"))) == NULL) {
-        convert_to_long_ex(tmp);
-        swf->header.version = Z_LVAL_P(tmp);
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("version"))) != NULL) {
+        swf->header.version = zval_get_long(tmp);
     }
 
     // FrameRect
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_min"))) == NULL) {
-        convert_to_long_ex(tmp);
-        swf->header_movie.frame_size.x_min = Z_LVAL_P(tmp) * SWF_TWIPS;
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_min"))) != NULL) {
+        swf->header_movie.frame_size.x_min = zval_get_long(tmp) * SWF_TWIPS;
     }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_min"))) == NULL) {
-        convert_to_long_ex(tmp);
-        swf->header_movie.frame_size.y_min = Z_LVAL_P(tmp) * SWF_TWIPS;
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_min"))) != NULL) {
+        swf->header_movie.frame_size.y_min = zval_get_long(tmp) * SWF_TWIPS;
     }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_max"))) == NULL) {
-        convert_to_long_ex(tmp);
-        swf->header_movie.frame_size.x_max = Z_LVAL_P(tmp) * SWF_TWIPS;
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_max"))) != NULL) {
+        swf->header_movie.frame_size.x_max = zval_get_long(tmp) * SWF_TWIPS;
     }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_max"))) == NULL) {
-        convert_to_long_ex(tmp);
-        swf->header_movie.frame_size.y_max = Z_LVAL_P(tmp) * SWF_TWIPS;
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_max"))) != NULL) {
+        swf->header_movie.frame_size.y_max = zval_get_long(tmp) * SWF_TWIPS;
     }
     RETURN_TRUE;
 }
@@ -1098,10 +1087,7 @@ PHP_METHOD(SWFEditor, replaceBitmapData) {
     }
     if (arg4 != NULL) {
         if (Z_TYPE_P(arg4) != IS_ARRAY) { // without_converting (boolean)
-            if (Z_TYPE_P(arg4) != IS_TRUE || Z_TYPE_P(arg4) != IS_FALSE) {
-                convert_to_boolean(arg4);
-            }
-            without_converting = (int) Z_LVAL_P(arg4);
+            without_converting = zend_is_true(arg4);
         } else { // or opts (array)
             opts_table = Z_ARRVAL_P(arg4);
             get_zend_hash_value_boolean(opts_table, "without_converting",  without_converting);
@@ -1380,72 +1366,48 @@ PHP_METHOD(SWFEditor, disasmActionData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, setActionVariables) {
-    zval *zid, *arr, **entry;
-    HashTable *arr_hash;
-    char            *str_key, *str_value;
-    uint            str_key_len, str_value_len;
-    int ret;
-    y_keyvalue_t *kv;
-    swf_object_t *swf = NULL;
+/* copy a PHP array into kv without modifying the (possibly shared/immutable) array */
+static y_keyvalue_t *
+_array_to_keyvalue(zval *arr) {
+    y_keyvalue_t *kv = y_keyvalue_open();
     zend_ulong loop_num_key;
     zend_string *loop_key = NULL;
     zval *loop_val;
+    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(arr), loop_num_key, loop_key, loop_val) {
+        zend_string *key = loop_key ? zend_string_copy(loop_key) : zend_long_to_str(loop_num_key);
+        zend_string *value = zval_get_string(loop_val);
+        y_keyvalue_set(kv, ZSTR_VAL(key), ZSTR_LEN(key), ZSTR_VAL(value), ZSTR_LEN(value));
+        zend_string_release(value);
+        zend_string_release(key);
+    } ZEND_HASH_FOREACH_END();
+    return kv;
+}
+
+PHP_METHOD(SWFEditor, setActionVariables) {
+    zval *arr;
+    y_keyvalue_t *kv;
+    swf_object_t *swf = NULL;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
-    kv = y_keyvalue_open();
-
-    arr_hash = Z_ARRVAL_P(arr);
-    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(arr), loop_num_key, loop_key, loop_val) {
-        if (! loop_key) {
-            loop_key = zend_long_to_str(loop_num_key);
-        }
-        convert_to_string_ex(loop_val);
-        str_key       = ZSTR_VAL(loop_key);
-        str_key_len   = ZSTR_LEN(loop_key);
-        str_value     = Z_STRVAL_P(loop_val);
-        str_value_len = Z_STRLEN_P(loop_val);
-	y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
-    } ZEND_HASH_FOREACH_END();
+    kv = _array_to_keyvalue(arr);
     swf_object_insert_action_setvariables(swf, kv);
     y_keyvalue_close(kv);
     RETURN_TRUE;
 }
 
 PHP_METHOD(SWFEditor, replaceActionStrings) {
-    zval *zid, *arr, **entry;
-    HashTable *arr_hash;
-    char            *str_key, *str_value;
-    uint            str_key_len, str_value_len;
-    int ret;
+    zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
-    zend_string *loop_key = NULL;
-    zval *loop_val;
-    zend_ulong loop_num_key;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
-    kv = y_keyvalue_open();
-
-    arr_hash = Z_ARRVAL_P(arr);
-    ZEND_HASH_FOREACH_KEY_VAL(Z_ARRVAL_P(arr), loop_num_key, loop_key, loop_val) {
-        if (! loop_key) {
-            loop_key = zend_long_to_str(loop_num_key);
-        }
-        convert_to_string_ex(loop_val);
-        str_key       = ZSTR_VAL(loop_key);
-        str_key_len   = ZSTR_LEN(loop_key);
-        str_value     = Z_STRVAL_P(loop_val);
-        str_value_len = Z_STRLEN_P(loop_val);
-        y_keyvalue_set(kv, str_key, str_key_len, str_value, str_value_len);
-    } ZEND_HASH_FOREACH_END();
-
+    kv = _array_to_keyvalue(arr);
     swf_object_replace_action_strings(swf, kv);
     y_keyvalue_close(kv);
     RETURN_TRUE;
