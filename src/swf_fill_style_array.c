@@ -11,8 +11,14 @@ swf_fill_style_array_parse(bitstream_t *bs,
     int i;
     int result;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
-    
-    fill_style_array->count = bitstream_getbyte(bs);
+
+    result = bitstream_getbyte(bs);
+    if (result < 0) {
+        fill_style_array->count = 0;
+        fill_style_array->fill_style = NULL;
+        return 1;
+    }
+    fill_style_array->count = result;
 
     if (swf_tag_shape->_parse_condition == SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP) {
         if (fill_style_array->count == 0) {
@@ -22,9 +28,19 @@ swf_fill_style_array_parse(bitstream_t *bs,
     
     if ((tag->code != 2) && // ! DefineShape
         (fill_style_array->count == 255)) {
-        fill_style_array->count = bitstream_getbytesLE(bs, 2);
+        unsigned long count = bitstream_getbytesLE(bs, 2);
+        if (count == (unsigned long) -1) {
+            fill_style_array->count = 0;
+            fill_style_array->fill_style = NULL;
+            return 1;
+        }
+        fill_style_array->count = count;
     }
-    fill_style_array->fill_style = calloc(fill_style_array->count, sizeof(swf_fill_style_t));
+    fill_style_array->fill_style = calloc(fill_style_array->count ? fill_style_array->count : 1, sizeof(swf_fill_style_t));
+    if (fill_style_array->fill_style == NULL) {
+        fill_style_array->count = 0;
+        return 1;
+    }
     for (i = 0 ; i < fill_style_array->count ; i++) {
         result = swf_fill_style_parse(bs, &(fill_style_array->fill_style[i]), tag);
         if (result) {
@@ -77,6 +93,10 @@ swf_fill_style_array_print(swf_fill_style_array_t *fill_style_array,
 int
 swf_fill_style_array_delete(swf_fill_style_array_t *fill_style_array) {
     int i;
+    if (fill_style_array->fill_style == NULL) {
+        fill_style_array->count = 0;
+        return 0;
+    }
     for (i = 0 ; i < fill_style_array->count ; i++) {
         swf_fill_style_delete(&(fill_style_array->fill_style[i]));
     }

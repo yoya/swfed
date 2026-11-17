@@ -9,6 +9,9 @@ swf_cxformwithalpha_parse(bitstream_t *bs, swf_cxformwithalpha_t *cx) {
     cx->has_add_terms  = bitstream_getbit(bs);
     cx->has_mult_terms = bitstream_getbit(bs);
     nbits = bitstream_getbits(bs, 4);
+    if (nbits < 0) {
+        return 1; // end of stream
+    }
     cx->nbits = nbits;
     if (cx->has_mult_terms) {
         cx->red_mult_term   = bitstream_getbits(bs, nbits);

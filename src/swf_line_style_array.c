@@ -20,6 +20,7 @@ swf_line_style_array_parse(bitstream_t *bs,
         result = bitstream_getbytesLE(bs, 2);
         if (result == -1) {
             fprintf(stderr, "swf_line_style_array_parse: bitstream_getbyte failed at (L%d)\n", __LINE__);
+            line_style_array->count = 0;
             return 1;
         }
         line_style_array->count = result;
@@ -30,7 +31,11 @@ swf_line_style_array_parse(bitstream_t *bs,
         line_style_array->count = 0;
         return 1;
     }
-    line_style_array->line_style = calloc(line_style_array->count, sizeof(swf_line_style_t));
+    line_style_array->line_style = calloc(line_style_array->count ? line_style_array->count : 1, sizeof(swf_line_style_t));
+    if (line_style_array->line_style == NULL) {
+        line_style_array->count = 0;
+        return 1;
+    }
     for (i = 0 ; i < line_style_array->count ; i++) {
         result = swf_line_style_parse(bs, &(line_style_array->line_style[i]), tag);
         if (result) {
@@ -74,6 +79,10 @@ swf_line_style_array_print(swf_line_style_array_t *line_style_array, int indent_
 int
 swf_line_style_array_delete(swf_line_style_array_t *line_style_array) {
     int i;
+    if (line_style_array->line_style == NULL) {
+        line_style_array->count = 0;
+        return 0;
+    }
     for (i = 0 ; i < line_style_array->count ; i++) {
         swf_line_style_delete(&(line_style_array->line_style[i]));
     }
