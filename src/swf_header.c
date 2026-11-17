@@ -10,6 +10,11 @@
 
 int
 swf_header_parse(bitstream_t *bs, swf_header_t *header) {
+    if (bitstream_length(bs) < SWF_HEADER_SIZE) {
+        fprintf(stderr, "swf_header_parse: input too short (%lu)\n",
+                bitstream_length(bs));
+        return 1;
+    }
     bitstream_getstring(bs, header->magic, 3);
     header->version = bitstream_getbyte(bs);
     header->file_length = bitstream_getbytesLE(bs, 4);

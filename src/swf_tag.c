@@ -97,15 +97,27 @@ swf_tag_t *swf_tag_create(bitstream_t *bs) {
     tag->length_longformat = 0;
     if (tag->length == 0x3f) {
         tag->length = bitstream_getbytesLE(bs, 4);
-        if (tag_and_length == (unsigned short) -1) {
-	    fprintf(stderr, "swf_tag_create: tag_and_length(long) == -1\n");
+        if (tag->length == (unsigned long) -1) {
+	    fprintf(stderr, "swf_tag_create: tag_length(long) == -1\n");
             free(tag);
             return NULL;
         }
         tag->length_longformat = 1;
     }
-//    printf("XXX: malloc length=%d\n", tag->length);
-    tag->data = malloc(tag->length);
+    /* never malloc an attacker-controlled length larger than the input */
+    if (tag->length > (unsigned long)(bs->data_len - bs->byte_offset)) {
+        fprintf(stderr, "swf_tag_create: tag->length(%lu) exceeds remaining bytes(%lu)\n",
+                tag->length, (unsigned long)(bs->data_len - bs->byte_offset));
+        free(tag);
+        return NULL;
+    }
+    /* always allocate (even for 0 length) since data != NULL means raw tag */
+    tag->data = malloc(tag->length ? tag->length : 1);
+    if (tag->data == NULL) {
+        fprintf(stderr, "swf_tag_create: malloc(%lu) failed\n", tag->length);
+        free(tag);
+        return NULL;
+    }
     bitstream_getstring(bs, tag->data, tag->length);
     tag->detail = NULL;
     return tag;
@@ -292,6 +304,8 @@ void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         result = detail_handler->input(tag, swf);
         if (result) {
             fprintf(stderr, "swf_tag_create_input_detail: can't input tag detail (result=%d)\n", result);
+            /* drop the half-parsed detail so it is never reused */
+            swf_tag_destroy_detail(tag);
             return NULL;
         }
     } else {
@@ -334,7 +348,11 @@ swf_tag_get_cid(swf_tag_t *tag) {
         return 1;
     }
     tag_no = tag->code;
-    if (tag->data) {
+    /* the raw-data paths below (and in each get_cid handler) read a 2 byte id */
+    if ((tag->detail == NULL) && ((tag->data == NULL) || (tag->length < 2))) {
+        return -1;
+    }
+    if (tag->data && (tag->length >= 2)) {
         switch (tag_no) {
           case 7:  // DefineButton
           case 10: // DefineFont
@@ -368,6 +386,10 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
     int tag_no;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_cid: tag == NULL\n");
+        return 1; // failure
+    }
+    /* the raw-data paths (here and in each replace_cid handler) write a 2 byte id */
+    if (tag->data && (tag->length < 2)) {
         return 1; // failure
     }
     tag_no = tag->code;
@@ -490,6 +512,9 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
             *width  = swf_tag_lossless->width;
             *height = swf_tag_lossless->height;
         } else {
+            if ((tag->data == NULL) || (tag->length < 7)) {
+                return 1;
+            }
             *width  = GetUShortLE((tag->data + 3));
             *height = GetUShortLE((tag->data + 5));
         }
@@ -845,6 +870,9 @@ swf_tag_convert_bitmap_data_tojpegtag(swf_tag_t *tag) {
         swf_tag_lossless = (swf_tag_lossless_detail_t *) swf_tag_create_input_detail(tag, NULL);
     } else {
         swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
+    }
+    if (swf_tag_lossless == NULL) {
+        return 1;
     }
     image_id= swf_tag_lossless->image_id;
     bitmap_data = swf_tag_lossless_get_png_data(swf_tag_lossless, &bitmap_data_len, image_id, tag);

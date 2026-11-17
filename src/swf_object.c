@@ -83,9 +83,14 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     swf_tag_t *tag, *prev_tag;
     // delete old tag if twice call
     _swf_object_tag_close(swf->tag_head);
-    
+    swf->tag_head = NULL;
+    swf->tag_tail = NULL;
+
     bs = bitstream_open();
-    bitstream_input(bs, data, data_len);
+    if (bitstream_input(bs, data, data_len)) {
+        bitstream_close(bs);
+        return 1;
+    }
     result = swf_header_parse(bs, &swf->header);
     if (result) {
         bitstream_close(bs);
@@ -96,11 +101,31 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     } else if (memcmp(swf->header.magic, "CWS", 3) == 0) {
         int result;
         unsigned char *old_buff_ref, *new_buff;
-        unsigned long origsize;
+        unsigned long origsize, compsize;
+        if ((swf->header.file_length < SWF_HEADER_SIZE) ||
+            (bs->data_len < SWF_HEADER_SIZE)) {
+            fprintf(stderr, "swf_object_input: invalid length file_length=%lu data_len=%lu\n",
+                    swf->header.file_length, bs->data_len);
+            bitstream_close(bs);
+            return 1; // FAILURE
+        }
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
+        compsize = bs->data_len - SWF_HEADER_SIZE;
         origsize = swf->header.file_length - SWF_HEADER_SIZE;
-        new_buff = malloc(origsize);
-        result = uncompress(new_buff, &origsize, old_buff_ref, bs->data_len - SWF_HEADER_SIZE);
+        /* deflate can't exceed ~1032:1; don't malloc impossible sizes */
+        if (origsize / 1032 > compsize) {
+            fprintf(stderr, "swf_object_input: file_length=%lu too large for compressed size=%lu\n",
+                    swf->header.file_length, compsize);
+            bitstream_close(bs);
+            return 1; // FAILURE
+        }
+        new_buff = malloc(origsize ? origsize : 1);
+        if (new_buff == NULL) {
+            fprintf(stderr, "swf_object_input: Can't malloc(%lu)\n", origsize);
+            bitstream_close(bs);
+            return 1; // FAILURE
+        }
+        result = uncompress(new_buff, &origsize, old_buff_ref, compsize);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
                 fprintf(stderr, "swf_object_input: uncompress Z_MEM_ERROR: can't malloc\n");
@@ -199,8 +224,13 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
         old_size = bs->data_len - SWF_HEADER_SIZE;
-        compsize = old_size * 1.001 + 12; // increasing, rarely situation
+        compsize = compressBound(old_size);
         new_buff = malloc(compsize);
+        if (new_buff == NULL) {
+            fprintf(stderr, "swf_object_output: Can't malloc(%lu)\n", compsize);
+            bitstream_close(bs);
+            return NULL; // FAILURE
+        }
         result = compress2(new_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
@@ -210,6 +240,7 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
             } else {
                 fprintf(stderr, "swf_object_output: compress failed by unknown reason\n");
             }
+            free(new_buff);
             bitstream_close(bs);
             return NULL; // FAILURE
         }
@@ -260,7 +291,7 @@ swf_object_rebuild(swf_object_t *swf) {
 
 void
 swf_object_purge_contents(swf_object_t *swf) {
-    swf_tag_t *tag;
+    swf_tag_t *tag, *prev_tag;
     trans_table_t *refcid_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_purge_contents: swf == NULL\n");
@@ -272,9 +303,11 @@ swf_object_purge_contents(swf_object_t *swf) {
         return ;
     }
     // scan from tail
-    for (tag = swf->tag_tail; tag ; tag = tag->prev) {
+    for (tag = swf->tag_tail; tag ; tag = prev_tag) {
         int cid;
-        int refcid = swf_tag_get_refcid(tag);
+        int refcid;
+        prev_tag = tag->prev;
+        refcid = swf_tag_get_refcid(tag);
         if (refcid > 0) {
             // register ref id in control tag
             trans_table_set(refcid_trans_table, refcid, TRANS_TABLE_RESERVE_ID);
@@ -336,12 +369,7 @@ swf_object_purge_contents(swf_object_t *swf) {
             }
         } else { // Purge!
             if (isShapeTag(tag->code) || isBitmapTag(tag->code)) {
-                // TODO:  tag == head ? tag == tail ? OK?
-                swf_tag_t *next_tag = tag->next;
-                tag->prev->next = tag->next;
-                tag->next->prev = tag->prev;
-                swf_tag_destroy(tag);
-                tag = next_tag;
+                _swf_object_remove_tag(swf, tag);
             }
         }
     }
@@ -434,7 +462,7 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
             tag->data = bitstream_steal(bs, &(tag->length));
             bitstream_close(bs);
         }
-        if (tag->data) {
+        if (tag->data && (tag->length >= 2)) {
             *length = tag->length - 2;
             return tag->data + 2; // success
         }
@@ -480,7 +508,9 @@ swf_object_remove_tag(swf_object_t *swf, int tag_seqno,
                 swf_tag_sprite_detail_t   *tag_sprite;
                 swf_tag_t *tag_in_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
-
+                if (tag_sprite == NULL) {
+                    return 1;
+                }
                 tag_in_sprite = swf_object_search_tag_in_sprite_byseqno(tag_sprite, tag_seqno_in_sprite);
                 if (tag_in_sprite) {
                     ret = _swf_object_remove_tag_in_sprite(tag_sprite, tag_in_sprite);
@@ -1240,12 +1270,20 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
         }
         if (prev_tag == NULL) { // to make sure. abnormal situation.
             tag->next = swf->tag_head;
-            tag->next->prev = tag;
+            if (tag->next) {
+                tag->next->prev = tag;
+            } else {
+                swf->tag_tail = tag;
+            }
             swf->tag_head = tag;
             tag->prev = NULL;
         } else {
             tag->next = prev_tag->next;
-            tag->next->prev = tag;
+            if (tag->next) {
+                tag->next->prev = tag;
+            } else {
+                swf->tag_tail = tag;
+            }
             prev_tag->next = tag;
             tag->prev = prev_tag;
         }
