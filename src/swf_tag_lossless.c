@@ -82,18 +82,37 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
     if (swf_tag_lossless->format == 3) {
         unsigned long indices_len;
         int bytes_per_color;
-        swf_tag_lossless->colormap_count = bitstream_getbyte(bs) + 1;
-        indices_len = ((swf_tag_lossless->width + 3) & -4) * swf_tag_lossless->height;
+        int colormap_count = bitstream_getbyte(bs);
+        if (colormap_count < 0) {
+            fprintf(stderr, "swf_tag_lossless_input_detail: tag too short\n");
+            bitstream_close(bs);
+            return 1;
+        }
+        swf_tag_lossless->colormap_count = colormap_count + 1;
+        indices_len = (((unsigned long) swf_tag_lossless->width + 3) & ~3UL) *
+            (unsigned long) swf_tag_lossless->height;
         if (tag->code == 20) { // Lossless => rgb (3 bytes)
             bytes_per_color = 3;
         } else { // Lossless2 => rgba (4 bytes)
             bytes_per_color = 4;
         }
         origsize = bytes_per_color * swf_tag_lossless->colormap_count + indices_len;
-        tmp_buff = malloc(origsize);
         offset = bitstream_getbytepos(bs);
         old_buff_ref = bitstream_buffer(bs, offset);
         old_size = bitstream_length(bs) - offset;
+        /* deflate can't exceed ~1032:1; refuse impossible sizes */
+        if (origsize / 1032 > old_size) {
+            fprintf(stderr, "swf_tag_lossless_input_detail: image size too large for data (%lu > %lu*1032)\n",
+                    origsize, old_size);
+            bitstream_close(bs);
+            return 1;
+        }
+        tmp_buff = malloc(origsize);
+        if (tmp_buff == NULL) {
+            fprintf(stderr, "swf_tag_lossless_input_detail: Can't malloc(%lu)\n", origsize);
+            bitstream_close(bs);
+            return 1;
+        }
         result = uncompress(tmp_buff, &origsize, old_buff_ref, old_size);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
@@ -121,29 +140,60 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->code == 20) { // Lossless
             swf_tag_lossless->colormap = malloc(sizeof(swf_rgb_t) * swf_tag_lossless->colormap_count);
+            if (swf_tag_lossless->colormap == NULL) {
+                bitstream_close(bs2);
+                free(tmp_buff);
+                bitstream_close(bs);
+                return 1;
+            }
             for (i=0 ; i < swf_tag_lossless->colormap_count ; i++) {
                 swf_rgb_t *rgb = swf_tag_lossless->colormap + i;
                 swf_rgb_parse(bs2, rgb);
             }
         } else { // tag == 36 (Lossless2)
             swf_tag_lossless->colormap2 = malloc(sizeof(swf_rgba_t) * swf_tag_lossless->colormap_count);
+            if (swf_tag_lossless->colormap2 == NULL) {
+                bitstream_close(bs2);
+                free(tmp_buff);
+                bitstream_close(bs);
+                return 1;
+            }
             for (i=0 ; i < swf_tag_lossless->colormap_count ; i++) {
                 swf_rgba_t *rgba = swf_tag_lossless->colormap2 + i;
                 swf_rgba_parse(bs2, rgba);
             }
         }
-        swf_tag_lossless->indices = malloc(indices_len);
+        swf_tag_lossless->indices = malloc(indices_len ? indices_len : 1);
+        if (swf_tag_lossless->indices == NULL) {
+            bitstream_close(bs2);
+            free(tmp_buff);
+            bitstream_close(bs);
+            return 1;
+        }
         bitstream_getstring(bs2, swf_tag_lossless->indices, indices_len);
         bitstream_close(bs2);
         free(tmp_buff);
     } else { // format != 3
         unsigned long bitmap_count;
-        bitmap_count = swf_tag_lossless->width * swf_tag_lossless->height;
+        bitmap_count = (unsigned long) swf_tag_lossless->width *
+            (unsigned long) swf_tag_lossless->height;
         origsize = 4 * bitmap_count; // xrgb or argb (4 bytes)
-        tmp_buff = malloc(origsize);
         offset = bitstream_getbytepos(bs);
         old_buff_ref = bitstream_buffer(bs, offset);
         old_size = bitstream_length(bs) - offset;
+        /* deflate can't exceed ~1032:1; refuse impossible sizes */
+        if (origsize / 1032 > old_size) {
+            fprintf(stderr, "swf_tag_lossless_input_detail: image size too large for data (%lu > %lu*1032)\n",
+                    origsize, old_size);
+            bitstream_close(bs);
+            return 1;
+        }
+        tmp_buff = malloc(origsize ? origsize : 1);
+        if (tmp_buff == NULL) {
+            fprintf(stderr, "swf_tag_lossless_input_detail: Can't malloc(%lu)\n", origsize);
+            bitstream_close(bs);
+            return 1;
+        }
         result = uncompress(tmp_buff, &origsize, old_buff_ref, old_size);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
@@ -164,13 +214,25 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->code == 20) { // Lossless
-            swf_tag_lossless->bitmap = malloc(bitmap_count * sizeof(swf_xrgb_t));
+            swf_tag_lossless->bitmap = malloc((bitmap_count ? bitmap_count : 1) * sizeof(swf_xrgb_t));
+            if (swf_tag_lossless->bitmap == NULL) {
+                bitstream_close(bs2);
+                free(tmp_buff);
+                bitstream_close(bs);
+                return 1;
+            }
             for (i=0 ; i < bitmap_count ; i++) {
                 swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
                 swf_xrgb_parse(bs2, xrgb);
             }
         } else { // tag == 36 (Lossless2)
-            swf_tag_lossless->bitmap2 = malloc(bitmap_count * sizeof(swf_argb_t));
+            swf_tag_lossless->bitmap2 = malloc((bitmap_count ? bitmap_count : 1) * sizeof(swf_argb_t));
+            if (swf_tag_lossless->bitmap2 == NULL) {
+                bitstream_close(bs2);
+                free(tmp_buff);
+                bitstream_close(bs);
+                return 1;
+            }
             for (i=0 ; i < bitmap_count ; i++) {
                 swf_argb_t *argb = swf_tag_lossless->bitmap2 + i;
                 swf_argb_parse(bs2, argb);
@@ -265,13 +327,18 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                 swf_rgba_build(bs2, rgba);
             }
         }
-        indices_len = ((swf_tag_lossless->width + 3) & -4) * swf_tag_lossless->height;
+        indices_len = (((unsigned long) swf_tag_lossless->width + 3) & ~3UL) * (unsigned long) swf_tag_lossless->height;
         bitstream_putstring(bs2, swf_tag_lossless->indices,
                             indices_len);
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        compsize = old_size * 1.001 + 12; // increasing, rarely situation
+        compsize = compressBound(old_size);
         tmp_buff = malloc(compsize);
+        if (tmp_buff == NULL) {
+            bitstream_close(bs2);
+            bitstream_close(bs);
+            return NULL;
+        }
         result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {
@@ -293,7 +360,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         unsigned long bitmap_size;
         bs2 = bitstream_open();
         if (tag->code == 20) { // Lossless
-            bitmap_size = swf_tag_lossless->width * swf_tag_lossless->height;
+            bitmap_size = (unsigned long) swf_tag_lossless->width * (unsigned long) swf_tag_lossless->height;
             if (swf_tag_lossless->format == 4) {
                 int x, y;
                 int width_padding = (swf_tag_lossless->width%2)?1:0;
@@ -318,7 +385,7 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
                 }
             }
         } else { // tag == 36 (Lossless2)
-            bitmap_size = swf_tag_lossless->width * swf_tag_lossless->height;
+            bitmap_size = (unsigned long) swf_tag_lossless->width * (unsigned long) swf_tag_lossless->height;
             for (i=0 ; i < bitmap_size ; i++) {
                 swf_argb_t *argb = swf_tag_lossless->bitmap2 + i;
                 swf_argb_build(bs2, argb);
@@ -326,8 +393,13 @@ swf_tag_lossless_output_detail(swf_tag_t *tag, unsigned long *length,
         }
         old_buff_ref = bitstream_buffer(bs2, 0);
         old_size = bitstream_length(bs2);
-        compsize = old_size * 1.001 + 12; // increasing, rarely situation
+        compsize = compressBound(old_size);
         tmp_buff = malloc(compsize);
+        if (tmp_buff == NULL) {
+            bitstream_close(bs2);
+            bitstream_close(bs);
+            return NULL;
+        }
         result = compress2(tmp_buff, &compsize, old_buff_ref, old_size, swf->compress_level);
         if (result != Z_OK) {
             if (result == Z_MEM_ERROR) {

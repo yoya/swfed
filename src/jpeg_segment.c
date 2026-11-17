@@ -121,9 +121,11 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
             eoi_found = 1;
             break;
           case 0xDA: // SOS
-	    if ((! rst_scan) && (data[data_len - 2] == 0xFF) &&
+	    if ((! rst_scan) && (data_len >= 2) &&
+                (bitstream_getbytepos(bs) + 2 <= data_len) &&
+                (data[data_len - 2] == 0xFF) &&
 		(data[data_len - 1] == 0xD9)) {
-	      int sos_len;
+	      unsigned long sos_len;
               sos_offset = bitstream_getbytepos(bs);
 	      sos_len = data_len - sos_offset - 2;
 	      jpeg_segment_append(jpeg_seg, marker2, data + sos_offset,
@@ -153,11 +155,20 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
               }
               break;
           default:
-              len = bitstream_getbytesBE(bs, 2) - 2;
-              jpeg_segment_append(jpeg_seg, marker2,
-                                  data + bitstream_getbytepos(bs),
-                                  len);
-              bitstream_incrpos(bs, len, 0);
+              {
+                  unsigned long seg_len = bitstream_getbytesBE(bs, 2);
+                  unsigned long pos = bitstream_getbytepos(bs);
+                  if ((seg_len == (unsigned long) -1) || (seg_len < 2) ||
+                      (pos > data_len) || (data_len - pos < seg_len - 2)) {
+                      fprintf(stderr, "jpeg_segment_parse: broken segment length (marker=0x%02X len=%lu pos=%lu data_len=%lu)\n",
+                              marker2, seg_len, pos, data_len);
+                      bitstream_close(bs);
+                      return jpeg_seg;
+                  }
+                  len = seg_len - 2;
+                  jpeg_segment_append(jpeg_seg, marker2, data + pos, len);
+                  bitstream_incrpos(bs, len, 0);
+              }
               break;
         }
     }

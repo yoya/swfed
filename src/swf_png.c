@@ -102,9 +102,14 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     png_bytep trans = NULL;
     int num_trans = 0;
     png_color_16p trans_values = NULL;
+    png_size_t rowbytes;
 
     if (png_data == NULL) {
         fprintf(stderr, "pngconv_png2lossless: png_data == NULL\n");
+        return NULL;
+    }
+    if (png_data_len < 8) {
+        fprintf(stderr, "pngconv_png2lossless: png_data_len(%lu) < 8\n", png_data_len);
         return NULL;
     }
     if (png_sig_cmp((png_bytep)png_data, 0, 8)) { // bad signature
@@ -144,6 +149,15 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     png_get_IHDR(png_ptr, png_info_ptr,
                  &png_width, &png_height, &bpp, &color_type,
                  NULL, NULL, NULL);
+    if ((png_width == 0) || (png_height == 0) ||
+        (png_width > 0xFFFF) || (png_height > 0xFFFF)) {
+        /* SWF bitmap width/height are 16bit */
+        fprintf(stderr, "pngconv_png2lossless: unsupported size %ux%u\n",
+                (unsigned) png_width, (unsigned) png_height);
+        png_destroy_read_struct((png_structpp)&png_ptr,
+                                (png_infopp)&png_info_ptr, NULL);
+        return NULL;
+    }
     *width = (unsigned short) png_width;
     *height = (unsigned short) png_height;
 
@@ -189,9 +203,18 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         return NULL;
     }
     
-    png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
+    rowbytes = png_get_rowbytes(png_ptr, png_info_ptr);
+    png_image_data = (png_bytepp) calloc(png_height, sizeof(png_bytep));
+    if (png_image_data == NULL) {
+        png_destroy_read_struct((png_structpp)&png_ptr,
+                                (png_infopp)&png_info_ptr, NULL);
+        return NULL;
+    }
     for (y=0 ; y < png_height ; y++) {
-        png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
+        png_image_data[y] = (png_bytep) malloc(rowbytes);
+        if (png_image_data[y] == NULL) {
+            png_error(png_ptr, "pngconv_png2lossless: can't malloc row");
+        }
     }
     png_read_image(png_ptr, png_image_data);
     /*
@@ -201,8 +224,17 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         register int i;
         unsigned char *indices_data;
         *colormap_count = palette_num;
+        if ((palette == NULL) || (palette_num <= 0) || (palette_num > 256)) {
+            png_error(png_ptr, "pngconv_png2lossless: invalid palette");
+        }
+        if (num_trans > palette_num) {
+            num_trans = palette_num;
+        }
         if (num_trans == 0) {
             swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);   // Lossless
+            if (result_colormap == NULL) {
+                png_error(png_ptr, "pngconv_png2lossless: can't malloc colormap");
+            }
             for (i=0 ; i < palette_num ; i++) {
                 result_colormap[i].red   = palette[i].red;
                 result_colormap[i].green = palette[i].green;
@@ -211,6 +243,9 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             *colormap = result_colormap;
         } else {
               swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);   // Lossless2
+            if (result_colormap == NULL) {
+                png_error(png_ptr, "pngconv_png2lossless: can't malloc colormap");
+            }
             for (i=0 ; i < palette_num ; i++) {
                 if (i < num_trans) {
                     int alpha_value = trans[i];
@@ -227,7 +262,12 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             }
             *colormap = result_colormap;
         }
-        indices_data = malloc(((png_width+ 3) & -4) * png_height);
+        indices_data = malloc((((size_t) png_width + 3) & ~(size_t)3) * (size_t) png_height);
+        if (indices_data == NULL) {
+            free(*colormap);
+            *colormap = NULL;
+            png_error(png_ptr, "pngconv_png2lossless: can't malloc indices");
+        }
         i = 0;
         for (y=0 ; y < png_height ; y++) {
             bitstream_t *bs = bitstream_open();
@@ -241,7 +281,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
                 free(png_image_data);
                 return NULL;
             }
-            bitstream_input(bs, png_image_data[y], png_width);
+            bitstream_input(bs, png_image_data[y], rowbytes);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
                 i++;
@@ -252,7 +292,10 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         image_data = indices_data;
     } else if (color_type == PNG_COLOR_TYPE_RGB) {
         swf_xrgb_t *xrgb_list;
-        xrgb_list = malloc(sizeof(swf_xrgb_t) * png_width * png_height);
+        xrgb_list = malloc(sizeof(swf_xrgb_t) * (size_t) png_width * (size_t) png_height);
+        if (xrgb_list == NULL) {
+            png_error(png_ptr, "pngconv_png2lossless: can't malloc image");
+        }
         for (y=0 ; y < png_height ; y++) {
             for (x=0 ; x < png_width ; x++) {
                 xrgb_list[x+y*png_width].red   = png_image_data[y][3*x + 0];
@@ -263,7 +306,10 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         image_data = xrgb_list;
     } else { // PNG_COLOR_TYPE_RGB_ALPHA
         swf_argb_t *argb_list;
-        argb_list = malloc(sizeof(swf_argb_t) * png_width * png_height);
+        argb_list = malloc(sizeof(swf_argb_t) * (size_t) png_width * (size_t) png_height);
+        if (argb_list == NULL) {
+            png_error(png_ptr, "pngconv_png2lossless: can't malloc image");
+        }
         for (y=0 ; y < png_height ; y++) {
             for (x=0 ; x < png_width ; x++) {
                 int alpha_value = png_image_data[y][4*x + 3];

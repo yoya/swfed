@@ -94,7 +94,8 @@ getTransparentIndex(SavedImage Image) {
     }
     for (i = 0 ; i < Image.ExtensionBlockCount ; i++ ) {
         ExtensionBlock Block = Image.ExtensionBlocks[i];
-        if (Block.Function == GRAPHICS_EXT_FUNC_CODE){
+        if ((Block.Function == GRAPHICS_EXT_FUNC_CODE) &&
+            (Block.ByteCount >= 4) && (Block.Bytes != NULL)) {
             int gcntl_flag = Block.Bytes[0];
             if (gcntl_flag & 0x01) {
                 transparent_index = Block.Bytes[3] & 0xff;
@@ -126,7 +127,7 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     int palette_num = 0;
     int trans_index = -1;
     SavedImage Image;
-    int i, j;
+    int i;
     unsigned char *indices_data;
 
     gif_buff.data = gif_data;
@@ -150,13 +151,35 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
 #endif
         return NULL;
     }
+    if ((GifFile->ImageCount < 1) || (GifFile->SavedImages == NULL) ||
+        (GifFile->SavedImages[0].RasterBits == NULL)) {
+        fprintf(stderr, "gifconv_gif2lossless: no image in GIF\n");
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+        DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
+        return NULL;
+    }
     Image = GifFile->SavedImages[0];
-    ColorMap = GifFile->SColorMap;
+    ColorMap = Image.ImageDesc.ColorMap;  // local color table has priority
     if (ColorMap == NULL) {
-        ColorMap = Image.ImageDesc.ColorMap;
+        ColorMap = GifFile->SColorMap;
     }
     gif_width  = GifFile->SWidth;
     gif_height = GifFile->SHeight;
+    if ((ColorMap == NULL) || (ColorMap->Colors == NULL) ||
+        (gif_width == 0) || (gif_height == 0) ||
+        (gif_width > 0xFFFF) || (gif_height > 0xFFFF) ||
+        (Image.ImageDesc.Width <= 0) || (Image.ImageDesc.Height <= 0)) {
+        fprintf(stderr, "gifconv_gif2lossless: invalid GIF (no colormap or bad size)\n");
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+        DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
+        return NULL;
+    }
     bpp = ColorMap->BitsPerPixel;
     if (bpp > 8) {
         fprintf(stderr, "gifconv_gif2lossless: bpp=%d not implemented. accept only bpp <= 8\n", bpp);
@@ -168,6 +191,15 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         return NULL;
     }
     palette_num = ColorMap->ColorCount;
+    if ((palette_num <= 0) || (palette_num > 256)) {
+        fprintf(stderr, "gifconv_gif2lossless: invalid palette_num=%d\n", palette_num);
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+        DGifCloseFile(GifFile, NULL);
+#else
+        DGifCloseFile(GifFile);
+#endif
+        return NULL;
+    }
 
     trans_index = getTransparentIndex(Image);
 
@@ -187,6 +219,9 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     *colormap_count = palette_num;
     if (trans_index == -1) {  // Lossless
         swf_rgb_t *result_colormap = malloc(sizeof(swf_rgb_t) * palette_num);
+        if (result_colormap == NULL) {
+            goto fail;
+        }
         for (i=0 ; i < palette_num ; i++) {
             result_colormap[i].red   = ColorMap->Colors[i].Red;
             result_colormap[i].green = ColorMap->Colors[i].Green;
@@ -195,6 +230,9 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         *colormap = result_colormap;
     } else {  // Lossless2
         swf_rgba_t *result_colormap = malloc(sizeof(swf_rgba_t) * palette_num);
+        if (result_colormap == NULL) {
+            goto fail;
+        }
         for (i=0 ; i < palette_num ; i++) {
             if (i == trans_index) {
                 result_colormap[i].red   = 0x0;
@@ -210,31 +248,56 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
         }
         *colormap = result_colormap;
     }
-    indices_data = malloc(((gif_width+ 3) & -4) * gif_height);
-    gif_image_data_ref = Image.RasterBits;
-
-    i = 0;
-    j = 0;
-    for (y=0 ; y < gif_height ; y++) {
-        for (x=0 ; x < gif_width ; x++) {
-            indices_data[i] = gif_image_data_ref[j];
-            i++;
-            j++;
+    {
+        /* the frame may be smaller than / offset within the logical screen */
+        unsigned long stride = ((unsigned long) gif_width + 3) & ~3UL;
+        long frame_left   = Image.ImageDesc.Left;
+        long frame_top    = Image.ImageDesc.Top;
+        long frame_width  = Image.ImageDesc.Width;
+        long frame_height = Image.ImageDesc.Height;
+        int fill_index = (trans_index != -1) ? trans_index : GifFile->SBackGroundColor;
+        if ((fill_index < 0) || (fill_index >= palette_num)) {
+            fill_index = 0;
         }
-        while (i % 4) { i++; } // 4byte alignment
+        indices_data = malloc(stride * gif_height);
+        if (indices_data == NULL) {
+            free(*colormap);
+            *colormap = NULL;
+            goto fail;
+        }
+        memset(indices_data, fill_index, stride * gif_height);
+        gif_image_data_ref = Image.RasterBits;
+        for (y=0 ; y < gif_height ; y++) {
+            long fy = (long) y - frame_top;
+            if ((fy < 0) || (fy >= frame_height)) {
+                continue;
+            }
+            for (x=0 ; x < gif_width ; x++) {
+                long fx = (long) x - frame_left;
+                if ((fx < 0) || (fx >= frame_width)) {
+                    continue;
+                }
+                indices_data[x + y * stride] = gif_image_data_ref[fx + fy * frame_width];
+            }
+        }
     }
     image_data = indices_data;
     /*
      * destruct
      */
-    if (GifFile) {
 #if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
-        DGifCloseFile(GifFile, NULL);
+    DGifCloseFile(GifFile, NULL);
 #else
-        DGifCloseFile(GifFile);
+    DGifCloseFile(GifFile);
 #endif
-    }
     return image_data;
+fail:
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+    DGifCloseFile(GifFile, NULL);
+#else
+    DGifCloseFile(GifFile);
+#endif
+    return NULL;
 }
 
 unsigned char *

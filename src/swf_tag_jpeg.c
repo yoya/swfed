@@ -21,6 +21,84 @@ swf_tag_detail_handler_t jpeg_detail_handler;
 swf_tag_detail_handler_t jpegt_detail_handler;
 swf_tag_detail_handler_t jpeg3_detail_handler;
 
+/* inflate src into a growing buffer, bounded by deflate's ~1032:1 limit */
+static unsigned char *
+_swf_tag_jpeg_uncompress_alloc(unsigned char *src, unsigned long src_len,
+                               unsigned long *out_len) {
+    z_stream z;
+    unsigned char *buf, *tmp;
+    unsigned long buf_len, max_len;
+    int ret;
+    *out_len = 0;
+    if ((src_len == 0) || (src_len > 0xFFFFFFFFUL)) {
+        return NULL;
+    }
+    max_len = (src_len + 1) * 1032UL;
+    if (max_len / 1032UL != src_len + 1) {
+        max_len = (unsigned long) -1;
+    }
+    buf_len = src_len * 4;
+    if ((buf_len < 1024) || (buf_len / 4 != src_len)) {
+        buf_len = 1024;
+    }
+    if (buf_len > max_len) {
+        buf_len = max_len;
+    }
+    buf = malloc(buf_len);
+    if (buf == NULL) {
+        return NULL;
+    }
+    memset(&z, 0, sizeof(z));
+    if (inflateInit(&z) != Z_OK) {
+        free(buf);
+        return NULL;
+    }
+    z.next_in = src;
+    z.avail_in = (uInt) src_len;
+    z.next_out = buf;
+    z.avail_out = (uInt) buf_len;
+    while (1) {
+        ret = inflate(&z, Z_NO_FLUSH);
+        if (ret == Z_STREAM_END) {
+            break;
+        }
+        if ((ret != Z_OK) && (ret != Z_BUF_ERROR)) {
+            goto fail; // Z_DATA_ERROR, Z_MEM_ERROR, ...
+        }
+        if (z.avail_out == 0) {
+            unsigned long new_len = buf_len * 2;
+            if (buf_len >= max_len) {
+                goto fail;
+            }
+            if ((new_len < buf_len) || (new_len > max_len)) {
+                new_len = max_len;
+            }
+            if (new_len - z.total_out > 0xFFFFFFFFUL) {
+                new_len = z.total_out + 0xFFFFFFFFUL;
+            }
+            tmp = realloc(buf, new_len);
+            if (tmp == NULL) {
+                goto fail;
+            }
+            buf = tmp;
+            buf_len = new_len;
+            z.next_out = buf + z.total_out;
+            z.avail_out = (uInt) (buf_len - z.total_out);
+            continue;
+        }
+        if ((z.avail_in == 0) || (ret == Z_BUF_ERROR)) {
+            goto fail; // truncated input
+        }
+    }
+    *out_len = z.total_out;
+    inflateEnd(&z);
+    return buf;
+fail:
+    inflateEnd(&z);
+    free(buf);
+    return NULL;
+}
+
 swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
     jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
     jpeg_detail_handler.input    = swf_tag_jpeg_input_detail;
@@ -90,10 +168,18 @@ swf_tag_jpeg_input_detail(swf_tag_t *tag,
         fprintf(stderr, "ERROR: swf_tag_jpeg_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
     }
+    if (length < 2) {
+        fprintf(stderr, "ERROR: swf_tag_jpeg_input_detail: length(%lu) < 2\n", length);
+        return 1;
+    }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     swf_tag_jpeg->image_id = bitstream_getbytesLE(bs, 2);
     swf_tag_jpeg->jpeg_data = bitstream_output_sub(bs, 2, length - 2);
+    if (swf_tag_jpeg->jpeg_data == NULL) {
+        bitstream_close(bs);
+        return 1;
+    }
     swf_tag_jpeg->jpeg_data_len = length - 2;
     swf_tag_jpeg->alpha_data = NULL;
     swf_tag_jpeg->alpha_data_len = 0;
@@ -120,7 +206,11 @@ swf_tag_jpegt_input_detail(swf_tag_t *tag,
         return 1;
     }
     swf_tag_jpeg->image_id = -1; // no id
-    swf_tag_jpeg->jpeg_data = (unsigned char *) malloc(length);
+    swf_tag_jpeg->jpeg_data = (unsigned char *) malloc(length ? length : 1);
+    if (swf_tag_jpeg->jpeg_data == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_jpegt_input_detail: Can't malloc(%lu)\n", length);
+        return 1;
+    }
     memcpy(swf_tag_jpeg->jpeg_data, data, length);
     swf_tag_jpeg->jpeg_data_len = length;
     swf_tag_jpeg->alpha_data = NULL;
@@ -152,53 +242,39 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
         fprintf(stderr, "ERROR: swf_tag_jpeg3_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
     }
+    if (length < 2 + 4) {
+        fprintf(stderr, "swf_tag_jpeg3_input_detail: length(%lu) < 6\n", length);
+        return 1;
+    }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     swf_tag_jpeg->image_id = bitstream_getbytesLE(bs, 2);
     offset_to_alpha = bitstream_getbytesLE(bs, 4);
+    if (offset_to_alpha > length - (2 + 4)) {
+        bitstream_close(bs);
+        fprintf(stderr, "swf_tag_jpeg3_input_detail: offset_to_alpha(%lu) exceeds tag length(%lu)\n",
+                offset_to_alpha, length);
+        return 1;
+    }
     swf_tag_jpeg->offset_to_alpha = offset_to_alpha;
     swf_tag_jpeg->jpeg_data = bitstream_output_sub(bs, 2 + 4 , offset_to_alpha);
     if (swf_tag_jpeg->jpeg_data == NULL) {
-        free(swf_tag_jpeg);
         bitstream_close(bs);
         fprintf(stderr, "swf_tag_jpeg3_create_detail: swf_tag_jpeg->jpeg_data\n");
         return 1;
     }
-    
+
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
     offset = 2 + 4 + offset_to_alpha;
     alpha_data_len = length - offset;
-    // TODO: analyze jpeg and get width and height
-    origsize = 512 * alpha_data_len; // XXX greater than jpeg1,2
-    
-    new_buff = malloc(origsize); // enough size?
     old_buff_ref = bitstream_buffer(bs, offset);
-    result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
-    if (result == Z_BUF_ERROR) { // XXX
-        origsize *= 2;
-        new_buff = realloc(new_buff, origsize); // enough size?
-        if (new_buff == NULL) {
-            free(swf_tag_jpeg);
-            bitstream_close(bs);
-            fprintf(stderr, "swf_tag_jpeg3_create_detail: realloc(%p, %lu) failed\n", new_buff, origsize);
-            return 1;
-        }
-        result = uncompress(new_buff, &origsize, old_buff_ref, alpha_data_len);
-    }
-    if (result == Z_OK) {
-        swf_tag_jpeg->alpha_data = realloc(new_buff, origsize);
+    new_buff = _swf_tag_jpeg_uncompress_alloc(old_buff_ref, alpha_data_len,
+                                              &origsize);
+    if (new_buff) {
+        swf_tag_jpeg->alpha_data = new_buff;
         swf_tag_jpeg->alpha_data_len = origsize;
     } else {
-        if (result == Z_MEM_ERROR) {
-            fprintf(stderr, "swf_tag_jpeg3_create_detail: uncompress: Z_MEM_ERROR: can't malloc\n");
-        } else if (result == Z_BUF_ERROR) {
-            fprintf(stderr, "swf_tag_jpeg3_create_detail: uncompress: Z_BUF_ERROR: not enough buff size\n");
-        } else if (result == Z_DATA_ERROR) {
-            fprintf(stderr, "swf_tag_jpeg3_create_detail: uncompress: Z_DATA_ERROR: corrupted or imcomplete data\n");
-        } else {
-            fprintf(stderr, "swf_tag_jpeg3_create_detail: uncompress: failed by unknown reason (%d)\n", result);
-        }
-        free(new_buff);
+        fprintf(stderr, "swf_tag_jpeg3_create_detail: can't uncompress alpha data\n");
     }
     bitstream_close(bs);
     return 0;
@@ -313,8 +389,12 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
     old_size = swf_tag_jpeg->alpha_data_len;
-    compsize = old_size * 1.001 + 12; // increasing, rarely situation
+    compsize = compressBound(old_size);
     new_buff = malloc(compsize);
+    if (new_buff == NULL) {
+        bitstream_close(bs);
+        return NULL;
+    }
     //    result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
     result = compress2(new_buff, &compsize, swf_tag_jpeg->alpha_data, old_size, swf->compress_level);
     if (result != Z_OK) {
