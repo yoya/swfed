@@ -296,7 +296,6 @@ PHP_METHOD(SWFEditor, input) {
 PHP_METHOD(SWFEditor, output) {
     unsigned long len = 0;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     swf_object_t *swf = NULL;
     if (ZEND_NUM_ARGS() != 0) {
         WRONG_PARAM_COUNT;
@@ -304,18 +303,11 @@ PHP_METHOD(SWFEditor, output) {
     }
     SWFED_GET_OBJECT(swf);
     data = swf_object_output(swf, &len);
-    new_buff = emalloc(len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "output: Can't emalloc new_buff\n");
-        free(data);
+    if (data == NULL) {
         RETURN_FALSE;
     }
-    memcpy(new_buff, data, len);
-    //free(data);
-    //RETURN_STRINGL(new_buff, len, 0);
-    zend_string *str = zend_string_init(new_buff, len, 0);
+    RETVAL_STRINGL((char *)data, len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, swfInfo) {
@@ -587,7 +579,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
 PHP_METHOD(SWFEditor, getTagData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
-    unsigned char *data = NULL, *new_buff;
+    unsigned char *data = NULL;
     unsigned long data_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
@@ -600,12 +592,8 @@ PHP_METHOD(SWFEditor, getTagData) {
         fprintf(stderr, "getTagData: Can't get_tagdata\n");
         RETURN_FALSE;
     }
-    new_buff = emalloc(data_len);
-    memcpy(new_buff, data, data_len);
-    //RETURN_STRINGL(new_buff, data_len, 0);
-    zend_string *str = zend_string_init((char *)new_buff, data_len, 0);
+    RETVAL_STRINGL((char *)data, data_len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, replaceTagData) {
@@ -637,21 +625,20 @@ PHP_METHOD(SWFEditor, replaceTagData) {
 PHP_METHOD(SWFEditor, getTagDataByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
-    char *data_ref = NULL;
+    char *data = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
-    data_ref = (char *) swf_object_get_tagdata_bycid(swf, cid, &data_len);
+    data = (char *) swf_object_get_tagdata_bycid(swf, cid, &data_len);
 
-    if (data_ref == NULL) {
+    if (data == NULL) {
         fprintf(stderr, "getTagDataByCID: Can't get_tagdata_bycid\n");
         RETURN_FALSE;
     }
-
-    zend_string *str = zend_string_init(data_ref, data_len, 0);
-    RETURN_STR(str);
+    RETVAL_STRINGL(data, data_len);
+    free(data);
 }
 
 PHP_METHOD(SWFEditor, replaceTagDataByCID) {
@@ -781,7 +768,6 @@ PHP_METHOD(SWFEditor, getShapeData) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     unsigned long data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
@@ -793,13 +779,8 @@ PHP_METHOD(SWFEditor, getShapeData) {
         fprintf(stderr, "getShapeData: Can't swf_object_get_shapedata (cid=%ld)\n", (long)cid);
         RETURN_FALSE;
     }
-    new_buff = emalloc(data_len);
-    memcpy(new_buff, data, data_len);
-    //RETURN_STRINGL((char *)new_buff, data_len, 0);
-
-    zend_string *str = zend_string_init(new_buff, data_len, 0);
+    RETVAL_STRINGL((char *)data, data_len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, replaceShapeData) {
@@ -896,7 +877,6 @@ PHP_METHOD(SWFEditor, getJpegData) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     swf_object_t *swf = NULL;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
@@ -907,26 +887,14 @@ PHP_METHOD(SWFEditor, getJpegData) {
     if (data == NULL) {
         RETURN_FALSE;
     }
-
-    new_buff = emalloc(len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "getJpegData Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, len);
-    //RETURN_STRINGL(new_buff, (int) len, 0);
-
-    zend_string *str = zend_string_init(new_buff, len, 0);
+    RETVAL_STRINGL((char *)data, len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, getJpegAlpha) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     swf_object_t *swf = NULL;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
@@ -937,19 +905,8 @@ PHP_METHOD(SWFEditor, getJpegAlpha) {
     if (data == NULL) {
         RETURN_FALSE;
     }
-
-    new_buff = emalloc(len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "getJpegAlpha Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, len);
-    //RETURN_STRINGL(new_buff, len, 0);
-
-    zend_string *str = zend_string_init(new_buff, len, 0);
+    RETVAL_STRINGL((char *)data, len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, replaceJpegData) {
@@ -994,7 +951,6 @@ PHP_METHOD(SWFEditor, getPNGData) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     swf_object_t *swf = NULL;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &image_id) == FAILURE) {
@@ -1005,18 +961,8 @@ PHP_METHOD(SWFEditor, getPNGData) {
     if (data == NULL) {
         RETURN_FALSE;
     }
-
-    new_buff = emalloc(len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "getPNGData: Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, len);
-    //RETURN_STRINGL(new_buff, (int) len, 0);
-    zend_string *str = zend_string_init(new_buff, len, 0);
+    RETVAL_STRINGL((char *)data, len);
     free(data);
-    RETURN_STR(str);
 #endif /* HAVE_PNG */
 }
 
@@ -1289,7 +1235,6 @@ PHP_METHOD(SWFEditor, getSoundData) {
     zend_long sound_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     swf_object_t *swf = NULL;
     if (param_is_null(1)) {
         php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
@@ -1304,19 +1249,8 @@ PHP_METHOD(SWFEditor, getSoundData) {
     if (data == NULL) {
         RETURN_FALSE;
     }
-
-    new_buff = emalloc(len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "getSoundData: Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, len);
-    //RETURN_STRINGL(new_buff, (int) len, 0);
-
-    zend_string *str = zend_string_init(new_buff, len, 0);
+    RETVAL_STRINGL((char *)data, len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, replaceMLDData) {
@@ -1353,7 +1287,7 @@ PHP_METHOD(SWFEditor, getEditString) {
     char *var_name = NULL;
     size_t var_name_len = 0;
     swf_object_t *swf = NULL;
-    char *data = NULL, *new_buff = NULL;
+    char *data = NULL;
     int str_len = 0;
     int error = 0;
     if (param_is_null(1)) {
@@ -1374,19 +1308,8 @@ PHP_METHOD(SWFEditor, getEditString) {
         }
     }
     str_len = strlen(data);
-    new_buff = emalloc(str_len);
-
-    if (new_buff == NULL) {
-        fprintf(stderr, "getEditString: Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, str_len);
+    RETVAL_STRINGL(data, str_len);
     free(data);
-    //RETURN_STRINGL(new_buff, str_len, 0);
-
-    zend_string *str = zend_string_init(new_buff, str_len, 0);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, replaceEditString) {
@@ -1416,7 +1339,6 @@ PHP_METHOD(SWFEditor, getActionData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
-    char *new_buff = NULL;
     unsigned long data_len = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
@@ -1428,19 +1350,8 @@ PHP_METHOD(SWFEditor, getActionData) {
         fprintf(stderr, "getActionData: Can't get_actiondata\n");
         RETURN_FALSE;
     }
-
-    new_buff = emalloc(data_len);
-    if (new_buff == NULL) {
-        fprintf(stderr, "getActionData: Can't emalloc new_buff\n");
-        free(data);
-        RETURN_FALSE;
-    }
-    memcpy(new_buff, data, data_len);
-    //RETURN_STRINGL(new_buff, data_len, 0);
-
-    zend_string *str = zend_string_init(new_buff, data_len, 0);
+    RETVAL_STRINGL((char *)data, data_len);
     free(data);
-    RETURN_STR(str);
 }
 
 PHP_METHOD(SWFEditor, disasmActionData) {
@@ -1452,7 +1363,6 @@ PHP_METHOD(SWFEditor, disasmActionData) {
                               "s", &data, &data_len) == FAILURE) {
         RETURN_FALSE;
     }
-    array_init(return_value);
     bs = bitstream_open();
     bitstream_input(bs, (unsigned char*) data, data_len);
     action_list = swf_action_list_create();
