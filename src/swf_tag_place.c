@@ -109,6 +109,11 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         if (swf_tag_place->flag_has_name) {
             swf_tag_place->name = (char *) bitstream_outputstring(bs);
+            if (swf_tag_place->name == NULL) {
+                fprintf(stderr, "ERROR: swf_tag_place_input_detail: broken name. character_id=%d\n", swf_tag_place->character_id);
+                bitstream_close(bs);
+                return 1;
+            }
         }
         if (swf_tag_place->flag_has_clip_depth) {
             swf_tag_place->clip_depth = bitstream_getbytesLE(bs, 2);   
@@ -275,8 +280,9 @@ swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_n
     swf_tag_place = (swf_tag_place_detail_t *) swf_tag_create_input_detail(tag, swf);
     if (swf_tag_place == NULL) {
         fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: swf_tag_place swf_tag_create_input_detail failed\n");
+        return -1;
     }
-    if (swf_tag_place->flag_has_name == 0) {
+    if ((swf_tag_place->flag_has_name == 0) || (swf_tag_place->name == NULL)) {
         return -2; // no name
     }
     if ((strlen(swf_tag_place->name) != (size_t) instance_name_len) ||

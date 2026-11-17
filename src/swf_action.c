@@ -133,20 +133,54 @@ get_swf_action_info(int action_id) {
     return NULL;
 }
 
+/* length of NUL-terminated string in [p, end), or -1 if unterminated */
+static long
+_swf_action_strnlen(const unsigned char *p, const unsigned char *end) {
+    const unsigned char *nul;
+    if (p >= end) {
+        return -1;
+    }
+    nul = memchr(p, '\0', end - p);
+    if (nul == NULL) {
+        return -1;
+    }
+    return nul - p;
+}
+
 int
 swf_action_parse(bitstream_t *bs, swf_action_t *act) {
-    unsigned long offset;
+    int action_id;
+    unsigned long action_length;
     bitstream_align(bs);
-    act->action_id = bitstream_getbyte(bs);
+    action_id = bitstream_getbyte(bs);
+    if (action_id < 0) {
+        fprintf(stderr, "swf_action_parse: unexpected end of stream\n");
+        return 1;
+    }
+    act->action_id = action_id;
+    act->action_data = NULL;
+    act->action_length = 0;
     if (act->action_id & 0x80) {
-        act->action_length = bitstream_getbytesLE(bs, 2);
-        offset = bitstream_getbytepos(bs);
-        act->action_data = malloc(act->action_length);
+        action_length = bitstream_getbytesLE(bs, 2);
+        if (action_length == (unsigned long) -1) {
+            fprintf(stderr, "swf_action_parse: unexpected end of stream\n");
+            return 1;
+        }
+        act->action_length = action_length;
+        /* +1 for a guard NUL so string scanning never runs off the end */
+        act->action_data = malloc(act->action_length + 1);
         if (act->action_data == NULL) {
             fprintf(stderr, "Can't alloc memory for act->action_data\n");
             return 1;
         }
-        bitstream_getstring(bs, act->action_data, act->action_length);
+        if (bitstream_getstring(bs, act->action_data, act->action_length)) {
+            fprintf(stderr, "swf_action_parse: action_length(%d) exceeds stream\n",
+                    act->action_length);
+            free(act->action_data);
+            act->action_data = NULL;
+            return 1;
+        }
+        act->action_data[act->action_length] = '\0';
     }
     return 0;
 }
@@ -175,24 +209,41 @@ swf_action_print(swf_action_t *act, int indent_depth) {
         print_indent(indent_depth);
         printf("0x%02x", act->action_id);
     }
-    if (act->action_id & 0x80) {
+    if ((act->action_id & 0x80) && act->action_data) {
         int i, n;
+        long len;
         unsigned char *d;
+        unsigned char *end = act->action_data + act->action_length;
         switch(act->action_id) {
         case 0x83: // Get URL
-            printf(" (String)%s", act->action_data);
-            printf(" (String)%s",
-                   act->action_data + strlen((char*) act->action_data) + 1);
+            d = act->action_data;
+            for (i = 0 ; i < 2 ; i++) {
+                len = _swf_action_strnlen(d, end);
+                if (len < 0) {
+                    printf(" (broken)");
+                    break;
+                }
+                printf(" (String)%s", d);
+                d += len + 1;
+            }
             break;
         case 0x88: // Declare Dictionary
+            if (act->action_length < 2) {
+                printf(" (broken)");
+                break;
+            }
             d = act->action_data;
             n = GetUShortLE(act->action_data);  d += 2;
             printf(":\n");
             print_indent(indent_depth);
             for (i=0 ; i < n ; i++) {
-                printf("\t\t[%d]'", i);
-                d += printf("%s", d) + 1;
-                printf("'\n");
+                len = _swf_action_strnlen(d, end);
+                if (len < 0) {
+                    printf("\t\t(broken)\n");
+                    break;
+                }
+                printf("\t\t[%d]'%s'\n", i, d);
+                d += len + 1;
             }
             break;
         case 0x96: // Push Data
@@ -230,7 +281,8 @@ swf_action_list_parse(bitstream_t *bs, swf_action_list_t *action_list) {
             break;
         }
         if (swf_action_parse(bs, action)) {
-            fprintf(stderr, "swf_action_list_parse: swf_action_parse failed");
+            fprintf(stderr, "swf_action_list_parse: swf_action_parse failed\n");
+            free(action);
             return 1; // NG
         }
         if (action_list->head == NULL) {
@@ -293,17 +345,35 @@ swf_action_list_print(swf_action_list_t *action_list, int indent_depth) {
 
 int
 swf_action_data_print(unsigned char *action_data, unsigned short action_data_len) {
-  unsigned char type;
-    unsigned char *data = action_data+1;
+    static const int action_value_type_size[] = {
+        -1, 4, 0, 0, 1, 1, 8, 4, 1, 2
+    };
+    unsigned char type;
+    unsigned char *data;
+    unsigned char *end = action_data + action_data_len;
     unsigned short data_len = action_data_len - 1;
+    long len;
+    if (action_data == NULL) {
+        return 1;
+    }
     data = action_data;
-    while (data < action_data + action_data_len) {
+    while (data < end) {
         type = data[0];
 	data += 1;
+        if ((type < 10) && (action_value_type_size[type] > 0) &&
+            (end - data < action_value_type_size[type])) {
+            printf("(broken)");
+            break;
+        }
 	switch (type) {
           case 0x00: // String
+            len = _swf_action_strnlen(data, end);
+            if (len < 0) {
+                printf("(broken)");
+                return 1;
+            }
 	    printf("(String)%s", data);
-	    data += strlen((char*) data) + 1; // text + \0
+	    data += len + 1; // text + \0
 	    break;
           case 0x01: // Float
 	    printf("(Float)%f", GetFloatIEEE(data));
@@ -355,90 +425,75 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
         *modified = 0;
     }
     for (action=action_list->head ; action ; action=action->next) {
+        int type;
+        unsigned char *token, *end;
+        long token_len;
+        bitstream_t *bs;
+        char *value;
+        int value_len;
+        int count;
+        int m = 0;
+        int i;
         if (action->action_id < 0x80) {
 	    continue; // skip (no string)
 	}
+        if (action->action_data == NULL) {
+            continue;
+        }
+        end = action->action_data + action->action_length;
 	switch(action->action_id) {
-	  int type;
-          unsigned char *token;
-          int token_len;
-          bitstream_t *bs;
-          char *value;
-          int value_len;
-          int count;
-          int m = 0;
-          int i;
 	case 0x83: // Get URL
-            m = 0;
             bs = bitstream_open();
             token = action->action_data;
-            token_len = strlen((char *) token);
-            value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
-            if (value) {
-                bitstream_putstring(bs, (unsigned char *) value, value_len);
-                bitstream_putbyte(bs, '\0');
-                m = 1;
-            } else {
-                bitstream_putstring(bs, (unsigned char *) token, token_len);
-                bitstream_putbyte(bs, '\0');
-            }
-            token +=  token_len + 1;
-            token_len = strlen((char *) token);
-            value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
-            if (value) {
-                bitstream_putstring(bs, (unsigned char *)value, value_len);
-                bitstream_putbyte(bs, '\0');
-                m = 1;
-            } else {
-                bitstream_putstring(bs, (unsigned char *)token, token_len);
-                bitstream_putbyte(bs, '\0');
-            }
-            if (m) {
-                unsigned long length;
-                free(action->action_data);
-                action->action_data = bitstream_steal(bs, &length);
-                action->action_length = length;
-                if (modified) {
-                    *modified = 1;
+            for (i = 0 ; i < 2 ; i++) { // URL, target
+                token_len = _swf_action_strnlen(token, end);
+                if (token_len < 0) {
+                    fprintf(stderr, "swf_action_list_replace_strings: broken GetURL string\n");
+                    bitstream_close(bs);
+                    return 1; // FAILURE
                 }
+                value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
+                if (value) {
+                    bitstream_putstring(bs, (unsigned char *) value, value_len);
+                    m = 1;
+                } else {
+                    bitstream_putstring(bs, (unsigned char *) token, token_len);
+                }
+                bitstream_putbyte(bs, '\0');
+                token += token_len + 1;
             }
-            bitstream_close(bs);
 	    break;
 	case 0x88: // ActionConstantPool
-            m = 0;
+            if (action->action_length < 2) {
+                fprintf(stderr, "swf_action_list_replace_strings: broken ConstantPool\n");
+                return 1; // FAILURE
+            }
             count = action->action_data[0] + 0x100 * action->action_data[1];
             token = action->action_data + 2;
             bs = bitstream_open();
             bitstream_putbytesLE(bs, count, 2);
             for (i = 0 ; i < count ; i++) {
-                token_len = strlen((char *) token);
+                token_len = _swf_action_strnlen(token, end);
+                if (token_len < 0) {
+                    fprintf(stderr, "swf_action_list_replace_strings: broken ConstantPool string (%d/%d)\n", i, count);
+                    bitstream_close(bs);
+                    return 1; // FAILURE
+                }
                 value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
                 if (value) {
                     bitstream_putstring(bs, (unsigned char *)value, value_len);
-                    bitstream_putbyte(bs, '\0');
                     m = 1;
                 } else {
                     bitstream_putstring(bs, (unsigned char *)token , token_len);
-                    bitstream_putbyte(bs, '\0');
                 }
-                token +=  token_len + 1;
+                bitstream_putbyte(bs, '\0');
+                token += token_len + 1;
             }
-            if (m) {
-                unsigned long length;
-                free(action->action_data);
-                action->action_data = bitstream_steal(bs, &length);
-                action->action_length = length;
-                if (modified) {
-                    *modified = 1;
-                }
-            }
-            bitstream_close(bs);
 	    break;
 	case 0x96: // Push Data
-            m = 0;
             token = action->action_data;
             bs = bitstream_open();
-	    while (token < action->action_data + action->action_length) {
+	    while (token < end) {
 	      static const int action_value_type_size[] = {
 		-1, // 0: String
 		4,  // 1: Float
@@ -455,18 +510,27 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
 	      bitstream_putbyte(bs, type);
 	      token += 1;
 	      if (type == 0) { // String
-                token_len = strlen((char *) token);
+                token_len = _swf_action_strnlen(token, end);
+                if (token_len < 0) {
+                    fprintf(stderr, "swf_action_list_replace_strings: broken Push string\n");
+                    bitstream_close(bs);
+                    return 1; // FAILURE
+                }
                 value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
                 if (value) {
                     bitstream_putstring(bs, (unsigned char *)value, value_len);
-                    bitstream_putbyte(bs, '\0');
                     m = 1;
                 } else {
                     bitstream_putstring(bs, (unsigned char *)token , token_len);
-                    bitstream_putbyte(bs, '\0');
                 }
-                token +=  token_len + 1;
+                bitstream_putbyte(bs, '\0');
+                token += token_len + 1;
 	      } else if (type < 10) { // else String
+                if (end - token < action_value_type_size[type]) {
+                    fprintf(stderr, "swf_action_list_replace_strings: broken Push value (type=%d)\n", type);
+                    bitstream_close(bs);
+                    return 1; // FAILURE
+                }
 		bitstream_putstring(bs, token, action_value_type_size[type]);
 		token += action_value_type_size[type];
 	      } else {
@@ -475,18 +539,27 @@ swf_action_list_replace_strings(swf_action_list_t *action_list,
 		return 1; // FAILURE
 	      }
 	    }
-            if (m) {
-                unsigned long length;
-                free(action->action_data);
-                action->action_data = bitstream_steal(bs, &length);
-                action->action_length = length;
-                if (modified) {
-                    *modified = 1;
-                }
-            }
-            bitstream_close(bs);
 	    break;
+        default:
+            continue;
 	}
+        /* note: token points into the old action_data, which is freed below */
+        if (m) {
+            unsigned long length;
+            if (bitstream_length(bs) > 0xFFFF) {
+                fprintf(stderr, "swf_action_list_replace_strings: action data too long (%lu)\n",
+                        bitstream_length(bs));
+                bitstream_close(bs);
+                return 1; // FAILURE
+            }
+            free(action->action_data);
+            action->action_data = bitstream_steal(bs, &length);
+            action->action_length = length;
+            if (modified) {
+                *modified = 1;
+            }
+        }
+        bitstream_close(bs);
     }
     return 0;
 }
@@ -496,10 +569,22 @@ swf_action_list_append_top(swf_action_list_t *list, int action_id,
                            unsigned char *action_data, int action_data_length) {
     swf_action_t *action;
     action = calloc(sizeof(*action), 1);
+    if (action == NULL) {
+        return 1;
+    }
     action->action_id = action_id;
     if (action_id >= 0x80) {
-        action->action_data = malloc(action_data_length);
+        if ((action_data_length < 0) || (action_data_length > 0xFFFF)) {
+            free(action);
+            return 1;
+        }
+        action->action_data = malloc(action_data_length + 1);
+        if (action->action_data == NULL) {
+            free(action);
+            return 1;
+        }
         memcpy(action->action_data, action_data, action_data_length);
+        action->action_data[action_data_length] = '\0';
         action->action_length = action_data_length;
     } else {
         action->action_data = NULL;

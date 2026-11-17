@@ -130,6 +130,12 @@ swf_tag_sprite_print_detail(swf_tag_t *tag,
     swf_tag_sprite_detail_t *swf_tag_sprite = (swf_tag_sprite_detail_t *) tag->detail;
     int i;
     swf_tag_t *_tag;
+    /* indent grows by 2 per nesting; cap recursion (64 levels) to protect the stack */
+    if (indent_depth > 2 * 64) {
+        print_indent(indent_depth);
+        printf("(sprite nesting too deep)\n");
+        return ;
+    }
     print_indent(indent_depth);
     printf("sprite_id=%d\n", swf_tag_sprite->sprite_id);
     print_indent(indent_depth);

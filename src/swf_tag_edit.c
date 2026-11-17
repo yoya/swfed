@@ -90,12 +90,22 @@ swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         swf_tag_edit->edit_leading = (signed) bitstream_getbytesLE(bs, 2);
     }
     swf_tag_edit->edit_variable_name = (char *) bitstream_outputstring(bs);
+    if (swf_tag_edit->edit_variable_name == NULL) {
+        fprintf(stderr, "ERROR: swf_tag_edit_input_detail: broken variable_name\n");
+        bitstream_close(bs);
+        return 1;
+    }
     if (swf_tag_edit->edit_has_text) {
         swf_tag_edit->edit_initial_text = (char *) bitstream_outputstring(bs);
+        if (swf_tag_edit->edit_initial_text == NULL) {
+            fprintf(stderr, "ERROR: swf_tag_edit_input_detail: broken initial_text\n");
+            bitstream_close(bs);
+            return 1;
+        }
     } else {
         swf_tag_edit->edit_initial_text = NULL;
     }
-    
+
     bitstream_close(bs);
     return 0;
 }
@@ -178,10 +188,12 @@ swf_tag_edit_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putstring(bs,
                         (unsigned char *) swf_tag_edit->edit_variable_name,
                         strlen(swf_tag_edit->edit_variable_name) + 1);
-    if (swf_tag_edit->edit_has_text) {
+    if (swf_tag_edit->edit_has_text && swf_tag_edit->edit_initial_text) {
         bitstream_putstring(bs,
                             (unsigned char *)swf_tag_edit->edit_initial_text,
                             strlen(swf_tag_edit->edit_initial_text) + 1);
+    } else if (swf_tag_edit->edit_has_text) {
+        bitstream_putbyte(bs, '\0');
     }
     data = bitstream_steal(bs, length);
     bitstream_close(bs);

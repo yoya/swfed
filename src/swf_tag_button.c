@@ -63,16 +63,37 @@ swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     }
     // Characters
     swf_tag_button->characters = swf_button_record_list_create();
-    swf_button_record_list_parse(bs, swf_tag_button->characters, tag);
+    if (swf_tag_button->characters == NULL) {
+        bitstream_close(bs);
+        return 1;
+    }
+    if (swf_button_record_list_parse(bs, swf_tag_button->characters, tag)) {
+        fprintf(stderr, "swf_tag_button_input_detail: swf_button_record_list_parse failed\n");
+        bitstream_close(bs);
+        return 1;
+    }
     // Actions
     if (tag->code == 7) { // DefineButton
         swf_tag_button->actions = swf_action_list_create();
-        swf_action_list_parse(bs, swf_tag_button->actions);
+        if ((swf_tag_button->actions == NULL) ||
+            swf_action_list_parse(bs, swf_tag_button->actions)) {
+            bitstream_close(bs);
+            return 1;
+        }
     } else {
         if (swf_tag_button->action_offset) {
-            bitstream_setpos(bs, offset_of_action_offset + swf_tag_button->action_offset, 0);
+            if (bitstream_setpos(bs, offset_of_action_offset + swf_tag_button->action_offset, 0)) {
+                fprintf(stderr, "swf_tag_button_input_detail: action_offset(%d) out of range\n",
+                        swf_tag_button->action_offset);
+                bitstream_close(bs);
+                return 1;
+            }
             swf_tag_button->condactions = swf_button_condaction_list_create();
-            swf_button_condaction_list_parse(bs, swf_tag_button->condactions);
+            if ((swf_tag_button->condactions == NULL) ||
+                swf_button_condaction_list_parse(bs, swf_tag_button->condactions)) {
+                bitstream_close(bs);
+                return 1;
+            }
         }
     }
     bitstream_close(bs);

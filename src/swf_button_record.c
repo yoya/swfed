@@ -135,8 +135,18 @@ swf_button_record_list_create(void) {
 int
 swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_record_list, swf_tag_t *tag) {
     swf_button_record_t *prev_button_record = NULL;
-    while (bitstream_getbyte(bs)) { // endflag is 0
-        swf_button_record_t *button_record = malloc(sizeof(*button_record));
+    int flag;
+    while ((flag = bitstream_getbyte(bs)) != 0) { // endflag is 0
+        swf_button_record_t *button_record;
+        if (flag < 0) {
+            /* no end flag: stop here instead of re-reading the last byte forever */
+            fprintf(stderr, "swf_button_record_list_parse: unexpected end of stream\n");
+            break;
+        }
+        button_record = calloc(1, sizeof(*button_record));
+        if (button_record == NULL) {
+            return 1;
+        }
         button_record->next = NULL;
         bitstream_incrpos(bs, -1, 0); // 1 byte back
         if (swf_button_record_parse(bs, button_record, tag)) {

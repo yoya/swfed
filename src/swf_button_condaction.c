@@ -21,7 +21,12 @@ swf_button_condaction_create(void) {
 
 int
 swf_button_condaction_parse(bitstream_t *bs, swf_button_condaction_t *button_condaction) {
-    button_condaction->cond_action_size = bitstream_getbytesLE(bs, 2);
+    unsigned long cond_action_size = bitstream_getbytesLE(bs, 2);
+    button_condaction->actions = NULL;
+    if (cond_action_size == (unsigned long) -1) {
+        return 1; // end of stream
+    }
+    button_condaction->cond_action_size = cond_action_size;
     //
     button_condaction->cond_idle_to_overdown    = bitstream_getbit(bs);
     button_condaction->cond_outdown_to_idle     = bitstream_getbit(bs);
@@ -36,7 +41,14 @@ swf_button_condaction_parse(bitstream_t *bs, swf_button_condaction_t *button_con
     button_condaction->cond_overdown_to_idle    = bitstream_getbit(bs);
     //
     button_condaction->actions = swf_action_list_create();
-    swf_action_list_parse(bs, button_condaction->actions);
+    if (button_condaction->actions == NULL) {
+        return 1;
+    }
+    if (swf_action_list_parse(bs, button_condaction->actions)) {
+        swf_action_list_destroy(button_condaction->actions);
+        button_condaction->actions = NULL;
+        return 1;
+    }
     return 0;
 }
 
@@ -112,11 +124,15 @@ swf_button_condaction_list_parse(bitstream_t *bs, swf_button_condaction_list_t *
     swf_button_condaction_t *prev_button_condaction = NULL;    
     int offset_of_action;
     while (1) { // endflag is 0
-        swf_button_condaction_t *button_condaction = malloc(sizeof(*button_condaction));
+        swf_button_condaction_t *button_condaction = calloc(1, sizeof(*button_condaction));
+        if (button_condaction == NULL) {
+            return 1;
+        }
         button_condaction->next = NULL;
         offset_of_action = bitstream_getbytepos(bs);
         ret = swf_button_condaction_parse(bs, button_condaction);
         if (ret) {
+            free(button_condaction);
             return ret;
         }
         if (prev_button_condaction) {
@@ -127,7 +143,10 @@ swf_button_condaction_list_parse(bitstream_t *bs, swf_button_condaction_list_t *
         if (button_condaction->cond_action_size == 0) { // last action
             break; // OK
         }
-        bitstream_setpos(bs, offset_of_action + button_condaction->cond_action_size, 0);
+        /* cond_action_size > 0 guarantees forward progress */
+        if (bitstream_setpos(bs, offset_of_action + button_condaction->cond_action_size, 0)) {
+            return 1; // out of range
+        }
         prev_button_condaction = button_condaction;
     }
     return 0;

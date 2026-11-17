@@ -67,11 +67,11 @@ y_keyvalue_set(y_keyvalue_t *st, char *key, int key_len, char *value, int value_
             offset = st->use_len;
         }
     }
-    st->table[offset].key = malloc(key_len);
+    st->table[offset].key = malloc(key_len ? key_len : 1);
     if (st->table[offset].key == NULL) {
-        
+        return 1; // NG
     }
-    st->table[offset].value = malloc(value_len);
+    st->table[offset].value = malloc(value_len ? value_len : 1);
     if (st->table[offset].value == NULL) {
         free(st->table[offset].key);
         return 1; // NG
