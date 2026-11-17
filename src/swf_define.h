@@ -58,7 +58,7 @@ extern void print_hexbin(unsigned char *data, int data_len);
 
 #define NumOfTable(t) (sizeof(t) / sizeof(*t))
 
-#define GV2B(a,b) ((a << 8) + b)
+#define GV2B(a,b) ((((unsigned long) (a)) << 8) + (b))
 #define GV4B(a,b,c,d) GV2B(GV2B(GV2B(a,b),c),d)
 #define GV8B(a,b,c,d,e,f,g,h) GV2B(GV2B(GV2B(GV2B(GV2B(GV2B(GV2B(a,b),c),d),e),f),g),h)
 

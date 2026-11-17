@@ -138,17 +138,23 @@ bitstream_clear(bitstream_t *bs) {
 int
 bitstream_realloc(bitstream_t *bs) {
     unsigned char *data;
-    bs->data_alloc_len *= 2;
-    if (bs->data_alloc_len < BITSTREAM_DATA_LEN_MIN) {
-        bs->data_alloc_len = BITSTREAM_DATA_LEN_MIN;
+    unsigned long new_alloc_len = bs->data_alloc_len * 2;
+    if (new_alloc_len < BITSTREAM_DATA_LEN_MIN) {
+        new_alloc_len = BITSTREAM_DATA_LEN_MIN;
     }
-    data = (unsigned char *) realloc(bs->data, bs->data_alloc_len);
+    if (new_alloc_len <= bs->data_alloc_len) { // overflow
+        fprintf(stderr, "bitstream_realloc: alloc length overflow (%lu)\n",
+                bs->data_alloc_len);
+        return 1;
+    }
+    data = (unsigned char *) realloc(bs->data, new_alloc_len);
     if (! data) {
         fprintf(stderr, "bitstream_realloc: Can't realloc memory (%p, %lu)\n",
-                bs->data, bs->data_alloc_len);
+                bs->data, new_alloc_len);
         return 1;
     }
     bs->data = data;
+    bs->data_alloc_len = new_alloc_len;
     return 0;
 }
 
@@ -199,7 +205,7 @@ bitstream_output_sub(bitstream_t *bs, unsigned long offset, unsigned long length
         fprintf(stderr, "bitstream_output_sub: bs == NULL\n");
         return NULL;
     }
-    if (bs->data_len < offset + length ) {
+    if ((bs->data_len < offset) || (bs->data_len - offset < length)) {
         fprintf(stderr, "bitstream_output_sub: bs->data_len(%lu) < offset(%lu)+length(%lu)\n",
                 bs->data_len, offset, length);
         return NULL;
@@ -225,7 +231,9 @@ bitstream_putbyte(bitstream_t *bs, int byte) {
     }
     if (bs->data_len == bs->byte_offset ) {
         if (bs->data_alloc_len <= bs->byte_offset ) {
-            bitstream_realloc(bs);
+            if (bitstream_realloc(bs)) {
+                return 1;
+            }
         }
         bs->data_len ++;
     }
@@ -250,11 +258,21 @@ bitstream_putstring(bitstream_t *bs,
     if (bs->data_len < bs->byte_offset ) {
         return 1;
     }
+    if (data_len < 0) {
+        return 1;
+    }
+    if (bs->byte_offset + (unsigned long) data_len < bs->byte_offset) {
+        return 1; // overflow
+    }
     while(bs->data_alloc_len < bs->byte_offset + data_len) {
-        bitstream_realloc(bs);
+        if (bitstream_realloc(bs)) {
+            return 1;
+        }
+    }
+    if (data_len > 0) {
+        memcpy(bs->data + bs->byte_offset, data, data_len);
     }
     bs->data_len = bs->byte_offset + data_len;
-    memcpy(bs->data + bs->byte_offset, data, data_len);
     bs->byte_offset += data_len;
     return 0;
 }
@@ -263,7 +281,8 @@ int
 bitstream_getstring(bitstream_t *bs,
                                unsigned char *data, signed long data_len) {
     bitstream_align(bs);
-    if (bs->data_len < bs->byte_offset + data_len) {
+    if ((data_len < 0) || (bs->data_len < bs->byte_offset) ||
+        (bs->data_len - bs->byte_offset < (unsigned long) data_len)) {
         return -1; /* End of Stream */
     }
     memcpy(data, bs->data + bs->byte_offset, data_len);
@@ -273,14 +292,18 @@ bitstream_getstring(bitstream_t *bs,
 
 unsigned char *
 bitstream_outputstring(bitstream_t *bs) {
-    unsigned char *data;
+    unsigned char *data, *nul;
     register unsigned long data_len;
     bitstream_align(bs);
-    data_len = strlen((char *) bs->data + bs->byte_offset);
-    data_len += 1; // + '\0'
-    if (bs->data_len < bs->byte_offset + data_len) {
+    if (bs->data_len <= bs->byte_offset) {
         return NULL; /* End of Stream */
     }
+    nul = memchr(bs->data + bs->byte_offset, '\0',
+                 bs->data_len - bs->byte_offset);
+    if (nul == NULL) {
+        return NULL; /* not NUL-terminated within stream */
+    }
+    data_len = (nul - (bs->data + bs->byte_offset)) + 1; // + '\0'
     data = malloc(data_len);
     if (data == NULL) {
         fprintf(stderr, "bitstream_outputstring: can't malloc\n");
@@ -322,8 +345,7 @@ bitstream_getbytesLE(bitstream_t *bs, int byte_width) {
         if (byte == -1) {
             return -1; // End of Stream;
         }
-        byte <<= 8 * i;
-        bytes |= byte;
+        bytes |= ((unsigned long) byte) << (8 * i);
     }
     return bytes;
 }
@@ -350,10 +372,14 @@ bitstream_getbytesBE(bitstream_t *bs, int byte_width) {
 
 int
 bitstream_putbit(bitstream_t *bs, int bit) {
-    if (bs->data_len <= bs->byte_offset) {
+    if (bs->data_len < bs->byte_offset) {
+        return 1;
+    }
+    if (bs->data_len == bs->byte_offset) {
         if (bs->data_alloc_len <= bs->byte_offset) {
-//            fprintf(stderr, "bitstream_putbit: alloc_len=%lu\n", bs->data_alloc_len);
-            bitstream_realloc(bs);
+            if (bitstream_realloc(bs)) {
+                return 1;
+            }
         }
         bs->data[bs->byte_offset] = 0;
         bs->data_len ++;
@@ -379,7 +405,10 @@ int
 bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
     register int i = bit_width;
     while (i--) {
-        bitstream_putbit(bs, (bits >> i) & 1);
+        int bit = (i < (int) (8 * sizeof(bits))) ? (int) ((bits >> i) & 1) : 0;
+        if (bitstream_putbit(bs, bit)) {
+            return 1;
+        }
     }
     return 0;
 }
@@ -387,9 +416,10 @@ bitstream_putbits(bitstream_t *bs, unsigned long bits, int bit_width) {
 int
 bitstream_putbits_signed(bitstream_t *bs, signed long bits, int bit_width) {
     if (bits < 0) {
-        register signed long msb = 1 << (bit_width - 1);
-        register signed long bitmask = (msb << 1) - 1;
-        bits = (-bits  - 1) ^ bitmask;
+        /* two's complement truncated to bit_width */
+        unsigned long bitmask = (bit_width >= (int) (8 * sizeof(unsigned long))) ?
+            ~0UL : ((1UL << bit_width) - 1);
+        return bitstream_putbits(bs, ((unsigned long) bits) & bitmask, bit_width);
     }
     return bitstream_putbits(bs, bits, bit_width);
 }
@@ -400,7 +430,7 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
     register unsigned long bits;
     register int byte_offset = bs->byte_offset;
     register int bit_offset  = bs->bit_offset;
-    if (bs->data_len <= byte_offset + (bit_offset + bit_width) >> 3) {
+    if (bs->data_len <= byte_offset + ((bit_offset + bit_width - 1) >> 3)) {
         fprintf(stderr, "bitstream_getbits: bs->data_len(%lu) <= byte_offset(%lu) + (bit_offset(%lu) + bit_width(%d)) >> 3\n",
                 bs->data_len, bs->byte_offset, bs->bit_offset , bit_width);
         return -1; /* End of Stream */
@@ -447,8 +477,12 @@ bitstream_getbits(bitstream_t *bs, int bit_width) {
 
 signed long
 bitstream_getbits_signed(bitstream_t *bs, int bit_width) {
-    register signed long bits = bitstream_getbits(bs, bit_width);
-    register signed long msb =  bits & (1 << (bit_width - 1));
+    register signed long bits, msb;
+    if (bit_width <= 0) {
+        return 0;
+    }
+    bits = bitstream_getbits(bs, bit_width);
+    msb =  bits & (1UL << (bit_width - 1));
     if (msb) {
         register signed long bitmask = (msb << 1) - 1;
         bits = - (bits ^ bitmask) - 1;
@@ -493,8 +527,11 @@ int
 bitstream_setpos(bitstream_t *bs, unsigned long byte_offset,
 		     unsigned long bit_offset) {
     if (bs->data_len < byte_offset ) {
-        fprintf(stderr, "bitstream_setpos: bs->data_len(%lu) <= byte_offset(%lu)\n",
+        fprintf(stderr, "bitstream_setpos: bs->data_len(%lu) < byte_offset(%lu)\n",
                 bs->data_len, byte_offset);
+        bs->byte_offset = bs->data_len;
+        bs->bit_offset = 0;
+        return 1;
     }
     bs->byte_offset = byte_offset;
     bs->bit_offset = bit_offset;
@@ -541,7 +578,7 @@ bitstream_hasnext(bitstream_t *bs, int byte_len, int bit_len) {
 
 signed long
 bitstream_unsigned2signed(unsigned long num, int size) {
-    register unsigned long sig_bit = 1 << (size - 1);
+    register unsigned long sig_bit = 1UL << (size - 1);
     if ((sig_bit & num) == 0) {
         return (signed long) num;
     } else {
@@ -555,7 +592,7 @@ bitstream_signed2unsigned(signed long num, int size) { // XXX check me!
     if (0 <= num){
         return (unsigned long) num;
     } else {
-        unsigned long sig_bit = 1 << (size - 1);
+        unsigned long sig_bit = 1UL << (size - 1);
         unsigned long mask = sig_bit - 1;
         return - ((num^mask) & mask) - 1;
     }
