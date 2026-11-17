@@ -317,7 +317,11 @@ gifconv_lossless2gif(void *image_data,
 #else
     GifFile->SColorMap = MakeMapObject(ColorCount, Colors);
 #endif
-    EGifSpew(GifFile); // XXX
+#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+    EGifSpew(GifFile, NULL);
+#else
+    EGifSpew(GifFile);
+#endif
 
     free(gif_image_data);
 
