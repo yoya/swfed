@@ -380,7 +380,7 @@ gifconv_lossless2gif(void *image_data,
 #else
     GifFile->SColorMap = MakeMapObject(ColorCount, Colors);
 #endif
-#if GIFLIB_MAJOR == 5 && GIFLIB_MINOR >= 1 || GIFLIB_MAJOR > 5
+#if GIFLIB_MAJOR >= 6 /* EGifSpew() gained ErrorCode in giflib 6.0 */
     EGifSpew(GifFile, NULL);
 #else
     EGifSpew(GifFile);
