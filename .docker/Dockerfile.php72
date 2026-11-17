@@ -2,6 +2,11 @@ FROM php:7.2-cli
 
 SHELL ["/bin/bash", "-c"]
 
+# Debian buster is EOL and its packages have moved to archive.debian.org
+RUN sed -i -e 's|http://deb.debian.org/|http://archive.debian.org/|g' \
+           -e 's|http://security.debian.org/|http://archive.debian.org/|g' \
+        /etc/apt/sources.list $(find /etc/apt/sources.list.d -type f)
+
 RUN apt-get -y update && \
         apt-get install -y build-essential libpng-dev libgif-dev
 COPY . /tmp/ext
