@@ -55,11 +55,11 @@ class SWFEditor
     public function getBitmapSize(int $bitmap_id): false|array {}
     public function getJpegData(int $index): false|string {}
     public function getJpegAlpha(int $index): false|string {}
-    public function replaceJpegData(int $index, string $data, ?string $alpha_data): bool {}
+    public function replaceJpegData(int $index, string $data, ?string $alpha_data = null): bool {}
     public function getPNGData(int $index): false|string {}
-    public function replacePNGData(int $index, string $data, ?string $option): bool {}
+    public function replacePNGData(int $index, string $data, ?array $option = null): bool {}
     public function replaceGIFData(int $index, string $data): bool {}
-    public function replaceBitmapData(mixed $arg1, string $data, ?string $data_alpha, ?mixed $arg4): bool {}
+    public function replaceBitmapData(mixed $arg1, string $data, ?string $data_alpha = null, mixed $arg4 = null): bool {}
     public function convertBitmapDataToJpegTag(): bool {}
     public function applyShapeMatrixFactor(int $shape_id, float $scale_x, float $scale_y, float $rotate_rad, int $trans_x, int $trans_y): bool {}
     public function applyShapeRectFactor(int $shape_id, float $scale_x, float $scale_y, int $trans_x, int $trans_y): bool {}
@@ -71,7 +71,7 @@ class SWFEditor
     public function disasmActionData(string $data): bool{}
     public function setActionVariables(array $arr): bool {}
     public function replaceActionStrings(array $arr): bool {}
-    public function replaceMovieClip(string $instance_name, string $swf_data, ?bool $unused_cid_purge): bool {}
+    public function replaceMovieClip(string $instance_name, string $swf_data, ?bool $unused_cid_purge = null): bool {}
     public function setCompressLevel(int $compress_level): bool {}
     public function rebuild(): bool {}
     public function purgeUselessContents(): true {}
