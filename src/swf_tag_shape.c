@@ -508,11 +508,16 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
-    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
-
-    if (! swf_tag_shape->is_morph) {
-        shape_record = &(swf_tag_shape->shape_with_style.shape_records);
+    if (swf_tag_shape->is_morph) {
+        /* DefineMorphShape keeps fill/line/edge data in morph_shape_with_style
+         * (both start and end), not in shape_with_style. Walking the empty
+         * shape_with_style would silently change nothing while returning
+         * success. Bail out until morph shape support is implemented. */
+        fprintf(stderr, "swf_tag_shape_apply_matrix_factor: DefineMorphShape not supported yet\n");
+        return 1;
     }
+    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
+    shape_record = &(swf_tag_shape->shape_with_style.shape_records);
 
     while (fill_styles) {
         for (i = 0 ; i < fill_styles->count ; i++) {
@@ -582,6 +587,14 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
         return 1;
     }
     if (shape_id != swf_tag_shape->shape_id) {
+        return 1;
+    }
+    if (swf_tag_shape->is_morph) {
+        /* DefineMorphShape has a second bounds rectangle (EndBounds) and
+         * stores edges in morph_shape_with_style, neither of which this
+         * routine touches. Applying just to StartBounds leaves EndBounds
+         * mismatched. Bail out until proper morph support lands. */
+        fprintf(stderr, "swf_tag_shape_apply_rect_factor: DefineMorphShape not supported yet\n");
         return 1;
     }
     // XXX: fix me.
