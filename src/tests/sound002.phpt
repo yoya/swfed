@@ -28,13 +28,13 @@ $src->input(sound_swf(5, "\x00\x00BBBB"));
 var_dump($obj->replaceTagDataByCID(1, $src->getTagData(1)));
 $d = array_values($obj->getTagDetail(1));
 var_dump($d[0]); // sound_id
-var_dump($obj->getSoundData(1));
+echo bin2hex($obj->getSoundData(1)), "\n";
 var_dump($obj->getSoundData(5));
 ?>
 ===DONE===
 --EXPECTF--
 bool(true)
 int(1)
-string(6) "%0%0BBBB"
+000042424242
 %Abool(false)
 ===DONE===
