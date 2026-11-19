@@ -1357,8 +1357,7 @@ PHP_METHOD(SWFEditor, disasmActionData) {
     if (action_list) {
         swf_action_t *action = action_list->head;
         while(action) {
-            printf("\t");
-//            swf_action_disasm(action);
+            swf_action_print(action, 1);
             action = action->next;
         }
     }
