@@ -14,18 +14,19 @@
 #include "swf_tag_button.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t button_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_button_detail_handler_table = {
+    .create      = swf_tag_button_create_detail,
+    .input       = swf_tag_button_input_detail,
+    .get_cid     = swf_tag_button_get_cid_detail,
+    .replace_cid = swf_tag_button_replace_cid_detail,
+    .output      = swf_tag_button_output_detail,
+    .print       = swf_tag_button_print_detail,
+    .destroy     = swf_tag_button_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_button_detail_handler(void) {
-    button_detail_handler.create   = swf_tag_button_create_detail;
-    button_detail_handler.input    = swf_tag_button_input_detail;
-    button_detail_handler.get_cid  = swf_tag_button_get_cid_detail;
-    button_detail_handler.replace_cid = swf_tag_button_replace_cid_detail;
-    button_detail_handler.output   = swf_tag_button_output_detail;
-    button_detail_handler.print    = swf_tag_button_print_detail;
-    button_detail_handler.destroy  = swf_tag_button_destroy_detail;
-    return &button_detail_handler;
+    return &swf_tag_button_detail_handler_table;
 }
 
 void *

@@ -10,18 +10,19 @@
 #include "swf_tag_sound.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t sound_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_sound_detail_handler_table = {
+    .create      = swf_tag_sound_create_detail,
+    .input       = swf_tag_sound_input_detail,
+    .get_cid     = swf_tag_sound_get_cid_detail,
+    .replace_cid = swf_tag_sound_replace_cid_detail,
+    .output      = swf_tag_sound_output_detail,
+    .print       = swf_tag_sound_print_detail,
+    .destroy     = swf_tag_sound_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_sound_detail_handler(void) {
-    sound_detail_handler.create   = swf_tag_sound_create_detail;
-    sound_detail_handler.input    = swf_tag_sound_input_detail;
-    sound_detail_handler.get_cid  = swf_tag_sound_get_cid_detail;
-    sound_detail_handler.replace_cid = swf_tag_sound_replace_cid_detail;
-    sound_detail_handler.output   = swf_tag_sound_output_detail;
-    sound_detail_handler.print    = swf_tag_sound_print_detail;
-    sound_detail_handler.destroy  = swf_tag_sound_destroy_detail;
-    return &sound_detail_handler;
+    return &swf_tag_sound_detail_handler_table;
 }
 
 void *
@@ -95,9 +96,9 @@ swf_tag_sound_replace_cid_detail(swf_tag_t *tag, int id) {
         swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
         swf_tag_sound->sound_id = id;
     }
-    if (data == NULL) {
+    if (data) {
         PutUShortLE(data, id);
-    }        
+    }
     return 0; // always 0
 }
 

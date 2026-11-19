@@ -274,10 +274,20 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
             }
             for (x=0 ; x < gif_width ; x++) {
                 long fx = (long) x - frame_left;
+                int index;
                 if ((fx < 0) || (fx >= frame_width)) {
                     continue;
                 }
-                indices_data[x + y * stride] = gif_image_data_ref[fx + fy * frame_width];
+                index = gif_image_data_ref[fx + fy * frame_width];
+                if (index >= palette_num) {
+                    fprintf(stderr, "gifconv_gif2lossless: color index(%d) >= palette_num(%d)\n",
+                            index, palette_num);
+                    free(indices_data);
+                    free(*colormap);
+                    *colormap = NULL;
+                    goto fail;
+                }
+                indices_data[x + y * stride] = index;
             }
         }
     }
