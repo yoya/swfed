@@ -22,6 +22,21 @@
  - other sample code
    https://osdn.jp/projects/swfed/scm/git/swfed/tree/master/sample/
 
+* messages and errors
+
+ - swfInfo() (and the other print output) goes through the PHP output,
+   so ob_start() can catch it.
+ - SWFEditor::getLastError() returns the error messages of the last
+   SWFEditor method call (one per line), or null.
+ - php.ini swfed.error_output decides where the error messages go:
+     stderr  : the process's stderr (default)
+     warning : E_WARNING
+     off     : nowhere (only getLastError())
+
+ if ($swf->input($swfdata) === false) {
+     error_log(SWFEditor::getLastError());
+ }
+
 
 * demo
 

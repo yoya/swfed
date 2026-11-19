@@ -98,31 +98,13 @@ PHP_METHOD(swfed, purgeUselessContents);
 
 PHP_METHOD(swfed, isShapeTagData);
 PHP_METHOD(swfed, isBitmapTagData);
-/*
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:
 
 ZEND_BEGIN_MODULE_GLOBALS(swfed)
-	long  global_value;
-	char *global_string;
+    char *error_output; // swfed.error_output: "stderr", "warning" or "none"
+    char *last_error;   // malloc'ed, SWFEditor::getLastError()
 ZEND_END_MODULE_GLOBALS(swfed)
-*/
 
-/* In every utility function you add that needs to use variables
-   in php_swfed_globals, call TSRMLS_FETCH(); after declaring other
-   variables used by that function, or better yet, pass in TSRMLS_CC
-   after the last function argument and declare your utility function
-   with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as SWFED_G(variable).  You are
-   encouraged to rename these macros something shorter, see
-   examples in any other php module directory.
-*/
-
-#ifdef ZTS
-#define SWFED_G(v) TSRMG(swfed_globals_id, zend_swfed_globals *, v)
-#else
-#define SWFED_G(v) (swfed_globals.v)
-#endif
+#define SWFED_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(swfed, v)
 
 #define REGISTER_SWFED_CLASS_CONST_LONG(const_name, value) \
     zend_declare_class_constant_long(swfed_entry_ptr, const_name, sizeof(const_name)-1, (long)value);

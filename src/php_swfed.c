@@ -73,12 +73,13 @@ param_is_null(int n) {
 }
 
 
-/* If you declare any globals in php_swfed.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
-*/
 
 /* True global resources - no need for thread safety here */
 static int le_swfed;
+
+static PHP_GINIT_FUNCTION(swfed);
+static PHP_GSHUTDOWN_FUNCTION(swfed);
 
 /* {{{ swfed_module_entry
  */
@@ -96,7 +97,11 @@ zend_module_entry swfed_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
         PHP_SWFED_VERSION,
 #endif
-        STANDARD_MODULE_PROPERTIES
+        PHP_MODULE_GLOBALS(swfed),
+        PHP_GINIT(swfed),
+        PHP_GSHUTDOWN(swfed),
+        NULL,
+        STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */
 
@@ -109,25 +114,85 @@ ZEND_GET_MODULE(swfed)
 
 /* {{{ PHP_INI
  */
-/* Remove comments and fill if you need to have entries in php.ini
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("swfed.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_swfed_globals, swfed_globals)
-    STD_PHP_INI_ENTRY("swfed.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_swfed_globals, swfed_globals)
+    STD_PHP_INI_ENTRY("swfed.error_output", "stderr", PHP_INI_ALL, OnUpdateString, error_output, zend_swfed_globals, swfed_globals)
 PHP_INI_END()
-*/
 /* }}} */
 
-/* {{{ php_swfed_init_globals
+/* {{{ PHP_GINIT_FUNCTION
  */
-/* Uncomment this function if you have INI entries
-static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
+static PHP_GINIT_FUNCTION(swfed)
 {
-        swfed_globals->global_value = 0;
-        swfed_globals->global_string = NULL;
+#if defined(COMPILE_DL_SWFED) && defined(ZTS)
+        ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+        swfed_globals->error_output = NULL;
+        swfed_globals->last_error = NULL;
 }
-*/
 /* }}} */
 
+/* {{{ PHP_GSHUTDOWN_FUNCTION
+ */
+static PHP_GSHUTDOWN_FUNCTION(swfed)
+{
+        free(swfed_globals->last_error);
+        swfed_globals->last_error = NULL;
+}
+/* }}} */
+
+static void
+swfed_clear_last_error(void) {
+    free(SWFED_G(last_error));
+    SWFED_G(last_error) = NULL;
+}
+
+/* print output of the library (swfInfo() etc.) goes through the output buffer */
+static void
+swfed_print_handler(const char *message, size_t length) {
+    PHPWRITE(message, length);
+}
+
+/* error messages of the library: kept for getLastError() (the messages of
+ * the last method call, one per line), and written out according to
+ * swfed.error_output */
+static void
+swfed_error_handler(const char *message, size_t length) {
+    const char *output = SWFED_G(error_output);
+    char *last_error = SWFED_G(last_error);
+    size_t len = length, last_len = 0;
+    while ((len > 0) && ((message[len - 1] == '\n') || (message[len - 1] == '\r'))) {
+        len--;
+    }
+    if (len == 0) {
+        return;
+    }
+    if (last_error) {
+        last_len = strlen(last_error);
+        last_error = realloc(last_error, last_len + 1 + len + 1);
+    } else {
+        last_error = malloc(len + 1);
+    }
+    if (last_error) {
+        if (last_len > 0) {
+            last_error[last_len++] = '\n';
+        }
+        memcpy(last_error + last_len, message, len);
+        last_error[last_len + len] = '\0';
+        SWFED_G(last_error) = last_error;
+    }
+    if (output == NULL) {
+        output = "stderr";
+    }
+    // php.ini turns none / off into ""
+    if ((*output == '\0') || (strcmp(output, "0") == 0) ||
+        (strcmp(output, "none") == 0) || (strcmp(output, "off") == 0)) {
+        ; // only getLastError()
+    } else if (strcmp(output, "warning") == 0) {
+        php_error_docref(NULL, E_WARNING, "%.*s", (int) len, message);
+    } else { // "stderr"
+        fwrite(message, 1, length, stderr);
+    }
+}
 
 static void free_swfed_resource(zend_resource *resource);
 static swf_object_t  *get_swf_object(zval *obj);
@@ -137,6 +202,7 @@ static swf_object_t  *get_swf_object(zval *obj);
 #endif
 /* get_swf_object() has thrown an Error when it returns NULL */
 #define SWFED_GET_OBJECT(swf) do { \
+        swfed_clear_last_error(); \
         (swf) = get_swf_object(getThis()); \
         if ((swf) == NULL) { \
             RETURN_THROWS(); \
@@ -147,10 +213,8 @@ static swf_object_t  *get_swf_object(zval *obj);
  */
 PHP_MINIT_FUNCTION(swfed)
 {
-    /* If you have INI entries, uncomment these lines
-       ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
-       REGISTER_INI_ENTRIES();
-       */
+    REGISTER_INI_ENTRIES();
+    swf_set_output_handler(swfed_print_handler, swfed_error_handler);
     swfed_entry_ptr = register_class_SWFEditor();
     #if ZEND_MODULE_API_NO >= 20220829 // php 8.2
     swfed_entry_ptr->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
@@ -169,9 +233,8 @@ PHP_MINIT_FUNCTION(swfed)
  */
 PHP_MSHUTDOWN_FUNCTION(swfed)
 {
-        /* uncomment this line if you have INI entries
+        swf_set_output_handler(NULL, NULL);
         UNREGISTER_INI_ENTRIES();
-        */
         return SUCCESS;
 }
 /* }}} */
@@ -181,7 +244,7 @@ PHP_MSHUTDOWN_FUNCTION(swfed)
  */
 PHP_RINIT_FUNCTION(swfed)
 {
-#if defined(COMPILE_DL_EXTNAME) && defined(ZTS)
+#if defined(COMPILE_DL_SWFED) && defined(ZTS)
         ZEND_TSRMLS_CACHE_UPDATE();
 #endif
         return SUCCESS;
@@ -193,6 +256,7 @@ PHP_RINIT_FUNCTION(swfed)
  */
 PHP_RSHUTDOWN_FUNCTION(swfed)
 {
+        swfed_clear_last_error();
         return SUCCESS;
 }
 /* }}} */
@@ -216,9 +280,7 @@ PHP_MINFO_FUNCTION(swfed)
         php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
         php_info_print_table_end();
 
-        /* Remove comments if you have entries in php.ini
         DISPLAY_INI_ENTRIES();
-        */
 }
 /* }}} */
 
@@ -1509,6 +1571,17 @@ PHP_METHOD(SWFEditor, isBitmapTagData) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
+}
+
+/* the error messages of the last SWFEditor method call (one per line), or null */
+PHP_METHOD(SWFEditor, getLastError) {
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_THROWS();
+    }
+    if (SWFED_G(last_error) == NULL) {
+        RETURN_NULL();
+    }
+    RETURN_STRING(SWFED_G(last_error));
 }
 
 
