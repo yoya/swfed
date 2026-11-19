@@ -1,5 +1,12 @@
 --TEST--
 SWFEditor frees its SWF data when the object is destroyed
+--SKIPIF--
+<?php
+// RSS growth means nothing without the Zend allocator (run-tests.php -m / valgrind)
+if (getenv('USE_ZEND_ALLOC') === '0') {
+    die('skip RSS based check, not under valgrind');
+}
+?>
 --FILE--
 <?php
 
