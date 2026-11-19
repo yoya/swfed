@@ -289,18 +289,18 @@ swf_object_rebuild(swf_object_t *swf) {
     return 0;
 }
 
-void
+int
 swf_object_purge_contents(swf_object_t *swf) {
     swf_tag_t *tag, *prev_tag;
     trans_table_t *refcid_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_purge_contents: swf == NULL\n");
-        return ;
+        return 1;
     }
     refcid_trans_table = trans_table_open();
     if (refcid_trans_table == NULL) {
         fprintf(stderr, "swf_object_purge_contents: trans_table_open failed\n");
-        return ;
+        return 1;
     }
     // scan from tail
     for (tag = swf->tag_tail; tag ; tag = prev_tag) {
@@ -374,6 +374,7 @@ swf_object_purge_contents(swf_object_t *swf) {
         }
     }
     trans_table_close(refcid_trans_table);
+    return 0;
 }
 
 /* --- */
