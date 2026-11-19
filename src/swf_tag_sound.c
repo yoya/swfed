@@ -95,9 +95,9 @@ swf_tag_sound_replace_cid_detail(swf_tag_t *tag, int id) {
         swf_tag_sound_detail_t *swf_tag_sound = (swf_tag_sound_detail_t *) tag->detail;
         swf_tag_sound->sound_id = id;
     }
-    if (data == NULL) {
+    if (data) {
         PutUShortLE(data, id);
-    }        
+    }
     return 0; // always 0
 }
 
