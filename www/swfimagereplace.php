@@ -2,13 +2,6 @@
 
 require_once('define.php');
 
-function multiply_unit($str) {
-   $str = preg_replace('/(\d+)G/ei', "$1*1024*1024*1024", $str);
-   $str = preg_replace('/(\d+)M/ei', "$1*1024*1024", $str);
-   $str = preg_replace('/(\d+)K/ei', "$1*1024", $str);
-   $str = preg_replace('/(\d+)B/ei', "$1", $str);
-   return $str;
-}
 $upload_max_filesize  = ini_get('upload_max_filesize');
 $upload_max_filesize_bytes = multiply_unit($upload_max_filesize);
 
@@ -46,7 +39,7 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
     $tmp_filename = "$tmp_prefix$id_image$ext";
     if ((! is_readable($tmp_filename)) &&
         (! file_put_contents($tmp_filename, $imagedata))) {
-        fprintf(stderr, "swfimagereplace.php: file_put_contents failed. zero size?\n");
+        error_log("swfimagereplace.php: file_put_contents failed. zero size?");
         unlink($tmp_filename);
         exit(0);
     }
@@ -79,9 +72,7 @@ echo <<< FORM
 </head>
 <body bgcolor="#fff0f0">
 <form enctype="multipart/form-data" action="" method="POST">
-    <input type="hidden" name="MAX_FILE_SIZE" value="$upload_max_filesize_bytes;
-
-_bytes" />
+    <input type="hidden" name="MAX_FILE_SIZE" value="$upload_max_filesize_bytes" />
     画像ファイルをアップロード: <input name="imagefile" type="file" />
     <input type="hidden" name="id" value="$id" />
     <input type="hidden" name="image_id" value="$image_id" />
