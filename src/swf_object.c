@@ -1159,23 +1159,24 @@ swf_object_replace_editstring(swf_object_t *swf,
                               int variable_name_len,
                               char *initial_text,
                               int initial_text_len) {
-    int result = 1;
+    int replaced = 0;
     swf_tag_t *tag;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_editstring: swf == NULL\n");
         return 1;
     }
+    /* Replace every DefineEditText whose variable name matches. Returning on
+     * the first hit leaves duplicate fields with the original text. */
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        result = swf_tag_replace_edit_string(tag, variable_name,
-                                             variable_name_len,
-                                             initial_text,
-                                             initial_text_len,
-                                             swf);
-        if (! result) {
-            break;
+        if (swf_tag_replace_edit_string(tag, variable_name,
+                                        variable_name_len,
+                                        initial_text,
+                                        initial_text_len,
+                                        swf) == 0) {
+            replaced++;
         }
     }
-    return result;
+    return replaced? 0: 1;
 }
 
 unsigned char *
