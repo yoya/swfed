@@ -23,6 +23,7 @@
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+#include "zend_interfaces.h"
 #include "php_swfed.h"
 
 #include "swf_define.h"
@@ -77,8 +78,19 @@ param_is_null(int n) {
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
 */
 
-/* True global resources - no need for thread safety here */
-static int le_swfed;
+/* SWFEditor keeps its swf_object_t in the object itself (not in a property),
+ * so it is freed with the object and invisible to foreach / serialize. */
+typedef struct swfed_object_ {
+    swf_object_t *swf;
+    int constructed;
+    zend_object std;
+} swfed_object;
+
+static zend_object_handlers swfed_object_handlers;
+
+static inline swfed_object *swfed_from_obj(zend_object *obj) {
+    return (swfed_object *)((char *)obj - XtOffsetOf(swfed_object, std));
+}
 
 /* {{{ swfed_module_entry
  */
@@ -129,7 +141,13 @@ static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
 /* }}} */
 
 
-static void free_swfed_resource(zend_resource *resource);
+static zend_object *swfed_create_object(zend_class_entry *ce);
+static void swfed_free_object(zend_object *obj);
+#if PHP_VERSION_ID >= 80000
+static zend_object *swfed_clone_object(zend_object *old_obj);
+#else
+static zend_object *swfed_clone_object(zval *old_zv);
+#endif
 static swf_object_t  *get_swf_object(zval *obj);
 
 #ifndef RETURN_THROWS
@@ -152,10 +170,22 @@ PHP_MINIT_FUNCTION(swfed)
        REGISTER_INI_ENTRIES();
        */
     swfed_entry_ptr = register_class_SWFEditor();
+    swfed_entry_ptr->create_object = swfed_create_object;
+    memcpy(&swfed_object_handlers, zend_get_std_object_handlers(),
+           sizeof(zend_object_handlers));
+    swfed_object_handlers.offset = XtOffsetOf(swfed_object, std);
+    swfed_object_handlers.free_obj = swfed_free_object;
+    swfed_object_handlers.clone_obj = swfed_clone_object;
     #if ZEND_MODULE_API_NO >= 20220829 // php 8.2
     swfed_entry_ptr->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
     #endif
-    le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
+    /* the SWF data lives outside the properties, so serialize would lose it */
+    #if PHP_VERSION_ID >= 80100
+    swfed_entry_ptr->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+    #else
+    swfed_entry_ptr->serialize = zend_class_serialize_deny;
+    swfed_entry_ptr->unserialize = zend_class_unserialize_deny;
+    #endif
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
@@ -262,16 +292,16 @@ PHP_FUNCTION(confirm_swfed_compiled)
  */
 
 PHP_METHOD(SWFEditor, __construct) {
-    //printf("__construct\n");
-    swf_object_t *swf = swf_object_open();
-    zval *ret = 0;
-    if (swf == NULL) {
-        php_error_docref(NULL, E_ERROR, "Couldn't create swf object");
+    swfed_object *intern = swfed_from_obj(Z_OBJ_P(getThis()));
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_THROWS();
     }
-    ret = zend_list_insert(swf, le_swfed);
-    //object_init_ex(getThis(), swfeditor_ce);
-    add_property_resource(getThis(), "swf_object", Z_RES_P(ret));
-    Z_ADDREF_P(ret);
+    /* re-initializing would free the swf_object_t a running method may hold */
+    if (intern->constructed) {
+        zend_throw_error(NULL, "SWFEditor object is already initialized");
+        RETURN_THROWS();
+    }
+    intern->constructed = 1;
 }
 
 PHP_METHOD(SWFEditor, input) {
@@ -1513,30 +1543,68 @@ PHP_METHOD(SWFEditor, isBitmapTagData) {
 
 
 static swf_object_t  *get_swf_object(zval *obj) {
-//    zval *data, **tmp;
-    zval *tmp = NULL;
-    swf_object_t *swf = NULL;
-    int id = 0, type = 0;
-/* XXX: zend_read_property
-    data = zend_read_property(Z_OBJCE_P(obj), obj, "swf_object",
-                                                          strlen("swf_object"), 1);
-*/
-    if ((obj == NULL) || (Z_TYPE_P(obj) != IS_OBJECT) ||
-        ((tmp = zend_hash_str_find(Z_OBJPROP_P(obj), ZEND_STRL("swf_object"))) == NULL) ||
-        (Z_TYPE_P(tmp) != IS_RESOURCE) || (Z_RES_P(tmp)->type != le_swfed) ||
-        (Z_RES_P(tmp)->ptr == NULL)) {
+    swfed_object *intern;
+    if ((obj == NULL) || (Z_TYPE_P(obj) != IS_OBJECT)) {
         zend_throw_error(NULL, "SWFEditor object is not initialized");
         return NULL;
     }
-    //id = Z_LVAL_P(tmp);
-    //swf = (swf_object_t *) zend_list_find(id, &type);
-    swf = (swf_object_t *) Z_RES_P(tmp)->ptr;
-    return swf;
+    intern = swfed_from_obj(Z_OBJ_P(obj));
+    if (intern->swf == NULL) {
+        zend_throw_error(NULL, "SWFEditor object is not initialized");
+        return NULL;
+    }
+    return intern->swf;
 }
 
-static void free_swfed_resource(zend_resource *resource)
-{
-//    printf("SWFEditor->destory\n");
-    swf_object_close((swf_object_t *) resource->ptr);
+static zend_object *swfed_create_object(zend_class_entry *ce) {
+    swfed_object *intern = ecalloc(1, sizeof(swfed_object) +
+                                   zend_object_properties_size(ce));
+    zend_object_std_init(&intern->std, ce);
+    object_properties_init(&intern->std, ce);
+    intern->std.handlers = &swfed_object_handlers;
+    /* allocated here (not in __construct) so the object is always usable,
+     * e.g. from a subclass constructor that doesn't call the parent one */
+    intern->swf = swf_object_open();
+    return &intern->std;
+}
+
+static void swfed_free_object(zend_object *obj) {
+    swfed_object *intern = swfed_from_obj(obj);
+    if (intern->swf) {
+        swf_object_close(intern->swf);
+        intern->swf = NULL;
+    }
+    zend_object_std_dtor(obj);
+}
+
+#if PHP_VERSION_ID >= 80000
+static zend_object *swfed_clone_object(zend_object *old_obj) {
+#else
+static zend_object *swfed_clone_object(zval *old_zv) {
+    zend_object *old_obj = Z_OBJ_P(old_zv);
+#endif
+    swfed_object *old_intern = swfed_from_obj(old_obj);
+    zend_object *new_obj = swfed_create_object(old_obj->ce);
+    swfed_object *new_intern = swfed_from_obj(new_obj);
+    swf_object_t *from = old_intern->swf, *to = new_intern->swf;
+
+    zend_objects_clone_members(new_obj, old_obj);
+    new_intern->constructed = old_intern->constructed;
+    if (from && to) {
+        if (from->tag_head) {
+            /* deep copy through the serialized form */
+            unsigned long len = 0;
+            unsigned char *data = swf_object_output(from, &len);
+            if ((data == NULL) || swf_object_input(to, data, len)) {
+                zend_throw_error(NULL, "SWFEditor: failed to clone the SWF data");
+            }
+            free(data);
+        }
+        to->header = from->header;
+        to->header_movie = from->header_movie;
+        to->shape_adjust_mode = from->shape_adjust_mode;
+        to->compress_level = from->compress_level;
+    }
+    return new_obj;
 }
 
