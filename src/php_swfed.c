@@ -181,7 +181,7 @@ PHP_MSHUTDOWN_FUNCTION(swfed)
  */
 PHP_RINIT_FUNCTION(swfed)
 {
-#if defined(COMPILE_DL_EXTNAME) && defined(ZTS)
+#if defined(COMPILE_DL_SWFED) && defined(ZTS)
         ZEND_TSRMLS_CACHE_UPDATE();
 #endif
         return SUCCESS;
@@ -221,35 +221,6 @@ PHP_MINFO_FUNCTION(swfed)
         */
 }
 /* }}} */
-
-
-/* Remove the following function when you have succesfully modified config.m4
-   so that your module can be compiled into PHP, it exists only for testing
-   purposes. */
-
-/* Every user-visible function in PHP should document itself in the source */
-/* {{{ proto string confirm_swfed_compiled(string arg)
-   Return a string to confirm that the module is compiled in */
-PHP_FUNCTION(confirm_swfed_compiled)
-{
-        char *arg = NULL;
-        size_t arg_len, len;
-        zend_string *string = zend_string_alloc(255, 0);
-
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &arg, &arg_len) == FAILURE) {
-                return;
-        }
-
-        len = sprintf(string->val, "Congratulations! You have successfully modified ext/%.78s/config.m4. Module %.78s is now compiled into PHP.", "swfed", arg);
-//         RETURN_STRINGL(string, len, 0);
-        RETURN_STR(string);
-}
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and
-   unfold functions in source code. See the corresponding marks just before
-   function definition, where the functions purpose is also documented. Please
-   follow this convention for the convenience of others editing your code.
-*/
 
 
 /*
@@ -934,7 +905,7 @@ PHP_METHOD(SWFEditor, replaceJpegData) {
 
 PHP_METHOD(SWFEditor, getPNGData) {
 #ifndef HAVE_PNG
-    fprintf(stderr, "replacePNGData: no png library\n");
+    fprintf(stderr, "getPNGData: no png library\n");
     RETURN_FALSE;
 #else /* HAVE_PNG */
     zend_long image_id = 0;
