@@ -100,7 +100,8 @@ $id_image = hex_from_string($_REQUEST['id_image']);
 $ext = $_REQUEST['ext'];
 
 if (($ext != '.jpg') && ($ext != '.png') && ($ext != '.gif')) {
-    echo "unknown ext=($ext)..\n";
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo "unknown ext\n";
     exit(1);
 }
 
