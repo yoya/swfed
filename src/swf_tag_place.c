@@ -118,7 +118,23 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         if (swf_tag_place->flag_has_clip_depth) {
             swf_tag_place->clip_depth = bitstream_getbytesLE(bs, 2);   
         }
-        // TODO: clip action data for SWF 5
+        if (swf_tag_place->flag_has_clip_action) {
+            unsigned long pos;
+            bitstream_align(bs);
+            pos = bitstream_getbytepos(bs);
+            if (pos >= length) {
+                fprintf(stderr, "ERROR: swf_tag_place_input_detail: no clip actions. character_id=%d\n", swf_tag_place->character_id);
+                bitstream_close(bs);
+                return 1;
+            }
+            swf_tag_place->clip_actions_len = length - pos;
+            swf_tag_place->clip_actions = malloc(swf_tag_place->clip_actions_len);
+            if (swf_tag_place->clip_actions == NULL) {
+                bitstream_close(bs);
+                return 1;
+            }
+            memcpy(swf_tag_place->clip_actions, data + pos, swf_tag_place->clip_actions_len);
+        }
         
     } else {
         bitstream_close(bs);
@@ -198,7 +214,10 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
         if (swf_tag_place->flag_has_clip_depth) {
             bitstream_putbytesLE(bs, swf_tag_place->clip_depth, 2);
         }
-        // TODO: clip action data for SWF 5
+        if (swf_tag_place->flag_has_clip_action && swf_tag_place->clip_actions) {
+            bitstream_align(bs);
+            bitstream_putstring(bs, swf_tag_place->clip_actions, swf_tag_place->clip_actions_len);
+        }
     } else {
         bitstream_close(bs);
         return NULL; // unknown tag;
@@ -264,6 +283,7 @@ swf_tag_place_destroy_detail(swf_tag_t *tag) {
         if (swf_tag_place->name) {
             free(swf_tag_place->name);
         }
+        free(swf_tag_place->clip_actions);
         free(swf_tag_place);
         tag->detail = NULL;
     }
