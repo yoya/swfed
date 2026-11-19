@@ -1385,14 +1385,24 @@ PHP_METHOD(SWFEditor, setActionVariables) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
+    int ret;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
-    SWFED_GET_OBJECT(swf);
+    /* Convert the array into kv first so an uncatchable Error from
+       zval_get_string() does not leave the SWF half modified. */
     kv = _array_to_keyvalue(arr);
-    swf_object_insert_action_setvariables(swf, kv);
+    if (EG(exception)) {
+        y_keyvalue_close(kv);
+        RETURN_THROWS();
+    }
+    SWFED_GET_OBJECT(swf);
+    ret = swf_object_insert_action_setvariables(swf, kv);
     y_keyvalue_close(kv);
+    if (ret) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
@@ -1400,14 +1410,22 @@ PHP_METHOD(SWFEditor, replaceActionStrings) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
+    int ret;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
-    SWFED_GET_OBJECT(swf);
     kv = _array_to_keyvalue(arr);
-    swf_object_replace_action_strings(swf, kv);
+    if (EG(exception)) {
+        y_keyvalue_close(kv);
+        RETURN_THROWS();
+    }
+    SWFED_GET_OBJECT(swf);
+    ret = swf_object_replace_action_strings(swf, kv);
     y_keyvalue_close(kv);
+    if (ret) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
@@ -1465,7 +1483,9 @@ PHP_METHOD(SWFEditor, rebuild) {
 PHP_METHOD(SWFEditor, purgeUselessContents) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
-    swf_object_purge_contents(swf);
+    if (swf_object_purge_contents(swf)) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
