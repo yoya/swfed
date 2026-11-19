@@ -1636,11 +1636,22 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 }
             }
             // extract tag before SpriteTag
-            prev_sprite_tag->next = swf_tag_move(tag);
-            prev_sprite_tag->next->prev = prev_sprite_tag;
-            prev_sprite_tag = prev_sprite_tag->next;
-            prev_sprite_tag->next = sprite_tag;
-            sprite_tag->prev = prev_sprite_tag;
+            {
+                swf_tag_t *inserted = swf_tag_move(tag);
+                if (prev_sprite_tag) {
+                    prev_sprite_tag->next = inserted;
+                    inserted->prev = prev_sprite_tag;
+                } else {
+                    /* sprite_tag was at the head of swf->tag_head; splice
+                     * the inserted tag in front and let it become the new
+                     * head. */
+                    inserted->prev = NULL;
+                    swf->tag_head = inserted;
+                }
+                prev_sprite_tag = inserted;
+                prev_sprite_tag->next = sprite_tag;
+                sprite_tag->prev = prev_sprite_tag;
+            }
             break;
             // Control Tag
           case 0: // End
