@@ -15,17 +15,19 @@
 #include "swf_png.h"
 #include "swf_gif.h"
 
-swf_tag_detail_handler_t lossless_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_lossless_detail_handler_table = {
+    .create      = swf_tag_lossless_create_detail,
+    .input       = swf_tag_lossless_input_detail,
+    .get_cid     = swf_tag_lossless_get_cid_detail,
+    .replace_cid = swf_tag_lossless_replace_cid_detail,
+    .output      = swf_tag_lossless_output_detail,
+    .print       = swf_tag_lossless_print_detail,
+    .destroy     = swf_tag_lossless_destroy_detail,
+};
 
-swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void) {
-    lossless_detail_handler.create   = swf_tag_lossless_create_detail;
-    lossless_detail_handler.input    = swf_tag_lossless_input_detail;
-    lossless_detail_handler.get_cid  = swf_tag_lossless_get_cid_detail;
-    lossless_detail_handler.replace_cid = swf_tag_lossless_replace_cid_detail;
-    lossless_detail_handler.output   = swf_tag_lossless_output_detail;
-    lossless_detail_handler.print    = swf_tag_lossless_print_detail;
-    lossless_detail_handler.destroy  = swf_tag_lossless_destroy_detail;
-    return &lossless_detail_handler;
+const swf_tag_detail_handler_t *
+swf_tag_lossless_detail_handler(void) {
+    return &swf_tag_lossless_detail_handler_table;
 }
 
 void *

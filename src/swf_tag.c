@@ -180,7 +180,7 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
     unsigned char *data = NULL;
     unsigned long data_len = 0;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     if (bs == NULL) {
         fprintf(stderr, "swf_tag_build: bs == NULL\n");
         return 1;
@@ -225,7 +225,7 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
 int
 swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t * detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     void *detail;
     tag_info = get_swf_tag_info(tag->code);
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
@@ -266,7 +266,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     }
     printf("\n");
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler;
+        const swf_tag_detail_handler_t *detail_handler;
         if (swf_tag_create_input_detail(tag, swf) == NULL) {
             fprintf(stderr, "swf_tag_print: swf_tag_create_input_detail failed\n");
             return ;
@@ -290,7 +290,7 @@ void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     tag_info = get_swf_tag_info(tag->code);
     if (tag_info && tag_info->detail_handler) {
         int result;
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->create == NULL) {
             fprintf(stderr, "swf_tag_create_input_detail: detail_handler->create == NULL (tag=%d)\n",
                     tag->code);
@@ -324,7 +324,7 @@ void swf_tag_destroy_detail(swf_tag_t *tag) {
     if (tag->detail) {
         swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
         if (tag_info && tag_info->detail_handler) {
-            swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+            const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
             if (detail_handler->destroy) {
                 detail_handler->destroy(tag);
             } else {
@@ -372,7 +372,7 @@ swf_tag_get_cid(swf_tag_t *tag) {
     }
     tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->get_cid) {
             return detail_handler->get_cid(tag);
         }
@@ -395,7 +395,7 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
     tag_no = tag->code;
     tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->replace_cid) {
             return detail_handler->replace_cid(tag, cid);
         }
@@ -656,7 +656,7 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                           unsigned long alpha_data_len,
                           int without_converting) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t * detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_jpeg_data: tag == NULL\n");
@@ -742,7 +742,7 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
                          unsigned char *png_data,
                          unsigned long png_data_len, int rgb15) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_png_data: tag == NULL\n");
@@ -800,7 +800,7 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                          unsigned char *gif_data,
                          unsigned long gif_data_len) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_gif_data: tag == NULL\n");
@@ -1113,7 +1113,7 @@ swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     swf_tag_t *tag = NULL;
     swf_tag_action_detail_t *swf_tag_action;
     swf_tag_info_t *tag_info;
-    swf_tag_detail_handler_t *detail_handler;
+    const swf_tag_detail_handler_t *detail_handler;
     if (kv == NULL) {
         fprintf(stderr, "swf_tag_create_action_setvariables: kv == NULL\n");
         return NULL;

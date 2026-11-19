@@ -11,30 +11,34 @@
 #include "swf_tag_shape.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t shape_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_shape_detail_handler_table = {
+    .create      = swf_tag_shape_create_detail,
+    .input       = swf_tag_shape_input_detail,
+    .get_cid     = swf_tag_shape_get_cid_detail,
+    .replace_cid = swf_tag_shape_replace_cid_detail,
+    .output      = swf_tag_shape_output_detail,
+    .print       = swf_tag_shape_print_detail,
+    .destroy     = swf_tag_shape_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_shape_detail_handler(void) {
-    shape_detail_handler.create   = swf_tag_shape_create_detail;
-    shape_detail_handler.input    = swf_tag_shape_input_detail;
-    shape_detail_handler.get_cid  = swf_tag_shape_get_cid_detail;
-    shape_detail_handler.replace_cid = swf_tag_shape_replace_cid_detail;
-    shape_detail_handler.output   = swf_tag_shape_output_detail;
-    shape_detail_handler.print    = swf_tag_shape_print_detail;
-    shape_detail_handler.destroy  = swf_tag_shape_destroy_detail;
-    return &shape_detail_handler;
+    return &swf_tag_shape_detail_handler_table;
 }
 
-swf_tag_detail_handler_t *
+static const swf_tag_detail_handler_t swf_tag_shape_cid_handler_table = {
+    .create      = NULL,
+    .input       = NULL,
+    .get_cid     = swf_tag_shape_get_cid_detail,
+    .replace_cid = swf_tag_shape_replace_cid_detail,
+    .output      = NULL,
+    .print       = NULL,
+    .destroy     = NULL,
+};
+
+const swf_tag_detail_handler_t *
 swf_tag_shape_cid_handler(void) {
-    shape_detail_handler.create   = NULL;
-    shape_detail_handler.input    = NULL;
-    shape_detail_handler.get_cid     = swf_tag_shape_get_cid_detail;
-    shape_detail_handler.replace_cid = swf_tag_shape_replace_cid_detail;
-    shape_detail_handler.output   = NULL;
-    shape_detail_handler.print    = NULL;
-    shape_detail_handler.destroy  = NULL;
-    return &shape_detail_handler;
+    return &swf_tag_shape_cid_handler_table;
 }
 
 void *

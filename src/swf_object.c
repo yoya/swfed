@@ -1462,7 +1462,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
     swf_object_t *swf4sprite = NULL;
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table = NULL;
     
     if (swf == NULL) {
