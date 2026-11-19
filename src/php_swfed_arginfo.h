@@ -165,6 +165,7 @@ ZEND_END_ARG_INFO()
 
 
 ZEND_METHOD(SWFEditor, __construct);
+ZEND_METHOD(SWFEditor, __clone);
 ZEND_METHOD(SWFEditor, input);
 ZEND_METHOD(SWFEditor, output);
 ZEND_METHOD(SWFEditor, swfInfo);
@@ -214,6 +215,7 @@ ZEND_METHOD(SWFEditor, isBitmapTagData);
 
 static const zend_function_entry class_SWFEditor_methods[] = {
 	ZEND_ME(SWFEditor, __construct, arginfo_class_SWFEditor___construct, ZEND_ACC_PUBLIC)
+	ZEND_ME(SWFEditor, __clone, arginfo_class_SWFEditor___construct, ZEND_ACC_PUBLIC)
 	ZEND_ME(SWFEditor, input, arginfo_class_SWFEditor_input, ZEND_ACC_PUBLIC)
 	ZEND_ME(SWFEditor, output, arginfo_class_SWFEditor_output, ZEND_ACC_PUBLIC)
 	ZEND_ME(SWFEditor, swfInfo, arginfo_class_SWFEditor_swfInfo, ZEND_ACC_PUBLIC)

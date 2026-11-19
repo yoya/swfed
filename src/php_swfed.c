@@ -274,6 +274,20 @@ PHP_METHOD(SWFEditor, __construct) {
     Z_ADDREF_P(ret);
 }
 
+PHP_METHOD(SWFEditor, __clone) {
+    /* The underlying swf_object_t is held as a resource in a dynamic property,
+     * so a bitwise clone would share the same backing data between both
+     * instances and edits would propagate back to the original. Forbid clone
+     * until a proper clone_obj handler is implemented. */
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_THROWS();
+    }
+    zend_throw_error(NULL,
+                     "SWFEditor does not support cloning; serialize via "
+                     "output()/input() instead");
+    RETURN_THROWS();
+}
+
 PHP_METHOD(SWFEditor, input) {
     char *data = NULL;
     size_t data_len = 0;

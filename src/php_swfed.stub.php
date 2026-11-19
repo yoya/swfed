@@ -30,6 +30,7 @@ class SWFEditor
     const SHAPE_BITMAP_TYPE_TILLED = UNKNOWN;
     
     public function __construct() {}
+    public function __clone() {}
 
     public function input(string $input): bool {}
     public function output(): false|string {}
