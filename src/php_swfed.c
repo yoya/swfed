@@ -531,8 +531,17 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         tag_shape = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
-        add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
-        add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
+        if (tag->code == 46) {
+            /* DefineMorphShape keeps the style arrays in morph_shape_with_style;
+             * shape_with_style is left empty. */
+            add_assoc_long(return_value, "fill_styles.count",
+                           tag_shape->morph_shape_with_style.styles.fill_styles.count);
+            add_assoc_long(return_value, "line_styles.count",
+                           tag_shape->morph_shape_with_style.styles.line_styles.count);
+        } else {
+            add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
+            add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
+        }
 //        tag_shape->shape_with_style.shape_records
         bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
         if (bitmap_id_list) {
