@@ -530,11 +530,15 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
             case 0x41: // clipped bitmap fill with smoothed edges
             case 0x42: // tilled  bitmap fill with hard edges
             case 0x43: // clipped bitmap fill with hard edges
-                if ((bitmap_id < 0) ||
-                    (bitmap_id == fill_style->bitmap.bitmap_ref)) {
+                if (bitmap_id < 0) {
                     swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
                                             scale_x, scale_y, rotate_rad,
                                             trans_x, trans_y);
+                } else if (bitmap_id == fill_style->bitmap.bitmap_ref) {
+                    /* a bitmap_id is given only to compensate a change of the
+                     * bitmap's pixel size, which is a scale in bitmap space */
+                    swf_matrix_scale_source(&(fill_style->bitmap.bitmap_matrix),
+                                            scale_x, scale_y);
                 }
                 break;
             case 0x00: // solid
