@@ -31,7 +31,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_SWFEditor_getTagDetail, 0,
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_SWFEditor_getTagData arginfo_class_SWFEditor_getTagDetail
+#define arginfo_class_SWFEditor_getTagData arginfo_class_SWFEditor_getJpegData
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceTagData, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
@@ -122,7 +122,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_applyShapeRectFa
 	ZEND_ARG_TYPE_INFO(0, trans_y, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_SWFEditor_getSoundData arginfo_class_SWFEditor_getTagDetail
+#define arginfo_class_SWFEditor_getSoundData arginfo_class_SWFEditor_getJpegData
 
 #define arginfo_class_SWFEditor_replaceMLDData arginfo_class_SWFEditor_replaceTagData
 
