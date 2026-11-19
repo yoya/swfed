@@ -666,32 +666,38 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         bitstream_close(bs);
         if ((new_tag == NULL) || (! isShapeTag(new_tag->code))) {
             fprintf(stderr, "swf_object_replace_shapedata: fallback to read old shape data\n");
-            // fallback reading Shape v0.37 and before
+            // fallback reading Shape v0.37 and before (shape body without CID)
             if (new_tag) {
                 swf_tag_destroy(new_tag);
             }
-            new_tag = swf_tag_move(old_tag);
-            swf_tag_destroy_detail(new_tag);
-            new_tag->length = length + 2;
-            if (new_tag->data) {
-                free(new_tag->data);
+            // build a fresh tag; old_tag must stay intact in case this fails
+            new_tag = calloc(sizeof(*new_tag), 1);
+            if (new_tag == NULL) {
+                return 1;
             }
+            new_tag->code = old_tag->code;
+            new_tag->length_longformat = old_tag->length_longformat;
+            new_tag->length = length + 2;
             new_tag->data = malloc(length + 2);
+            if (new_tag->data == NULL) {
+                free(new_tag);
+                return 1;
+            }
             PutUShortLE(new_tag->data, cid);
             memcpy(new_tag->data + 2, data, length);
         }
-        if (new_tag) {
-            if (swf_tag_create_input_detail(new_tag, swf)) {
-                // save cid in SWF
-                swf_tag_replace_cid(new_tag, cid);
-                _swf_object_replace_tag(swf, old_tag, new_tag);
-                swf_tag_destroy(old_tag);
-                // information modified so remove raw data.
-                free(new_tag->data);
-                new_tag->data = NULL;
-                return 0;
-            }
+        if (swf_tag_create_input_detail(new_tag, swf) == NULL) {
+            swf_tag_destroy(new_tag);
+            return 1;
         }
+        // save cid in SWF
+        swf_tag_replace_cid(new_tag, cid);
+        _swf_object_replace_tag(swf, old_tag, new_tag);
+        swf_tag_destroy(old_tag);
+        // information modified so remove raw data.
+        free(new_tag->data);
+        new_tag->data = NULL;
+        return 0;
     }
     return 1;
 }
@@ -1512,6 +1518,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
+        swf_object_close(swf4sprite);
         return ret;
     }
     
