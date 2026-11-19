@@ -22,12 +22,19 @@
 #include "swf_object.h"
 #include "bitmap_util.h"
 #include "trans_table.h"
+#ifdef HAVE_LZMA
+#include <lzma.h>
+#endif
 
 static int _swf_object_remove_tag(swf_object_t *swf, swf_tag_t *tag);
 static int _swf_object_remove_tag_in_sprite(swf_tag_sprite_detail_t *sprite, swf_tag_t *tag);
 static int _swf_object_replace_tag(swf_object_t *swf,
                                    swf_tag_t *old_tag, swf_tag_t *new_tag);
 static void _swf_object_tag_close(swf_tag_t *tag_head);
+#ifdef HAVE_LZMA
+static int _swf_object_lzma_uncompress(swf_object_t *swf, bitstream_t *bs);
+static int _swf_object_lzma_compress(swf_object_t *swf, bitstream_t *bs);
+#endif
 
 swf_object_t *
 swf_object_open(void) {
@@ -141,6 +148,17 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         bitstream_putstring(bs, new_buff, origsize);
         free(new_buff);
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
+    } else if (memcmp(swf->header.magic, "ZWS", 3) == 0) {
+#ifdef HAVE_LZMA
+        if (_swf_object_lzma_uncompress(swf, bs)) {
+            bitstream_close(bs);
+            return 1; // FAILURE
+        }
+#else
+        fprintf(stderr, "swf_object_input: LZMA compressed SWF (ZWS) is not supported (built without liblzma)\n");
+        bitstream_close(bs);
+        return 1; // FAILURE
+#endif
     } else {
         fprintf(stderr, "swf_object_input: unknown magic %s\n", swf->header.magic);
         bitstream_close(bs);
@@ -246,6 +264,17 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         }
         bitstream_putstring(bs, new_buff, compsize);
         free(new_buff);
+    } else if (memcmp(swf->header.magic, "ZWS", SWF_MAGIC_SIZE) == 0) {
+#ifdef HAVE_LZMA
+        if (_swf_object_lzma_compress(swf, bs)) {
+            bitstream_close(bs);
+            return NULL; // FAILURE
+        }
+#else
+        fprintf(stderr, "swf_object_output: LZMA compressed SWF (ZWS) is not supported (built without liblzma)\n");
+        bitstream_close(bs);
+        return NULL; // FAILURE
+#endif
     } else {
         fprintf(stderr, "swf_object_output: unknown magic %s\n", swf->header.magic);
         bitstream_close(bs);
@@ -255,6 +284,206 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
     bitstream_close(bs);
     return data;
 }
+
+#ifdef HAVE_LZMA
+/*
+ * ZWS: magic(3) version(1) file_length(4) compressed_length(4)
+ *      lzma_properties(5) lzma_data
+ * liblzma's .lzma (lzma_alone) format: properties(5) uncompressed_size(8) data
+ */
+#define SWF_LZMA_COMPSIZE_SIZE 4
+#define SWF_LZMA_PROPS_SIZE 5
+#define SWF_LZMA_DATA_OFFSET (SWF_HEADER_SIZE + SWF_LZMA_COMPSIZE_SIZE + SWF_LZMA_PROPS_SIZE)
+#define SWF_LZMA_ALONE_HEADER_SIZE (SWF_LZMA_PROPS_SIZE + 8)
+
+static void
+_swf_object_lzma_error(char *func, lzma_ret ret) {
+    switch (ret) {
+      case LZMA_MEM_ERROR:
+        fprintf(stderr, "%s: lzma LZMA_MEM_ERROR: can't malloc\n", func);
+        break;
+      case LZMA_OPTIONS_ERROR:
+        fprintf(stderr, "%s: lzma LZMA_OPTIONS_ERROR: unsupported properties\n", func);
+        break;
+      case LZMA_FORMAT_ERROR:
+        fprintf(stderr, "%s: lzma LZMA_FORMAT_ERROR: invalid properties\n", func);
+        break;
+      case LZMA_DATA_ERROR:
+        fprintf(stderr, "%s: lzma LZMA_DATA_ERROR: corrupt data\n", func);
+        break;
+      case LZMA_BUF_ERROR:
+        fprintf(stderr, "%s: lzma LZMA_BUF_ERROR: truncated data\n", func);
+        break;
+      default:
+        fprintf(stderr, "%s: lzma failed (%d)\n", func, (int) ret);
+        break;
+    }
+}
+
+static int
+_swf_object_lzma_uncompress(swf_object_t *swf, bitstream_t *bs) {
+    unsigned char alone_header[SWF_LZMA_ALONE_HEADER_SIZE];
+    unsigned char *data_ref, *new_buff, *tmp;
+    unsigned long origsize, alloc_len, dict_size;
+    lzma_stream strm = LZMA_STREAM_INIT;
+    lzma_ret ret;
+    int i, header_fed = 0;
+    if ((swf->header.file_length < SWF_HEADER_SIZE) ||
+        (bs->data_len < SWF_LZMA_DATA_OFFSET)) {
+        fprintf(stderr, "swf_object_input: invalid length file_length=%lu data_len=%lu\n",
+                swf->header.file_length, bs->data_len);
+        return 1;
+    }
+    data_ref = bitstream_buffer(bs, 0);
+    origsize = swf->header.file_length - SWF_HEADER_SIZE;
+    memcpy(alone_header, data_ref + SWF_HEADER_SIZE + SWF_LZMA_COMPSIZE_SIZE,
+           SWF_LZMA_PROPS_SIZE);
+    // a dictionary larger than the whole movie is never used
+    dict_size = alone_header[1] | (alone_header[2] << 8) |
+        (alone_header[3] << 16) | ((unsigned long) alone_header[4] << 24);
+    if (dict_size > origsize) {
+        dict_size = (origsize < 4096) ? 4096 : origsize;
+        for (i = 0 ; i < 4 ; i++) {
+            alone_header[1 + i] = (dict_size >> (8 * i)) & 0xff;
+        }
+    }
+    // the size is left unknown: the data may or may not have the end marker,
+    // and liblzma < 5.4 rejects the end marker when the size is known.
+    // decoding stops at file_length instead.
+    memset(alone_header + SWF_LZMA_PROPS_SIZE, 0xff, 8);
+    ret = lzma_alone_decoder(&strm, UINT64_MAX);
+    if (ret != LZMA_OK) {
+        _swf_object_lzma_error("swf_object_input", ret);
+        return 1;
+    }
+    // file_length is not trusted: grow the buffer as data comes out.
+    alloc_len = (origsize < 0x10000) ? origsize : 0x10000;
+    new_buff = malloc(alloc_len ? alloc_len : 1);
+    if (new_buff == NULL) {
+        fprintf(stderr, "swf_object_input: Can't malloc(%lu)\n", alloc_len);
+        lzma_end(&strm);
+        return 1;
+    }
+    strm.next_in = alone_header;
+    strm.avail_in = SWF_LZMA_ALONE_HEADER_SIZE;
+    strm.next_out = new_buff;
+    strm.avail_out = alloc_len;
+    while (1) {
+        if ((strm.avail_in == 0) && (header_fed == 0)) {
+            strm.next_in = data_ref + SWF_LZMA_DATA_OFFSET;
+            strm.avail_in = bs->data_len - SWF_LZMA_DATA_OFFSET;
+            header_fed = 1;
+        }
+        if (strm.avail_out == 0) {
+            unsigned long new_len = alloc_len * 2;
+            if (alloc_len >= origsize) {
+                break; // got file_length
+            }
+            if (new_len > origsize) {
+                new_len = origsize;
+            }
+            tmp = realloc(new_buff, new_len);
+            if (tmp == NULL) {
+                fprintf(stderr, "swf_object_input: Can't realloc(%lu)\n", new_len);
+                free(new_buff);
+                lzma_end(&strm);
+                return 1;
+            }
+            new_buff = tmp;
+            strm.next_out = new_buff + alloc_len;
+            strm.avail_out = new_len - alloc_len;
+            alloc_len = new_len;
+        }
+        ret = lzma_code(&strm, header_fed ? LZMA_FINISH : LZMA_RUN);
+        if (ret == LZMA_STREAM_END) {
+            break;
+        }
+        if (ret != LZMA_OK) {
+            _swf_object_lzma_error("swf_object_input", ret);
+            free(new_buff);
+            lzma_end(&strm);
+            return 1;
+        }
+    }
+    if (strm.total_out != origsize) {
+        fprintf(stderr, "swf_object_input: lzma uncompressed size=%llu != file_length=%lu - %d\n",
+                (unsigned long long) strm.total_out, swf->header.file_length, SWF_HEADER_SIZE);
+        free(new_buff);
+        lzma_end(&strm);
+        return 1;
+    }
+    lzma_end(&strm);
+    bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
+    bitstream_putstring(bs, new_buff, origsize);
+    free(new_buff);
+    bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
+    return 0;
+}
+
+static int
+_swf_object_lzma_compress(swf_object_t *swf, bitstream_t *bs) {
+    lzma_options_lzma opt;
+    lzma_stream strm = LZMA_STREAM_INIT;
+    lzma_ret ret;
+    unsigned char *body_ref, *out, *tmp;
+    unsigned long body_len, out_len, data_len;
+    uint32_t preset;
+    preset = (swf->compress_level <= 9) ? swf->compress_level : LZMA_PRESET_DEFAULT;
+    if (lzma_lzma_preset(&opt, preset)) {
+        fprintf(stderr, "swf_object_output: lzma_lzma_preset(%u) failed\n", preset);
+        return 1;
+    }
+    ret = lzma_alone_encoder(&strm, &opt);
+    if (ret != LZMA_OK) {
+        _swf_object_lzma_error("swf_object_output", ret);
+        return 1;
+    }
+    body_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
+    body_len = bs->data_len - SWF_HEADER_SIZE;
+    out_len = body_len + body_len / 8 + 1024;
+    out = malloc(out_len);
+    if (out == NULL) {
+        fprintf(stderr, "swf_object_output: Can't malloc(%lu)\n", out_len);
+        lzma_end(&strm);
+        return 1;
+    }
+    strm.next_in = body_ref;
+    strm.avail_in = body_len;
+    strm.next_out = out;
+    strm.avail_out = out_len;
+    while ((ret = lzma_code(&strm, LZMA_FINISH)) == LZMA_OK) {
+        if (strm.avail_out == 0) {
+            tmp = realloc(out, out_len * 2);
+            if (tmp == NULL) {
+                fprintf(stderr, "swf_object_output: Can't realloc(%lu)\n", out_len * 2);
+                free(out);
+                lzma_end(&strm);
+                return 1;
+            }
+            out = tmp;
+            strm.next_out = out + out_len;
+            strm.avail_out = out_len;
+            out_len *= 2;
+        }
+    }
+    if ((ret != LZMA_STREAM_END) ||
+        (strm.total_out < SWF_LZMA_ALONE_HEADER_SIZE)) {
+        _swf_object_lzma_error("swf_object_output", ret);
+        free(out);
+        lzma_end(&strm);
+        return 1;
+    }
+    // drop the uncompressed_size(8) of the .lzma header
+    data_len = strm.total_out - SWF_LZMA_ALONE_HEADER_SIZE;
+    lzma_end(&strm);
+    bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
+    bitstream_putbytesLE(bs, data_len, SWF_LZMA_COMPSIZE_SIZE);
+    bitstream_putstring(bs, out, SWF_LZMA_PROPS_SIZE);
+    bitstream_putstring(bs, out + SWF_LZMA_ALONE_HEADER_SIZE, data_len);
+    free(out);
+    return 0;
+}
+#endif /* HAVE_LZMA */
 
 void
 swf_object_print(swf_object_t *swf) {

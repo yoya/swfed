@@ -203,6 +203,7 @@ PHP_MINFO_FUNCTION(swfed)
 {
         int gif_support = 0;
         int png_support = 0;
+        int lzma_support = 0;
         php_info_print_table_start();
         php_info_print_table_header(2, "SWF Editor support", "enabled");
         php_info_print_table_row(2, "SWF Editor version", PHP_SWFED_VERSION);
@@ -212,8 +213,12 @@ PHP_MINFO_FUNCTION(swfed)
 #ifdef HAVE_GIF
         gif_support = 1;
 #endif
+#ifdef HAVE_LZMA
+        lzma_support = 1;
+#endif
         php_info_print_table_row(2, "SWF Editor PNG support", png_support?"yes":"no");
         php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
+        php_info_print_table_row(2, "SWF Editor LZMA (ZWS) support", lzma_support?"yes":"no");
         php_info_print_table_end();
 
         /* Remove comments if you have entries in php.ini
@@ -325,8 +330,13 @@ PHP_METHOD(SWFEditor, getHeaderInfo) {
     array_init(return_value);
     if (memcmp(swf->header.magic, "CWS", 3) == 0) {
         add_assoc_bool(return_value, "compress", 1);
+        add_assoc_bool(return_value, "lzma", 0);
+    } else if (memcmp(swf->header.magic, "ZWS", 3) == 0) {
+        add_assoc_bool(return_value, "compress", 1);
+        add_assoc_bool(return_value, "lzma", 1);
     } else { // FWS
         add_assoc_bool(return_value, "compress", 0);
+        add_assoc_bool(return_value, "lzma", 0);
     }
     add_assoc_long(return_value, "version", swf->header.version);
 
@@ -342,7 +352,7 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     zval *header_info = NULL;
     swf_object_t *swf = NULL;
     HashTable *header_table = NULL;
-    zval *tmp = NULL;
+    zval *tmp = NULL, *tmp2 = NULL;
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                               &header_info) == FAILURE) {
         php_error_docref(NULL, E_ERROR, "Invalid parameters");
@@ -351,12 +361,26 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     SWFED_GET_OBJECT(swf);
     header_table = Z_ARRVAL_P(header_info);
 
-    // FWS or CWS
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"))) != NULL) {
-        if (zend_is_true(tmp)) {
+    // compress => false: FWS, lzma => true: ZWS, otherwise compress => true: CWS
+    // (an already ZWS movie stays ZWS unless lzma => false)
+    tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"));
+    tmp2 = zend_hash_str_find(header_table, ZEND_STRL("lzma"));
+    if (tmp && (zend_is_true(tmp) == 0)) {
+        memcpy(swf->header.magic, "FWS", 3);
+    } else if (tmp2 && zend_is_true(tmp2)) {
+#ifdef HAVE_LZMA
+        memcpy(swf->header.magic, "ZWS", 3);
+#else
+        php_error_docref(NULL, E_WARNING, "LZMA (ZWS) is not supported (built without liblzma)");
+        RETURN_FALSE;
+#endif
+    } else if (tmp2) { // lzma => false
+        if (tmp || (memcmp(swf->header.magic, "ZWS", 3) == 0)) {
             memcpy(swf->header.magic, "CWS", 3);
-        } else {
-            memcpy(swf->header.magic, "FWS", 3);
+        }
+    } else if (tmp) { // compress => true
+        if (memcmp(swf->header.magic, "ZWS", 3) != 0) {
+            memcpy(swf->header.magic, "CWS", 3);
         }
     }
 
