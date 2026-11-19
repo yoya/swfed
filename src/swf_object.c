@@ -462,7 +462,7 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
          * directly, which returns just the tag body. */
         if ((tag->data == NULL) && tag->detail) {
             swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
-            swf_tag_detail_handler_t *handler =
+            const swf_tag_detail_handler_t *handler =
                 (tag_info && tag_info->detail_handler)? tag_info->detail_handler(): NULL;
             if (handler && handler->output) {
                 unsigned long data_len = 0;
