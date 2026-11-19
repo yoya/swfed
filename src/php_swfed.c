@@ -706,20 +706,19 @@ PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
 PHP_METHOD(SWFEditor, removeTag) {
     zend_long tag_seqno = 0;
     zend_long tag_seqno_in_sprite = -1;
+    zend_bool index_is_null = 1;
     swf_object_t *swf = NULL;
     int ret;
 
-    switch (ZEND_NUM_ARGS()) {
-      case 1:
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
-            RETURN_FALSE;
-        }
-        break;
-      case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &tag_seqno, &tag_seqno_in_sprite) == FAILURE) {
-            RETURN_FALSE;
-        }
-        break;
+    /* "l|l!" handles 1 or 2 args; 0 args or 3+ args raise ArgumentCountError.
+     * null for the 2nd arg sets index_is_null so it behaves like omitted (-1). */
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l|l!",
+                              &tag_seqno,
+                              &tag_seqno_in_sprite, &index_is_null) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if (index_is_null) {
+        tag_seqno_in_sprite = -1;
     }
     SWFED_GET_OBJECT(swf);
     ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);

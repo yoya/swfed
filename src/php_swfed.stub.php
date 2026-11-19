@@ -46,7 +46,7 @@ class SWFEditor
     public function replaceTagDataByCID(int $cid, string $data): bool {}
     public function getTagContentsByCID(int $cid): false|string {}
     public function replaceTagContentsByCID(int $cid, string $data): bool {}
-    public function removeTag(int $index, ?int $index_sprint): bool {}
+    public function removeTag(int $index, ?int $index_sprint = null): bool {}
     public function printTagData(string $data): bool {}
     public function getShapeData(int $cid): false|string{}
     public function replaceShapeData(int $cid, string $data): bool {}

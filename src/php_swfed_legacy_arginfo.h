@@ -46,7 +46,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceTagContentsByCID arginfo_class_SWFEditor_replaceTagDataByCID
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 0, 1)
 	ZEND_ARG_INFO(0, index)
 	ZEND_ARG_INFO(0, index_sprint)
 ZEND_END_ARG_INFO()
