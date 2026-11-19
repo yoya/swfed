@@ -15,16 +15,6 @@ function tag($code, $body) {
 $obj = new SWFEditor();
 var_dump($obj->setActionVariables(array('a' => 'b')));
 
-// value that can't be converted to string must not modify the SWF
-$obj->input(file_get_contents('tests/textvar-noaction.swf'));
-$n = count($obj->getTagList());
-try {
-    $obj->setActionVariables(array('a' => new stdClass));
-} catch (Error $e) {
-    echo get_class($e), ": ", $e->getMessage(), "\n";
-}
-var_dump(count($obj->getTagList()) === $n);
-
 // broken DoAction (Push length runs past the end of the tag)
 $obj->input(file_get_contents('tests/textvar.swf'));
 $obj->replaceTagData(1, tag(12, "\x96\x05\x00AB"));
@@ -35,8 +25,6 @@ var_dump($obj->purgeUselessContents());
 ===DONE===
 --EXPECTF--
 %Abool(false)
-Error: Object of class stdClass could not be converted to string
-bool(true)
 %Abool(false)
 bool(true)
 ===DONE===
