@@ -289,6 +289,58 @@ swf_object_rebuild(swf_object_t *swf) {
     return 0;
 }
 
+/* Register the characters that tags without a detail handler refer to:
+ * PlaceObject3, ExportAssets / SymbolClass (linkage) and DoInitAction.
+ * These tags are never edited, so their raw data is always there. */
+static void
+_swf_object_reserve_linkage_refcids(swf_tag_t *tag, trans_table_t *table) {
+    unsigned char *d = tag->data, *p;
+    unsigned long len = tag->length, pos, i, n;
+    if (d == NULL) {
+        return;
+    }
+    switch (tag->code) {
+      case 59: // DoInitAction: SpriteID
+        if (len >= 2) {
+            trans_table_set(table, GetUShortLE(d), TRANS_TABLE_RESERVE_ID);
+        }
+        break;
+      case 56: // ExportAssets: Count, { Tag, Name }
+      case 76: // SymbolClass: NumSymbols, { Tag, Name }
+        if (len < 2) {
+            break;
+        }
+        n = GetUShortLE(d);
+        pos = 2;
+        for (i = 0 ; (i < n) && (pos + 2 <= len) ; i++) {
+            int id;
+            p = d + pos;
+            id = GetUShortLE(p);
+            if (id > 0) { // 0 is the main timeline in SymbolClass
+                trans_table_set(table, id, TRANS_TABLE_RESERVE_ID);
+            }
+            for (pos += 2 ; (pos < len) && d[pos] ; pos++);
+            pos++; // NUL
+        }
+        break;
+      case 70: // PlaceObject3
+        if (len < 4) {
+            break;
+        }
+        pos = 4; // flags(2), Depth
+        // ClassName if HasClassName, or HasImage and HasCharacter
+        if ((d[1] & 0x08) || ((d[1] & 0x10) && (d[0] & 0x02))) {
+            for ( ; (pos < len) && d[pos] ; pos++);
+            pos++;
+        }
+        if ((d[0] & 0x02) && (pos + 2 <= len)) { // HasCharacter
+            p = d + pos;
+            trans_table_set(table, GetUShortLE(p), TRANS_TABLE_RESERVE_ID);
+        }
+        break;
+    }
+}
+
 void
 swf_object_purge_contents(swf_object_t *swf) {
     swf_tag_t *tag, *prev_tag;
@@ -307,6 +359,7 @@ swf_object_purge_contents(swf_object_t *swf) {
         int cid;
         int refcid;
         prev_tag = tag->prev;
+        _swf_object_reserve_linkage_refcids(tag, refcid_trans_table);
         refcid = swf_tag_get_refcid(tag);
         if (refcid > 0) {
             // register ref id in control tag
