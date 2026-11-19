@@ -10,18 +10,19 @@
 #include "swf_tag_place.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t place_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_place_detail_handler_table = {
+    .create      = swf_tag_place_create_detail,
+    .input       = swf_tag_place_input_detail,
+    .get_cid     = NULL,
+    .replace_cid = NULL,
+    .output      = swf_tag_place_output_detail,
+    .print       = swf_tag_place_print_detail,
+    .destroy     = swf_tag_place_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_place_detail_handler(void) {
-    place_detail_handler.create   = swf_tag_place_create_detail;
-    place_detail_handler.input    = swf_tag_place_input_detail;
-    place_detail_handler.get_cid  = NULL;
-    place_detail_handler.replace_cid = NULL;
-    place_detail_handler.output   = swf_tag_place_output_detail;
-    place_detail_handler.print    = swf_tag_place_print_detail;
-    place_detail_handler.destroy  = swf_tag_place_destroy_detail;
-    return &place_detail_handler;
+    return &swf_tag_place_detail_handler_table;
 }
 
 void *

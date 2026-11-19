@@ -20,7 +20,7 @@ typedef struct swf_tag_button_detail_ {
     swf_button_condaction_list_t *condactions;
 } swf_tag_button_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_button_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_button_detail_handler(void);
 
 extern void *swf_tag_button_create_detail(void);
 extern int swf_tag_button_input_detail(swf_tag_t *tag, struct swf_object_ *swf);

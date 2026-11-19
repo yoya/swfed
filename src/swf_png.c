@@ -284,6 +284,23 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             bitstream_input(bs, png_image_data[y], rowbytes);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
+                if (indices_data[i] >= palette_num) {
+                    /* libpng doesn't reject this on read, but writing it back
+                     * (getPNGData etc.) fails, and color lookups overrun */
+                    fprintf(stderr, "pngconv_png2lossless: color index(%d) >= palette_num(%d)\n",
+                            indices_data[i], palette_num);
+                    bitstream_close(bs);
+                    free(*colormap);
+                    *colormap = NULL;
+                    free(indices_data);
+                    for (y=0 ; y < png_height ; y++) {
+                        free(png_image_data[y]);
+                    }
+                    free(png_image_data);
+                    png_destroy_read_struct((png_structpp) &png_ptr,
+                                            (png_infopp) &png_info_ptr, NULL);
+                    return NULL;
+                }
                 i++;
             }
             while (i % 4) { i++; } // 4byte alignment
@@ -356,6 +373,15 @@ pngconv_lossless2png(void *image_data,
         fprintf(stderr, "jpegconv_lossless2png: format=%d not implemented yes.\n", format);
         return NULL;
     }
+    if ((width == 0) || (height == 0)) {
+        fprintf(stderr, "pngconv_lossless2png: invalid size width=%u height=%u\n",
+                width, height);
+        return NULL;
+    }
+    /* must be initialized before setjmp(): the error handler frees it */
+    png_buff.data = NULL;
+    png_buff.data_len = 0;
+    png_buff.data_offset = 0;
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
     if (! png_ptr) {
         fprintf(stderr, "jpegconv_lossless2png: can't create write_struct\n");
@@ -450,8 +476,9 @@ pngconv_lossless2png(void *image_data,
         }
         png_set_PLTE( png_ptr, png_info_ptr, png_palette, index_data_count);
         free(png_palette);
+        png_palette = NULL;
     }
-    png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
+    png_image_data = (png_bytepp) calloc(png_height, sizeof(png_bytep));
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
@@ -484,9 +511,6 @@ pngconv_lossless2png(void *image_data,
         }
         
     }
-    png_buff.data = NULL;
-    png_buff.data_len = 0;
-    png_buff.data_offset = 0;
     png_data_write((png_structp) png_ptr, (my_png_buffer*) &png_buff);
 
     png_write_info(png_ptr, png_info_ptr);

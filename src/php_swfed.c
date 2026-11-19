@@ -23,6 +23,7 @@
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+#include "zend_interfaces.h"
 #include "php_swfed.h"
 
 #include "swf_define.h"
@@ -77,8 +78,19 @@ param_is_null(int n) {
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
 */
 
-/* True global resources - no need for thread safety here */
-static int le_swfed;
+/* SWFEditor keeps its swf_object_t in the object itself (not in a property),
+ * so it is freed with the object and invisible to foreach / serialize. */
+typedef struct swfed_object_ {
+    swf_object_t *swf;
+    int constructed;
+    zend_object std;
+} swfed_object;
+
+static zend_object_handlers swfed_object_handlers;
+
+static inline swfed_object *swfed_from_obj(zend_object *obj) {
+    return (swfed_object *)((char *)obj - XtOffsetOf(swfed_object, std));
+}
 
 /* {{{ swfed_module_entry
  */
@@ -178,7 +190,13 @@ static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
 /* }}} */
 
 
-static void free_swfed_resource(zend_resource *resource);
+static zend_object *swfed_create_object(zend_class_entry *ce);
+static void swfed_free_object(zend_object *obj);
+#if PHP_VERSION_ID >= 80000
+static zend_object *swfed_clone_object(zend_object *old_obj);
+#else
+static zend_object *swfed_clone_object(zval *old_zv);
+#endif
 static swf_object_t  *get_swf_object(zval *obj);
 
 #ifndef RETURN_THROWS
@@ -198,10 +216,22 @@ PHP_MINIT_FUNCTION(swfed)
 {
     REGISTER_INI_ENTRIES();
     swfed_entry_ptr = register_class_SWFEditor();
+    swfed_entry_ptr->create_object = swfed_create_object;
+    memcpy(&swfed_object_handlers, zend_get_std_object_handlers(),
+           sizeof(zend_object_handlers));
+    swfed_object_handlers.offset = XtOffsetOf(swfed_object, std);
+    swfed_object_handlers.free_obj = swfed_free_object;
+    swfed_object_handlers.clone_obj = swfed_clone_object;
     #if ZEND_MODULE_API_NO >= 20220829 // php 8.2
     swfed_entry_ptr->ce_flags |= ZEND_ACC_ALLOW_DYNAMIC_PROPERTIES;
     #endif
-    le_swfed = zend_register_list_destructors_ex(free_swfed_resource, NULL, "SWFEditor", module_number);
+    /* the SWF data lives outside the properties, so serialize would lose it */
+    #if PHP_VERSION_ID >= 80100
+    swfed_entry_ptr->ce_flags |= ZEND_ACC_NOT_SERIALIZABLE;
+    #else
+    swfed_entry_ptr->serialize = zend_class_serialize_deny;
+    swfed_entry_ptr->unserialize = zend_class_unserialize_deny;
+    #endif
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_NONE", SWFED_SHAPE_BITMAP_NONE);
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_MATRIX_RESCALE", SWFED_SHAPE_BITMAP_MATRIX_RESCALE);
     // REGISTER_SWFED_CLASS_CONST_LONG("SHAPE_BITMAP_RECT_RESIZE", SWFED_SHAPE_BITMAP_RECT_RESIZE);
@@ -304,16 +334,16 @@ PHP_FUNCTION(confirm_swfed_compiled)
  */
 
 PHP_METHOD(SWFEditor, __construct) {
-    //printf("__construct\n");
-    swf_object_t *swf = swf_object_open();
-    zval *ret = 0;
-    if (swf == NULL) {
-        php_error_docref(NULL, E_ERROR, "Couldn't create swf object");
+    swfed_object *intern = swfed_from_obj(Z_OBJ_P(getThis()));
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_THROWS();
     }
-    ret = zend_list_insert(swf, le_swfed);
-    //object_init_ex(getThis(), swfeditor_ce);
-    add_property_resource(getThis(), "swf_object", Z_RES_P(ret));
-    Z_ADDREF_P(ret);
+    /* re-initializing would free the swf_object_t a running method may hold */
+    if (intern->constructed) {
+        zend_throw_error(NULL, "SWFEditor object is already initialized");
+        RETURN_THROWS();
+    }
+    intern->constructed = 1;
 }
 
 PHP_METHOD(SWFEditor, input) {
@@ -554,12 +584,12 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         add_assoc_long(return_value, "edit_id", tag_edit->edit_id);
         if (tag_edit->edit_variable_name && tag_edit->edit_variable_name[0]) {
             add_assoc_string_ex(return_value, "variable_name",
-                                sizeof("variable_name"),
+                                sizeof("variable_name") - 1,
                                 (char *)tag_edit->edit_variable_name);
         }
         if (tag_edit->edit_initial_text && tag_edit->edit_initial_text[0]) {
             add_assoc_string_ex(return_value, "initial_text",
-                                sizeof("initial_text"),
+                                sizeof("initial_text") - 1,
                                 (char *)tag_edit->edit_initial_text);
         }
         break;
@@ -576,8 +606,17 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         tag_shape = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
-        add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
-        add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
+        if (tag->code == 46) {
+            /* DefineMorphShape keeps the style arrays in morph_shape_with_style;
+             * shape_with_style is left empty. */
+            add_assoc_long(return_value, "fill_styles.count",
+                           tag_shape->morph_shape_with_style.styles.fill_styles.count);
+            add_assoc_long(return_value, "line_styles.count",
+                           tag_shape->morph_shape_with_style.styles.line_styles.count);
+        } else {
+            add_assoc_long(return_value, "fill_styles.count", tag_shape->shape_with_style.styles.fill_styles.count);
+            add_assoc_long(return_value, "line_styles.count", tag_shape->shape_with_style.styles.line_styles.count);
+        }
 //        tag_shape->shape_with_style.shape_records
         bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
         if (bitmap_id_list) {
@@ -600,7 +639,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         add_assoc_long(return_value, "depth", tag_place->depth);
         if (tag_place->flag_has_name) {
             add_assoc_string_ex(return_value, "name",
-                                sizeof("name"), (char *)tag_place->name);
+                                sizeof("name") - 1, (char *)tag_place->name);
         }
 
       default:
@@ -751,20 +790,19 @@ PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
 PHP_METHOD(SWFEditor, removeTag) {
     zend_long tag_seqno = 0;
     zend_long tag_seqno_in_sprite = -1;
+    zend_bool index_is_null = 1;
     swf_object_t *swf = NULL;
     int ret;
 
-    switch (ZEND_NUM_ARGS()) {
-      case 1:
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
-            RETURN_FALSE;
-        }
-        break;
-      case 2:
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll", &tag_seqno, &tag_seqno_in_sprite) == FAILURE) {
-            RETURN_FALSE;
-        }
-        break;
+    /* "l|l!" handles 1 or 2 args; 0 args or 3+ args raise ArgumentCountError.
+     * null for the 2nd arg sets index_is_null so it behaves like omitted (-1). */
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "l|l!",
+                              &tag_seqno,
+                              &tag_seqno_in_sprite, &index_is_null) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if (index_is_null) {
+        tag_seqno_in_sprite = -1;
     }
     SWFED_GET_OBJECT(swf);
     ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);
@@ -1402,8 +1440,7 @@ PHP_METHOD(SWFEditor, disasmActionData) {
     if (action_list) {
         swf_action_t *action = action_list->head;
         while(action) {
-            printf("\t");
-//            swf_action_disasm(action);
+            swf_action_print(action, 1);
             action = action->next;
         }
     }
@@ -1432,14 +1469,24 @@ PHP_METHOD(SWFEditor, setActionVariables) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
+    int ret;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
-    SWFED_GET_OBJECT(swf);
+    /* Convert the array into kv first so an uncatchable Error from
+       zval_get_string() does not leave the SWF half modified. */
     kv = _array_to_keyvalue(arr);
-    swf_object_insert_action_setvariables(swf, kv);
+    if (EG(exception)) {
+        y_keyvalue_close(kv);
+        RETURN_THROWS();
+    }
+    SWFED_GET_OBJECT(swf);
+    ret = swf_object_insert_action_setvariables(swf, kv);
     y_keyvalue_close(kv);
+    if (ret) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
@@ -1447,14 +1494,22 @@ PHP_METHOD(SWFEditor, replaceActionStrings) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
+    int ret;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a", &arr) == FAILURE) {
         RETURN_FALSE;
     }
-    SWFED_GET_OBJECT(swf);
     kv = _array_to_keyvalue(arr);
-    swf_object_replace_action_strings(swf, kv);
+    if (EG(exception)) {
+        y_keyvalue_close(kv);
+        RETURN_THROWS();
+    }
+    SWFED_GET_OBJECT(swf);
+    ret = swf_object_replace_action_strings(swf, kv);
     y_keyvalue_close(kv);
+    if (ret) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
@@ -1515,7 +1570,9 @@ PHP_METHOD(SWFEditor, rebuild) {
 PHP_METHOD(SWFEditor, purgeUselessContents) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
-    swf_object_purge_contents(swf);
+    if (swf_object_purge_contents(swf)) {
+        RETURN_FALSE;
+    }
     RETURN_TRUE;
 }
 
@@ -1524,6 +1581,12 @@ PHP_METHOD(SWFEditor, setCompressLevel) {
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &compress_level) == FAILURE) {
+        RETURN_FALSE;
+    }
+    if (compress_level < -1 || compress_level > 9) {
+        php_error_docref(NULL, E_WARNING,
+                         "setCompressLevel: compress_level must be -1..9 (got %ld)",
+                         (long)compress_level);
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
@@ -1561,30 +1624,68 @@ PHP_METHOD(SWFEditor, isBitmapTagData) {
 
 
 static swf_object_t  *get_swf_object(zval *obj) {
-//    zval *data, **tmp;
-    zval *tmp = NULL;
-    swf_object_t *swf = NULL;
-    int id = 0, type = 0;
-/* XXX: zend_read_property
-    data = zend_read_property(Z_OBJCE_P(obj), obj, "swf_object",
-                                                          strlen("swf_object"), 1);
-*/
-    if ((obj == NULL) || (Z_TYPE_P(obj) != IS_OBJECT) ||
-        ((tmp = zend_hash_str_find(Z_OBJPROP_P(obj), ZEND_STRL("swf_object"))) == NULL) ||
-        (Z_TYPE_P(tmp) != IS_RESOURCE) || (Z_RES_P(tmp)->type != le_swfed) ||
-        (Z_RES_P(tmp)->ptr == NULL)) {
+    swfed_object *intern;
+    if ((obj == NULL) || (Z_TYPE_P(obj) != IS_OBJECT)) {
         zend_throw_error(NULL, "SWFEditor object is not initialized");
         return NULL;
     }
-    //id = Z_LVAL_P(tmp);
-    //swf = (swf_object_t *) zend_list_find(id, &type);
-    swf = (swf_object_t *) Z_RES_P(tmp)->ptr;
-    return swf;
+    intern = swfed_from_obj(Z_OBJ_P(obj));
+    if (intern->swf == NULL) {
+        zend_throw_error(NULL, "SWFEditor object is not initialized");
+        return NULL;
+    }
+    return intern->swf;
 }
 
-static void free_swfed_resource(zend_resource *resource)
-{
-//    printf("SWFEditor->destory\n");
-    swf_object_close((swf_object_t *) resource->ptr);
+static zend_object *swfed_create_object(zend_class_entry *ce) {
+    swfed_object *intern = ecalloc(1, sizeof(swfed_object) +
+                                   zend_object_properties_size(ce));
+    zend_object_std_init(&intern->std, ce);
+    object_properties_init(&intern->std, ce);
+    intern->std.handlers = &swfed_object_handlers;
+    /* allocated here (not in __construct) so the object is always usable,
+     * e.g. from a subclass constructor that doesn't call the parent one */
+    intern->swf = swf_object_open();
+    return &intern->std;
+}
+
+static void swfed_free_object(zend_object *obj) {
+    swfed_object *intern = swfed_from_obj(obj);
+    if (intern->swf) {
+        swf_object_close(intern->swf);
+        intern->swf = NULL;
+    }
+    zend_object_std_dtor(obj);
+}
+
+#if PHP_VERSION_ID >= 80000
+static zend_object *swfed_clone_object(zend_object *old_obj) {
+#else
+static zend_object *swfed_clone_object(zval *old_zv) {
+    zend_object *old_obj = Z_OBJ_P(old_zv);
+#endif
+    swfed_object *old_intern = swfed_from_obj(old_obj);
+    zend_object *new_obj = swfed_create_object(old_obj->ce);
+    swfed_object *new_intern = swfed_from_obj(new_obj);
+    swf_object_t *from = old_intern->swf, *to = new_intern->swf;
+
+    zend_objects_clone_members(new_obj, old_obj);
+    new_intern->constructed = old_intern->constructed;
+    if (from && to) {
+        if (from->tag_head) {
+            /* deep copy through the serialized form */
+            unsigned long len = 0;
+            unsigned char *data = swf_object_output(from, &len);
+            if ((data == NULL) || swf_object_input(to, data, len)) {
+                zend_throw_error(NULL, "SWFEditor: failed to clone the SWF data");
+            }
+            free(data);
+        }
+        to->header = from->header;
+        to->header_movie = from->header_movie;
+        to->shape_adjust_mode = from->shape_adjust_mode;
+        to->compress_level = from->compress_level;
+    }
+    return new_obj;
 }
 
