@@ -173,6 +173,22 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bitstream_getstring(bs2, swf_tag_lossless->indices, indices_len);
         bitstream_close(bs2);
         free(tmp_buff);
+        {
+            /* row padding bytes are not pixels, so only check the pixels */
+            unsigned long stride = ((unsigned long) swf_tag_lossless->width + 3) & ~3UL;
+            unsigned long x, y;
+            for (y = 0 ; y < swf_tag_lossless->height ; y++) {
+                for (x = 0 ; x < swf_tag_lossless->width ; x++) {
+                    int index = swf_tag_lossless->indices[x + y * stride];
+                    if (index >= swf_tag_lossless->colormap_count) {
+                        fprintf(stderr, "swf_tag_lossless_input_detail: color index(%d) >= colormap_count(%d) at (%lu, %lu)\n",
+                                index, swf_tag_lossless->colormap_count, x, y);
+                        bitstream_close(bs);
+                        return 1;
+                    }
+                }
+            }
+        }
     } else { // format != 3
         unsigned long bitmap_count;
         bitmap_count = (unsigned long) swf_tag_lossless->width *

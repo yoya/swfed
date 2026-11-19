@@ -549,7 +549,13 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
     switch (swf_tag_lossless->format) {
         int color_index;
     case 3:
+        if ((swf_tag_lossless->width == 0) || (swf_tag_lossless->height == 0)) {
+            return 1;
+        }
         color_index = swf_tag_lossless->indices[0];
+        if (color_index >= swf_tag_lossless->colormap_count) {
+            return 1;
+        }
         if (tag->code == 20) { // Lossless => RGB
             *red   = swf_tag_lossless->colormap[color_index].red;
             *green = swf_tag_lossless->colormap[color_index].green;
