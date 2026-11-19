@@ -568,6 +568,7 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
             }
         }
         break;
+    case 4: // held as xrgb like format=5
     case 5:
         if (tag->code == 20) { // Lossless => RGB
             *red   = swf_tag_lossless->bitmap[0].red;
