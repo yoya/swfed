@@ -10,6 +10,43 @@
 #include "swf_jpeg.h"
 #include "jpeg_segment.h"
 
+/* length up to the EOI that ends the first image, dropping trailing data
+ * (it may even be another JPEG, which would be lumped into the scan data) */
+static unsigned long
+jpeg_image_length(unsigned char *data, unsigned long data_len) {
+    jpeg_segment_t *seg = jpeg_segment_parse(data, data_len, 1); // scan every marker
+    jpeg_segment_node_t *node, *last_sos = NULL;
+    unsigned long len = data_len;
+    if (seg == NULL) {
+        return data_len;
+    }
+    for (node = seg->head ; node ; node = node->next) {
+        if (node->marker == 0xDA) {
+            last_sos = node;
+        } else if ((node->marker == 0xD9) && last_sos && last_sos->data_ref) {
+            unsigned long end = (last_sos->data_ref - data) + last_sos->data_len + 2;
+            if (end <= data_len) {
+                len = end;
+            }
+            break;
+        }
+    }
+    jpeg_segment_destroy(seg);
+    return len;
+}
+
+static int
+jpeg_has_sof(jpeg_segment_t *seg) {
+    jpeg_segment_node_t *node;
+    for (node = seg->head ; node ; node = node->next) {
+        int m = node->marker;
+        if ((0xC0 <= m) && (m <= 0xCF) && (m != 0xC4) && (m != 0xC8) && (m != 0xCC)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 unsigned char *
 jpegconv_std2swf(unsigned char *data, unsigned long data_len,
                  unsigned long *length) {
@@ -23,9 +60,20 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
         fprintf(stderr, "jpegconv_std2swf: data == NULL\n");
         return NULL;
     }
+    if ((data_len < 4) || (data[0] != 0xFF) || (data[1] != 0xD8)) {
+        fprintf(stderr, "jpegconv_std2swf: not a JPEG (no SOI)\n");
+        return NULL;
+    }
+    data_len = jpeg_image_length(data, data_len);
     jpeg_data = jpeg_segment_parse(data, data_len, SWFED_JPEG_RST_SCAN_STDJPEG);
     if (jpeg_data == NULL) {
         fprintf(stderr, "jpegconv_std2swf: Can't create jpeg segment for data\n");
+        return NULL;
+    }
+    if (jpeg_data->broken || (! jpeg_has_sof(jpeg_data)) ||
+        (! jpeg_segment_contain(jpeg_data, 0xDA))) {
+        fprintf(stderr, "jpegconv_std2swf: broken JPEG (broken segment, or no SOF / SOS)\n");
+        jpeg_segment_destroy(jpeg_data);
         return NULL;
     }
     jpeg_output = jpeg_segment_create();
@@ -38,10 +86,11 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
     /* re-order */
     // compression table parts
     jpeg_segment_append(jpeg_output, 0xD8, NULL, 0); // SOI
-    while ((d = jpeg_segment_steal_node(jpeg_data, 0xDB, &d_len)) != NULL) {
+    // tables after the first SOS (between progressive scans) stay in place
+    while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xDB, 0xDA, &d_len)) != NULL) {
         jpeg_segment_append(jpeg_output, 0xDB, d, d_len); // DQT
     }
-    while ((d = jpeg_segment_steal_node(jpeg_data, 0xC4, &d_len)) != NULL) {
+    while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xC4, 0xDA, &d_len)) != NULL) {
         jpeg_segment_append(jpeg_output, 0xC4, d, d_len); // DHT
     }
     jpeg_segment_append(jpeg_output, 0xD9, NULL, 0); // EOI
@@ -85,10 +134,10 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
             jpeg_segment_destroy(jpeg_data);
             return NULL;
         }
-        while ((d = jpeg_segment_steal_node(jpeg_data, 0xDB, &d_len)) != NULL) {
+        while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xDB, 0xDA, &d_len)) != NULL) {
             jpeg_segment_append(jpeg_table, 0xDB, d, d_len);  // DQT
         }
-        while ((d = jpeg_segment_steal_node(jpeg_data, 0xC4, &d_len)) != NULL) {
+        while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xC4, 0xDA, &d_len)) != NULL) {
             jpeg_segment_append(jpeg_table, 0xC4, d, d_len); // DHT
         }
     } else if (table_data && table_data_len) {
