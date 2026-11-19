@@ -12,3 +12,29 @@ Password:
 # vi <php lib>/php.ini
  or
 # vi <php conf.d>/swfed.ini
+
+* requirements
+
+- PHP 7.2 or newer
+- zlib (required)
+- libpng, giflib (optional; without them PNG / GIF support is disabled)
+
+configure looks for the libraries with pkg-config, then under
+/usr/local, /usr, /opt/homebrew and /opt/local, and uses the first one found.
+Use --with-zlib-dir=DIR / --with-png-dir=DIR / --with-gif-dir=DIR to give
+the install prefix explicitly, and --without-png-dir / --without-gif-dir to
+build without PNG / GIF support.
+
+* macOS (Homebrew)
+
+% brew install zlib libpng giflib pkg-config
+% phpize
+% ./configure
+
+If configure still can't find them (e.g. without pkg-config), give the
+prefixes explicitly. On Apple Silicon Homebrew lives in /opt/homebrew,
+on Intel Macs in /usr/local:
+
+% ./configure --with-zlib-dir=/opt/homebrew/opt/zlib \
+              --with-png-dir=/opt/homebrew/opt/libpng \
+              --with-gif-dir=/opt/homebrew/opt/giflib

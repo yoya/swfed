@@ -20,8 +20,11 @@ Make sure that the comment is aligned:
 if test "$PHP_SWFED" != "no"; then
   dnl Write more examples of tests here...
 
+  dnl phpize runs in this directory; a php-src tree build runs at its top
   sinclude(version-lib.m4)
+  sinclude(ext/swfed/version-lib.m4)
   sinclude(config-lib.m4)
+  sinclude(ext/swfed/config-lib.m4)
 
   dnl # --with-swfed -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
