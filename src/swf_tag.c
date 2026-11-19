@@ -365,7 +365,12 @@ swf_tag_get_cid(swf_tag_t *tag) {
           case 39: // DefineSprite
           case 46: // DefineMorphShape
           case 48: // DefineFont2
+          case 60: // DefineVideoStream
+          case 75: // DefineFont3
+          case 87: // DefineBinaryData
           case 88: // DefineFontName
+          case 90: // DefineBitsJPEG4
+          case 91: // DefineFont4
               return GetUShortLE(tag->data);
               break;
         }
@@ -412,7 +417,12 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
           case 39: // DefineSprite
           case 46: // DefineMorphShape
           case 48: // DefineFont2
+          case 60: // DefineVideoStream
+          case 75: // DefineFont3
+          case 87: // DefineBinaryData
           case 88: // DefineFontName
+          case 90: // DefineBitsJPEG4
+          case 91: // DefineFont4
             if (tag->data) {
                 PutUShortLE(tag->data, cid);
                 return 0;
@@ -439,6 +449,12 @@ swf_tag_get_refcid(swf_tag_t *tag) {
             return -1;
         }
         return swf_tag_place->character_id;
+    } else if (tag->code == 70) { // PlaceObject3
+        unsigned long cid_offset;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, NULL)) {
+            return -1;
+        }
+        return cid_offset ? GetUShortLE((tag->data + cid_offset)) : 0;
     } else if (tag->code == 37) { // DefineEditText
         swf_tag_edit_detail_t *swf_tag_edit;
         swf_tag_edit = swf_tag_create_input_detail(tag, NULL);
@@ -465,6 +481,13 @@ swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
             return 1; // failure
         }
         swf_tag_place->character_id = cid;
+    } else if (tag->code == 70) { // PlaceObject3: rewrite the raw data in place
+        unsigned long cid_offset;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, NULL) || (cid_offset == 0)) {
+            return 1; // failure
+        }
+        PutUShortLE((tag->data + cid_offset), cid);
+        return 0; // success
     } else if (tag->code == 37) { // DefineEditText
         swf_tag_edit_detail_t *swf_tag_edit;
         swf_tag_edit = swf_tag_create_input_detail(tag, NULL);

@@ -270,9 +270,90 @@ swf_tag_place_destroy_detail(swf_tag_t *tag) {
     return ;
 }
 
+/*
+ * PlaceObject3 has no detail handler (its raw data is always kept):
+ * read the fields up to Name.
+ * *cid_offset: byte offset of CharacterId, 0 if it has no CharacterId.
+ * *name (if name != NULL): malloc'ed instance name, NULL if it has no Name.
+ */
+int
+swf_tag_place3_parse_head(swf_tag_t *tag, unsigned long *cid_offset, char **name) {
+    bitstream_t *bs;
+    int flags, flags2;
+    swf_matrix_t matrix;
+    swf_cxformwithalpha_t cxform;
+    *cid_offset = 0;
+    if (name) {
+        *name = NULL;
+    }
+    if ((tag->code != 70) || (tag->data == NULL) || (tag->length < 4)) {
+        return 1;
+    }
+    bs = bitstream_open();
+    bitstream_input(bs, tag->data, tag->length);
+    flags = bitstream_getbyte(bs);
+    flags2 = bitstream_getbyte(bs);
+    bitstream_getbytesLE(bs, 2); // Depth
+    // ClassName: HasClassName, or HasImage and HasCharacter
+    if ((flags2 & 0x08) || ((flags2 & 0x10) && (flags & 0x02))) {
+        char *class_name = (char *) bitstream_outputstring(bs);
+        if (class_name == NULL) {
+            bitstream_close(bs);
+            return 1;
+        }
+        free(class_name);
+    }
+    if (flags & 0x02) { // HasCharacter
+        *cid_offset = bitstream_getbytepos(bs);
+        if (*cid_offset + 2 > tag->length) {
+            *cid_offset = 0;
+            bitstream_close(bs);
+            return 1;
+        }
+        bitstream_getbytesLE(bs, 2);
+    }
+    if ((name == NULL) || ((flags & 0x20) == 0)) { // ! HasName
+        bitstream_close(bs);
+        return 0;
+    }
+    if ((flags & 0x04) && swf_matrix_parse(bs, &matrix)) { // HasMatrix
+        bitstream_close(bs);
+        return 1;
+    }
+    if ((flags & 0x08) && swf_cxformwithalpha_parse(bs, &cxform)) { // HasColorTransform
+        bitstream_close(bs);
+        return 1;
+    }
+    if (flags & 0x10) { // HasRatio
+        bitstream_getbytesLE(bs, 2);
+    }
+    *name = (char *) bitstream_outputstring(bs);
+    bitstream_close(bs);
+    return (*name == NULL) ? 1 : 0;
+}
+
 int
 swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len, struct swf_object_ *swf) {
     swf_tag_place_detail_t *swf_tag_place;
+    if (tag->code == 70) { // PlaceObject3
+        unsigned long cid_offset;
+        char *name;
+        int cid, match;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, &name)) {
+            return -1;
+        }
+        if (name == NULL) {
+            return -2; // no name
+        }
+        match = (strlen(name) == (size_t) instance_name_len) &&
+            (strncmp(name, (char *) instance_name, instance_name_len) == 0);
+        free(name);
+        if (! match) {
+            return -3; // name no match
+        }
+        cid = cid_offset ? GetUShortLE((tag->data + cid_offset)) : 0;
+        return cid; // found
+    }
     if (! isPlaceTag(tag->code)) {
         fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: ! isPlaceTag(%d)\n", tag->code);
         return -1; // wrong tag
