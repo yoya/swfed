@@ -1419,7 +1419,8 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
     char *instance_name = NULL, *swf_data = NULL;
     size_t instance_name_len = 0, swf_data_len = 0;
     swf_object_t *swf = NULL;
-    zend_bool unused_cid_purge = 1; // デフォルト on
+    zend_bool unused_cid_purge = 0; // off unless requested; null means off
+    zend_bool purge_is_null = 0;
     int result = 0;
     if (param_is_null(1)) {
         php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
@@ -1437,10 +1438,10 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
         }
       break;
       case 3:
-        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssb",
+        if (zend_parse_parameters(ZEND_NUM_ARGS(), "ssb!",
                                   &instance_name, &instance_name_len,
-                                  &swf_data, &swf_data_len, &unused_cid_purge) == FAILURE) {
-            // unused_cid_purge は無視します。
+                                  &swf_data, &swf_data_len, &unused_cid_purge,
+                                  &purge_is_null) == FAILURE) {
           RETURN_FALSE;
         }
         break;
@@ -1453,6 +1454,9 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
                                           swf_data_len);
     if (result) {
         RETURN_FALSE;
+    }
+    if (unused_cid_purge && ! purge_is_null) {
+        swf_object_purge_contents(swf);
     }
     RETURN_TRUE;
 }
