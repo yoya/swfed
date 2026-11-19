@@ -80,6 +80,20 @@ png_data_write(png_structp png_ptr, my_png_buffer *png_buff) {
                      (png_rw_ptr)png_data_write_func, NULL);
 }
 
+/* SWF Lossless2 keeps premultiplied colors, PNG keeps straight alpha */
+static unsigned char
+unpremultiply(int c, int a) {
+    int v;
+    if (a == 0) {
+        return 0;
+    }
+    if (a == 255) {
+        return (unsigned char) c;
+    }
+    v = (c * 255 + a / 2) / a;
+    return (unsigned char) ((v > 255) ? 255 : v);
+}
+
 /*
  *
  */
@@ -426,13 +440,14 @@ pngconv_lossless2png(void *image_data,
             int num_trans = 0;
             png_color_16p trans_values = NULL;
             for (i=0 ; i < index_data_count ; i++) {
-                png_palette[i].red   = rgba_list[i].red;
-                png_palette[i].green = rgba_list[i].green;
-                png_palette[i].blue  = rgba_list[i].blue;
+                int a = rgba_list[i].alpha;
+                png_palette[i].red   = unpremultiply(rgba_list[i].red,   a);
+                png_palette[i].green = unpremultiply(rgba_list[i].green, a);
+                png_palette[i].blue  = unpremultiply(rgba_list[i].blue,  a);
             }
-            // scanning to end of transparent pixel
+            // tRNS covers up to the last non-opaque color
             for (i = index_data_count - 1 ; 0 <= i ; i--) {
-                if (rgba_list[i].alpha < 254) { // 254 XXX
+                if (rgba_list[i].alpha < 255) {
                     break;
                 }
             }
@@ -476,10 +491,11 @@ pngconv_lossless2png(void *image_data,
         for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
             for (x=0 ; x < png_width ; x++) {
-                png_image_data[y][4*x]   = argb_list[x+y*png_width].red;
-                png_image_data[y][4*x+1] = argb_list[x+y*png_width].green;
-                png_image_data[y][4*x+2] = argb_list[x+y*png_width].blue;
-                png_image_data[y][4*x+3] = argb_list[x+y*png_width].alpha;
+                int a = argb_list[x+y*png_width].alpha;
+                png_image_data[y][4*x]   = unpremultiply(argb_list[x+y*png_width].red,   a);
+                png_image_data[y][4*x+1] = unpremultiply(argb_list[x+y*png_width].green, a);
+                png_image_data[y][4*x+2] = unpremultiply(argb_list[x+y*png_width].blue,  a);
+                png_image_data[y][4*x+3] = a;
             }
         }
         
