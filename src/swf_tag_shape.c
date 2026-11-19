@@ -371,8 +371,6 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
     (void) swf;
     *length = 0;
     // build context
-    swf_tag_shape->_current_fill_style_num = 0;
-    swf_tag_shape->_current_line_style_num = 0;
     swf_tag_shape->_current_x = 0;
     swf_tag_shape->_current_y = 0;
 
