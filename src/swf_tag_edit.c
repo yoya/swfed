@@ -59,21 +59,28 @@ swf_tag_edit_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_edit->edit_has_color      = bitstream_getbit(bs);
     swf_tag_edit->edit_has_max_length = bitstream_getbit(bs);
     swf_tag_edit->edit_has_font       = bitstream_getbit(bs);
-    if (swf && (swf->header.version >= 6)) {
-        (void) bitstream_getbit(bs); // reserved;
-        swf_tag_edit->edit_auto_size = bitstream_getbit(bs);
-    } else {
-        (void) bitstream_getbit(bs); // reserved;
-        (void) bitstream_getbit(bs); // reserved;
-    }
+    /* every flag is kept regardless of the SWF version (swf may be NULL) */
+    swf_tag_edit->edit_has_font_class = bitstream_getbit(bs);
+    swf_tag_edit->edit_auto_size      = bitstream_getbit(bs);
     swf_tag_edit->edit_has_layout   = bitstream_getbit(bs);
     swf_tag_edit->edit_no_select    = bitstream_getbit(bs);
     swf_tag_edit->edit_border       = bitstream_getbit(bs);
-    (void) bitstream_getbit(bs); // reserved;
+    swf_tag_edit->edit_was_static   = bitstream_getbit(bs);
     swf_tag_edit->edit_html         = bitstream_getbit(bs);
     swf_tag_edit->edit_use_outlines = bitstream_getbit(bs);
+    (void) swf;
     if (swf_tag_edit->edit_has_font) {
         swf_tag_edit->edit_font_id_ref = bitstream_getbytesLE(bs, 2);
+    }
+    if (swf_tag_edit->edit_has_font_class) {
+        swf_tag_edit->edit_font_class = (char *) bitstream_outputstring(bs);
+        if (swf_tag_edit->edit_font_class == NULL) {
+            fprintf(stderr, "ERROR: swf_tag_edit_input_detail: broken font_class\n");
+            bitstream_close(bs);
+            return 1;
+        }
+    }
+    if (swf_tag_edit->edit_has_font || swf_tag_edit->edit_has_font_class) {
         swf_tag_edit->edit_font_height = bitstream_getbytesLE(bs, 2);
     }
     if (swf_tag_edit->edit_has_color) {
@@ -155,21 +162,23 @@ swf_tag_edit_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putbit(bs, swf_tag_edit->edit_has_color );
     bitstream_putbit(bs, swf_tag_edit->edit_has_max_length);
     bitstream_putbit(bs, swf_tag_edit->edit_has_font);
-    if (swf && (swf->header.version >= 6)) {
-        bitstream_putbit(bs, 0); // reserved;
-        bitstream_putbit(bs, swf_tag_edit->edit_auto_size);
-    } else {
-        bitstream_putbit(bs, 0); // reserved;
-        bitstream_putbit(bs, 0); // reserved;
-    }
+    bitstream_putbit(bs, swf_tag_edit->edit_has_font_class);
+    bitstream_putbit(bs, swf_tag_edit->edit_auto_size);
     bitstream_putbit(bs, swf_tag_edit->edit_has_layout);
     bitstream_putbit(bs, swf_tag_edit->edit_no_select);
     bitstream_putbit(bs, swf_tag_edit->edit_border);
-    bitstream_putbit(bs, 0); // reserved;
+    bitstream_putbit(bs, swf_tag_edit->edit_was_static);
     bitstream_putbit(bs, swf_tag_edit->edit_html);
     bitstream_putbit(bs, swf_tag_edit->edit_use_outlines);
+    (void) swf;
     if (swf_tag_edit->edit_has_font) {
         bitstream_putbytesLE(bs, swf_tag_edit->edit_font_id_ref, 2);
+    }
+    if (swf_tag_edit->edit_has_font_class) {
+        const char *font_class = swf_tag_edit->edit_font_class ? swf_tag_edit->edit_font_class : "";
+        bitstream_putstring(bs, (unsigned char *) font_class, strlen(font_class) + 1);
+    }
+    if (swf_tag_edit->edit_has_font || swf_tag_edit->edit_has_font_class) {
         bitstream_putbytesLE(bs, swf_tag_edit->edit_font_height, 2);
     }
     if (swf_tag_edit->edit_has_color) {
@@ -218,10 +227,11 @@ swf_tag_edit_print_detail(swf_tag_t *tag,
            swf_tag_edit->edit_has_color?1:0,
            swf_tag_edit->edit_has_max_length?1:0,
            swf_tag_edit->edit_has_font?1:0);
-    if (swf->header.version >= 6) {
-            print_indent(indent_depth);
-            printf("auto_size=%d\n", swf_tag_edit->edit_auto_size);
-    }
+    print_indent(indent_depth);
+    printf("font_class=%d auto_size=%d was_static=%d\n",
+           swf_tag_edit->edit_has_font_class?1:0,
+           swf_tag_edit->edit_auto_size?1:0,
+           swf_tag_edit->edit_was_static?1:0);
     print_indent(indent_depth);
     printf("layout=%d no_sel=%d border=%d\n",
            swf_tag_edit->edit_has_layout?1:0,
@@ -274,6 +284,7 @@ swf_tag_edit_destroy_detail(swf_tag_t *tag) {
     if (swf_tag_edit) {
         free(swf_tag_edit->edit_variable_name);
         free(swf_tag_edit->edit_initial_text);
+        free(swf_tag_edit->edit_font_class);
         swf_tag_edit->edit_variable_name = NULL;
         swf_tag_edit->edit_initial_text = NULL;
         free(swf_tag_edit);
