@@ -403,7 +403,7 @@ PHP_METHOD(SWFEditor, getTagList) {
                                 "tagName", sizeof("tagName")-1,
                                 (char *)tag_info->name);
         }
-        add_assoc_long(&data, "length", tag->length);
+        add_assoc_long(&data, "length", swf_tag_get_length(tag, swf));
         if (tag_info && tag_info->detail_handler) {
             add_assoc_bool(&data, "detail", 1);
         }
