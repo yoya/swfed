@@ -1157,7 +1157,9 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
     }
     ret = swf_tag_action_top_append_varibles(tag, kv);
     if (ret) {
-        swf_tag_destroy(tag);
+        /* The tag is already linked into the swf's tag list, so destroying
+         * it here would unlink it only in the local pointer and leave a
+         * dangling entry. Leave the caller to decide — just report NG. */
         return 1; // NG
     }
     if (tag->data) {
