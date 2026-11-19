@@ -104,6 +104,7 @@ swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
                 return ret;
             }
         }
+        bitstream_align(bs); // flags follow the byte-padded RECT
         swf_tag_shape->define_shape_reserved = bitstream_getbits(bs, 6);
         swf_tag_shape->define_shape_non_scaling_strokes = bitstream_getbits(bs, 1);
         swf_tag_shape->define_shape_scaling_strokes = bitstream_getbits(bs, 1);
@@ -409,9 +410,10 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
                 return NULL;
             }
         }
-        bitstream_putbits(bs, 6, swf_tag_shape->define_shape_reserved );
-        bitstream_putbits(bs, 1, swf_tag_shape->define_shape_non_scaling_strokes );
-        bitstream_putbits(bs, 1, swf_tag_shape->define_shape_scaling_strokes);
+        bitstream_align(bs); // flags follow the byte-padded RECT
+        bitstream_putbits(bs, swf_tag_shape->define_shape_reserved, 6);
+        bitstream_putbits(bs, swf_tag_shape->define_shape_non_scaling_strokes, 1);
+        bitstream_putbits(bs, swf_tag_shape->define_shape_scaling_strokes, 1);
     }
     if (swf_tag_shape->is_morph) {
         bitstream_align(bs);

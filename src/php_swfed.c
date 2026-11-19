@@ -528,6 +528,8 @@ PHP_METHOD(SWFEditor, getTagDetail) {
       case 22: // DefineShape2;
       case 32: // DefineShape3;
       case 46: // DefineMorphShape;
+      case 83: // DefineShape4;
+      case 84: // DefineMorphShape2;
         tag_shape = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
