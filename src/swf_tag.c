@@ -506,6 +506,10 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         ret = jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
                         width, height);
+        if (ret) { // DefineBitsJPEG2/3 may hold a PNG or GIF since SWF 8
+            ret = bitmap_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
+                              width, height);
+        }
     } else if (isBitsLosslessTag(tag->code)) {
         if (tag->detail) {
             swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;

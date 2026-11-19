@@ -785,6 +785,11 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
     swf_tag_t *tag = NULL;
     double width_scale = 0, height_scale = 0;
     int *bitmap_id_list, bitmap_id_list_num;
+    if ((old_width <= 0) || (old_height <= 0) || (new_width <= 0) || (new_height <= 0)) {
+        fprintf(stderr, "swf_object_adjust_shapebitmap: unknown bitmap size (%dx%d -> %dx%d), shapes are not adjusted\n",
+                old_width, old_height, new_width, new_height);
+        return 1;
+    }
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
@@ -926,7 +931,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             int without_converting) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
         return 1;
@@ -990,7 +995,7 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
                             unsigned long png_data_len, int rgb15) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_pngdata: swf == NULL\n");
         return 1;
@@ -1032,7 +1037,7 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
                             unsigned long gif_data_len) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_gifdata: swf == NULL\n");
         return 1;
