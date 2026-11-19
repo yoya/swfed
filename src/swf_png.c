@@ -284,6 +284,23 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             bitstream_input(bs, png_image_data[y], rowbytes);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
+                if (indices_data[i] >= palette_num) {
+                    /* libpng doesn't reject this on read, but writing it back
+                     * (getPNGData etc.) fails, and color lookups overrun */
+                    fprintf(stderr, "pngconv_png2lossless: color index(%d) >= palette_num(%d)\n",
+                            indices_data[i], palette_num);
+                    bitstream_close(bs);
+                    free(*colormap);
+                    *colormap = NULL;
+                    free(indices_data);
+                    for (y=0 ; y < png_height ; y++) {
+                        free(png_image_data[y]);
+                    }
+                    free(png_image_data);
+                    png_destroy_read_struct((png_structpp) &png_ptr,
+                                            (png_infopp) &png_info_ptr, NULL);
+                    return NULL;
+                }
                 i++;
             }
             while (i % 4) { i++; } // 4byte alignment
