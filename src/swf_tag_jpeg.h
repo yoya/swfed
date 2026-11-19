@@ -16,6 +16,7 @@ typedef struct swf_tag_jpeg_detail_ {
     unsigned long  offset_to_alpha;
     unsigned char *alpha_data;
     unsigned long  alpha_data_len;
+    unsigned short deblock_param; // DefineBitsJPEG4
 } swf_tag_jpeg_detail_t;
 
 extern swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void);

@@ -66,6 +66,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 83, "DefineShape4",  swf_tag_shape_cid_handler },
     { 84, "DefineMorphShape2", swf_tag_shape_cid_handler },
     { 88, "DefineFontName", NULL } ,
+    { 90, "DefineBitsJPEG4", swf_tag_jpeg3_detail_handler },
     { 777,"Reflex", NULL } ,
 };
 
@@ -607,7 +608,7 @@ swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_t
         return NULL;
     }
     tag_info = get_swf_tag_info(tag->code);
-    if ((tag->code != 6) && (tag->code != 21) && (tag->code != 35)) {
+    if (! isBitsJPEGTag(tag->code)) {
         return NULL;
     }
     if (swf_tag_create_input_detail(tag, NULL) == NULL) {
@@ -635,7 +636,7 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         fprintf(stderr, "swf_tag_get_alpha_data: length == NULL\n");
         return NULL;
     }
-    if (tag->code != 35) { // ! DefineBitsJPEG3
+    if ((tag->code != 35) && (tag->code != 90)) { // ! DefineBitsJPEG3,4
         return NULL;
     }
     if (swf_tag_get_cid(tag) != image_id) {
@@ -679,7 +680,9 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
         detail_handler->destroy(tag);
         tag->detail = NULL;
     }
-    if (alpha_data && (alpha_data_len > 0)) {
+    if (tag->code == 90) {
+        ; // DefineBitsJPEG4 stays (keeps DeblockParam)
+    } else if (alpha_data && (alpha_data_len > 0)) {
         tag->code = 35; // DefineBitsJPEG3
     } else {
         tag->code = 21; // DefineBitsJPEG2

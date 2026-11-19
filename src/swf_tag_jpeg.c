@@ -226,7 +226,7 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     unsigned long length;
     unsigned long offset_to_alpha;
     bitstream_t *bs = NULL;
-    unsigned long  offset, alpha_data_len;
+    unsigned long  offset, alpha_data_len, header_len;
     unsigned char *old_buff_ref = NULL, *new_buff = NULL;
     unsigned long origsize;
     int result;
@@ -242,22 +242,27 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
         fprintf(stderr, "ERROR: swf_tag_jpeg3_input_detail: swf_tag_jpeg == NULL\n");
         return 1;
     }
-    if (length < 2 + 4) {
-        fprintf(stderr, "swf_tag_jpeg3_input_detail: length(%lu) < 6\n", length);
+    // CharacterID, AlphaDataOffset (, DeblockParam for DefineBitsJPEG4)
+    header_len = (tag->code == 90) ? 2 + 4 + 2 : 2 + 4;
+    if (length < header_len) {
+        fprintf(stderr, "swf_tag_jpeg3_input_detail: length(%lu) < %lu\n", length, header_len);
         return 1;
     }
     bs = bitstream_open();
     bitstream_input(bs, data, length);
     swf_tag_jpeg->image_id = bitstream_getbytesLE(bs, 2);
     offset_to_alpha = bitstream_getbytesLE(bs, 4);
-    if (offset_to_alpha > length - (2 + 4)) {
+    if (tag->code == 90) {
+        swf_tag_jpeg->deblock_param = bitstream_getbytesLE(bs, 2);
+    }
+    if (offset_to_alpha > length - header_len) {
         bitstream_close(bs);
         fprintf(stderr, "swf_tag_jpeg3_input_detail: offset_to_alpha(%lu) exceeds tag length(%lu)\n",
                 offset_to_alpha, length);
         return 1;
     }
     swf_tag_jpeg->offset_to_alpha = offset_to_alpha;
-    swf_tag_jpeg->jpeg_data = bitstream_output_sub(bs, 2 + 4 , offset_to_alpha);
+    swf_tag_jpeg->jpeg_data = bitstream_output_sub(bs, header_len, offset_to_alpha);
     if (swf_tag_jpeg->jpeg_data == NULL) {
         bitstream_close(bs);
         fprintf(stderr, "swf_tag_jpeg3_create_detail: swf_tag_jpeg->jpeg_data\n");
@@ -265,7 +270,7 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     }
 
     swf_tag_jpeg->jpeg_data_len = offset_to_alpha;
-    offset = 2 + 4 + offset_to_alpha;
+    offset = header_len + offset_to_alpha;
     alpha_data_len = length - offset;
     old_buff_ref = bitstream_buffer(bs, offset);
     new_buff = _swf_tag_jpeg_uncompress_alloc(old_buff_ref, alpha_data_len,
@@ -386,6 +391,9 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     bs = bitstream_open();
     bitstream_putbytesLE(bs, swf_tag_jpeg->image_id, 2);
     bitstream_putbytesLE(bs, swf_tag_jpeg->jpeg_data_len, 4);
+    if (tag->code == 90) { // DefineBitsJPEG4
+        bitstream_putbytesLE(bs, swf_tag_jpeg->deblock_param, 2);
+    }
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
     old_size = swf_tag_jpeg->alpha_data_len;

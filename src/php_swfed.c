@@ -456,6 +456,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
+      case 90: // DefineBitsJPEG4
         tag_jpeg = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "image_id", tag_jpeg->image_id);
