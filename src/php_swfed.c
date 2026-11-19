@@ -509,12 +509,12 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         add_assoc_long(return_value, "edit_id", tag_edit->edit_id);
         if (tag_edit->edit_variable_name && tag_edit->edit_variable_name[0]) {
             add_assoc_string_ex(return_value, "variable_name",
-                                sizeof("variable_name"),
+                                sizeof("variable_name") - 1,
                                 (char *)tag_edit->edit_variable_name);
         }
         if (tag_edit->edit_initial_text && tag_edit->edit_initial_text[0]) {
             add_assoc_string_ex(return_value, "initial_text",
-                                sizeof("initial_text"),
+                                sizeof("initial_text") - 1,
                                 (char *)tag_edit->edit_initial_text);
         }
         break;
@@ -555,7 +555,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         add_assoc_long(return_value, "depth", tag_place->depth);
         if (tag_place->flag_has_name) {
             add_assoc_string_ex(return_value, "name",
-                                sizeof("name"), (char *)tag_place->name);
+                                sizeof("name") - 1, (char *)tag_place->name);
         }
 
       default:
