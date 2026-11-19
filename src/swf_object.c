@@ -1792,16 +1792,21 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
 }
 
 static int
-_swf_object_replace_tag(swf_object_t *swf, 
+_swf_object_replace_tag(swf_object_t *swf,
                         swf_tag_t *old_tag, swf_tag_t *new_tag) {
-    old_tag->prev->next = new_tag;
-    old_tag->next->prev = new_tag;
+    /* old_tag may be the head (prev == NULL) or the tail (next == NULL).
+     * Updating prev->next / next->prev unconditionally dereferences NULL
+     * for those edge cases. */
     new_tag->prev = old_tag->prev;
     new_tag->next = old_tag->next;
-    if (new_tag->prev == NULL) {
+    if (old_tag->prev) {
+        old_tag->prev->next = new_tag;
+    } else {
         swf->tag_head = new_tag;
     }
-    if (new_tag->next == NULL) {
+    if (old_tag->next) {
+        old_tag->next->prev = new_tag;
+    } else {
         swf->tag_tail = new_tag;
     }
     old_tag->prev = NULL;
