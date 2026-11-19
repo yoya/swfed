@@ -18,9 +18,9 @@ typedef struct swf_tag_jpeg_detail_ {
     unsigned long  alpha_data_len;
 } swf_tag_jpeg_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void);
-extern swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void);
-extern swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void);
 
 extern void *swf_tag_jpeg_create_detail(void);
 

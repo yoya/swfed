@@ -11,30 +11,34 @@
 #include "swf_tag_shape.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t shape_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_shape_detail_handler_table = {
+    .create      = swf_tag_shape_create_detail,
+    .input       = swf_tag_shape_input_detail,
+    .get_cid     = swf_tag_shape_get_cid_detail,
+    .replace_cid = swf_tag_shape_replace_cid_detail,
+    .output      = swf_tag_shape_output_detail,
+    .print       = swf_tag_shape_print_detail,
+    .destroy     = swf_tag_shape_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_shape_detail_handler(void) {
-    shape_detail_handler.create   = swf_tag_shape_create_detail;
-    shape_detail_handler.input    = swf_tag_shape_input_detail;
-    shape_detail_handler.get_cid  = swf_tag_shape_get_cid_detail;
-    shape_detail_handler.replace_cid = swf_tag_shape_replace_cid_detail;
-    shape_detail_handler.output   = swf_tag_shape_output_detail;
-    shape_detail_handler.print    = swf_tag_shape_print_detail;
-    shape_detail_handler.destroy  = swf_tag_shape_destroy_detail;
-    return &shape_detail_handler;
+    return &swf_tag_shape_detail_handler_table;
 }
 
-swf_tag_detail_handler_t *
+static const swf_tag_detail_handler_t swf_tag_shape_cid_handler_table = {
+    .create      = NULL,
+    .input       = NULL,
+    .get_cid     = swf_tag_shape_get_cid_detail,
+    .replace_cid = swf_tag_shape_replace_cid_detail,
+    .output      = NULL,
+    .print       = NULL,
+    .destroy     = NULL,
+};
+
+const swf_tag_detail_handler_t *
 swf_tag_shape_cid_handler(void) {
-    shape_detail_handler.create   = NULL;
-    shape_detail_handler.input    = NULL;
-    shape_detail_handler.get_cid     = swf_tag_shape_get_cid_detail;
-    shape_detail_handler.replace_cid = swf_tag_shape_replace_cid_detail;
-    shape_detail_handler.output   = NULL;
-    shape_detail_handler.print    = NULL;
-    shape_detail_handler.destroy  = NULL;
-    return &shape_detail_handler;
+    return &swf_tag_shape_cid_handler_table;
 }
 
 void *
@@ -508,11 +512,16 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
-    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
-
-    if (! swf_tag_shape->is_morph) {
-        shape_record = &(swf_tag_shape->shape_with_style.shape_records);
+    if (swf_tag_shape->is_morph) {
+        /* DefineMorphShape keeps fill/line/edge data in morph_shape_with_style
+         * (both start and end), not in shape_with_style. Walking the empty
+         * shape_with_style would silently change nothing while returning
+         * success. Bail out until morph shape support is implemented. */
+        fprintf(stderr, "swf_tag_shape_apply_matrix_factor: DefineMorphShape not supported yet\n");
+        return 1;
     }
+    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
+    shape_record = &(swf_tag_shape->shape_with_style.shape_records);
 
     while (fill_styles) {
         for (i = 0 ; i < fill_styles->count ; i++) {
@@ -582,6 +591,14 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
         return 1;
     }
     if (shape_id != swf_tag_shape->shape_id) {
+        return 1;
+    }
+    if (swf_tag_shape->is_morph) {
+        /* DefineMorphShape has a second bounds rectangle (EndBounds) and
+         * stores edges in morph_shape_with_style, neither of which this
+         * routine touches. Applying just to StartBounds leaves EndBounds
+         * mismatched. Bail out until proper morph support lands. */
+        fprintf(stderr, "swf_tag_shape_apply_rect_factor: DefineMorphShape not supported yet\n");
         return 1;
     }
     // edges scale around the same base point as the rect (x_min, y_min)

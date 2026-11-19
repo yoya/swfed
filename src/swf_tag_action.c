@@ -10,18 +10,19 @@
 #include "swf_tag_action.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t action_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_action_detail_handler_table = {
+    .create      = swf_tag_action_create_detail,
+    .input       = swf_tag_action_input_detail,
+    .get_cid     = NULL,
+    .replace_cid = NULL,
+    .output      = swf_tag_action_output_detail,
+    .print       = swf_tag_action_print_detail,
+    .destroy     = swf_tag_action_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_action_detail_handler(void) {
-    action_detail_handler.create   = swf_tag_action_create_detail;
-    action_detail_handler.input    = swf_tag_action_input_detail;
-    action_detail_handler.get_cid  = NULL;
-    action_detail_handler.replace_cid  = NULL;
-    action_detail_handler.output   = swf_tag_action_output_detail;
-    action_detail_handler.print    = swf_tag_action_print_detail;
-    action_detail_handler.destroy  = swf_tag_action_destroy_detail;
-    return &action_detail_handler;
+    return &swf_tag_action_detail_handler_table;
 }
 
 void *
@@ -135,6 +136,10 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
     int key_maxlen, value_maxlen, maxlen;
     swf_tag_action_detail_t *swf_tag_action = (swf_tag_action_detail_t *) tag->detail;
     unsigned char *action_data = NULL;
+    /* Push action_length is a 16-bit field (SWF). With 1 byte for the type
+     * tag and 1 byte for the terminating NUL, the key/value string itself
+     * must fit in 0xFFFF - 2 bytes. */
+    const int MAX_PUSH_STRING_LEN = 0xFFFF - 2;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_action_top_append_varibles: tag == NULL\n");
         return 1; // NG
@@ -145,8 +150,19 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
     }
     key_maxlen = y_keyvalue_get_maxkeylength(kv);
     value_maxlen = y_keyvalue_get_maxvaluelength(kv);
+    if (key_maxlen > MAX_PUSH_STRING_LEN || value_maxlen > MAX_PUSH_STRING_LEN) {
+        fprintf(stderr,
+                "swf_tag_action_top_append_varibles: entry exceeds Push action length "
+                "(key_maxlen=%d value_maxlen=%d limit=%d)\n",
+                key_maxlen, value_maxlen, MAX_PUSH_STRING_LEN);
+        return 1; // NG
+    }
     maxlen = (key_maxlen>value_maxlen)?key_maxlen:value_maxlen;
     action_data = malloc(1 + maxlen + 1);
+    if (action_data == NULL) {
+        fprintf(stderr, "swf_tag_action_top_append_varibles: malloc failed\n");
+        return 1; // NG
+    }
     swf_tag_action->action_sprite = 0;
     // Reversible itelator for append top method.
     y_keyvalue_seeklast(kv);
@@ -161,25 +177,35 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
         // But reversible order for append top method.
         //
         // Set Variable
-        swf_action_list_append_top(swf_tag_action->action_list, 0x1d, NULL, 0);
+        if (swf_action_list_append_top(swf_tag_action->action_list, 0x1d, NULL, 0)) {
+            goto fail;
+        }
         // Push Data (value);
         action_data[0] = 0; // type string;
         memcpy(action_data + 1, value, value_len);
         action_data[value_len + 1] = '\0';
-        swf_action_list_append_top(swf_tag_action->action_list, 0x96,
-                                   action_data, 1 + value_len + 1);
+        if (swf_action_list_append_top(swf_tag_action->action_list, 0x96,
+                                       action_data, 1 + value_len + 1)) {
+            goto fail;
+        }
         // Push Data (key);
         action_data[0] = 0; // type string;
         memcpy(action_data + 1, key, key_len);
         action_data[key_len + 1] = '\0';
-        swf_action_list_append_top(swf_tag_action->action_list, 0x96,
-                                   action_data, 1 + key_len + 1);
+        if (swf_action_list_append_top(swf_tag_action->action_list, 0x96,
+                                       action_data, 1 + key_len + 1)) {
+            goto fail;
+        }
         if (y_keyvalue_prev(kv) == 0) {
             break;
         }
     }
     free(action_data);
     return 0;
+ fail:
+    fprintf(stderr, "swf_tag_action_top_append_varibles: swf_action_list_append_top failed\n");
+    free(action_data);
+    return 1; // NG
 }
 
 

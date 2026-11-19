@@ -11,18 +11,19 @@
 #include "swf_object.h"
 #include "swf_rgba.h"
 
-swf_tag_detail_handler_t edit_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_edit_detail_handler_table = {
+    .create      = swf_tag_edit_create_detail,
+    .input       = swf_tag_edit_input_detail,
+    .get_cid     = swf_tag_edit_get_cid_detail,
+    .replace_cid = swf_tag_edit_replace_cid_detail,
+    .output      = swf_tag_edit_output_detail,
+    .print       = swf_tag_edit_print_detail,
+    .destroy     = swf_tag_edit_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_edit_detail_handler(void) {
-    edit_detail_handler.create   = swf_tag_edit_create_detail;
-    edit_detail_handler.input    = swf_tag_edit_input_detail;
-    edit_detail_handler.get_cid  = swf_tag_edit_get_cid_detail;
-    edit_detail_handler.replace_cid = swf_tag_edit_replace_cid_detail;
-    edit_detail_handler.output   = swf_tag_edit_output_detail;
-    edit_detail_handler.print    = swf_tag_edit_print_detail;
-    edit_detail_handler.destroy  = swf_tag_edit_destroy_detail;
-    return &edit_detail_handler;
+    return &swf_tag_edit_detail_handler_table;
 }
 
 void *
