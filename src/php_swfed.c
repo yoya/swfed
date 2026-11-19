@@ -1478,6 +1478,12 @@ PHP_METHOD(SWFEditor, setCompressLevel) {
                               "l", &compress_level) == FAILURE) {
         RETURN_FALSE;
     }
+    if (compress_level < -1 || compress_level > 9) {
+        php_error_docref(NULL, E_WARNING,
+                         "setCompressLevel: compress_level must be -1..9 (got %ld)",
+                         (long)compress_level);
+        RETURN_FALSE;
+    }
     SWFED_GET_OBJECT(swf);
     swf->compress_level = compress_level;
     RETURN_TRUE;
