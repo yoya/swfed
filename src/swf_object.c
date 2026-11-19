@@ -162,11 +162,21 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         bitstream_align(bs);
         pos = bitstream_getbytepos(bs);
         if ((pos == -1) || ((long) new_header.file_length <= pos)) {
-            break;
+            break; // a missing End tag at the very end is tolerated
+        }
+        if ((unsigned long) pos >= bitstream_length(bs)) {
+            fprintf(stderr, "swf_object_input: data ends at %ld before file_length(%lu)\n",
+                    pos, new_header.file_length);
+            _swf_object_tag_close(new_tag_head);
+            bitstream_close(bs);
+            return 1; // truncated
         }
         tag = swf_tag_create(bs);
         if (tag == NULL) {
-            break; // finish (no end tag in _root)
+            fprintf(stderr, "swf_object_input: broken tag at %ld\n", pos);
+            _swf_object_tag_close(new_tag_head);
+            bitstream_close(bs);
+            return 1;
         }
         if (prev_tag == NULL) {
             new_tag_head = tag;
