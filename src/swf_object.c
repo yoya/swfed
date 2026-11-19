@@ -1291,6 +1291,55 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+/* action strings in DefineButton / DefineButton2 and in PlaceObject2 clip actions */
+static int
+_swf_object_replace_other_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                         swf_object_t *swf, int *modified) {
+    int m = 0;
+    *modified = 0;
+    if (isButtonTag(tag->code)) {
+        swf_tag_button_detail_t *button = swf_tag_create_input_detail(tag, swf);
+        if (button == NULL) {
+            return 1;
+        }
+        if (tag->code == 7) { // DefineButton
+            if (button->actions) {
+                if (swf_action_list_replace_strings(button->actions, &m, kv)) {
+                    return 1;
+                }
+                *modified |= m;
+            }
+        } else if (button->condactions) { // DefineButton2
+            swf_button_condaction_t *ca;
+            for (ca = button->condactions->head ; ca ; ca = ca->next) {
+                if (ca->actions) {
+                    if (swf_action_list_replace_strings(ca->actions, &m, kv)) {
+                        return 1;
+                    }
+                    *modified |= m;
+                }
+            }
+        }
+    } else if (tag->code == 26) { // PlaceObject2
+        /* only those with HasClipActions need parsing */
+        if (tag->data && ((tag->length < 1) || ! (tag->data[0] & 0x80))) {
+            return 0;
+        }
+        if (swf_tag_create_input_detail(tag, swf) == NULL) {
+            return 1;
+        }
+        if (swf_tag_place_replace_action_strings(tag, kv, modified,
+                                                 swf->header.version)) {
+            return 1;
+        }
+    }
+    if (*modified && tag->data) { // rebuild from the detail
+        free(tag->data);
+        tag->data = NULL;
+    }
+    return 0;
+}
+
 int
 swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
     swf_tag_t *tag;
@@ -1305,7 +1354,13 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isActionTag(tag->code)) {
+        if (isButtonTag(tag->code) || (tag->code == 26)) {
+            ret = _swf_object_replace_other_action_strings(tag, kv, swf, &m);
+            if (ret) {
+                fprintf(stderr, "swf_object_replace_action_strings: button / clip actions failed\n");
+                break;
+            }
+        } else if (isActionTag(tag->code)) {
             ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
             if (ret) {
                 fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
@@ -1324,7 +1379,15 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                 int modified = 0;
                 swf_tag_t *t;
                 for (t = tag_sprite->tag ; t ; t = t->next) {
-                    if (isActionTag(t->code)) {
+                    if (t->code == 26) { // PlaceObject2 with onClipEvent
+                        ret = _swf_object_replace_other_action_strings(t, kv, swf, &m);
+                        if (ret) {
+                            break;
+                        }
+                        if (m) {
+                            modified = 1;
+                        }
+                    } else if (isActionTag(t->code)) {
                         ret = swf_tag_replace_action_strings(t, kv, &m, swf);
                         if (ret) {
                             fprintf(stderr, "swf_object_replace_action_strings: replace_action_string failed\n");
