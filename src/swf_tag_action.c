@@ -10,18 +10,19 @@
 #include "swf_tag_action.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t action_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_action_detail_handler_table = {
+    .create      = swf_tag_action_create_detail,
+    .input       = swf_tag_action_input_detail,
+    .get_cid     = NULL,
+    .replace_cid = NULL,
+    .output      = swf_tag_action_output_detail,
+    .print       = swf_tag_action_print_detail,
+    .destroy     = swf_tag_action_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_action_detail_handler(void) {
-    action_detail_handler.create   = swf_tag_action_create_detail;
-    action_detail_handler.input    = swf_tag_action_input_detail;
-    action_detail_handler.get_cid  = NULL;
-    action_detail_handler.replace_cid  = NULL;
-    action_detail_handler.output   = swf_tag_action_output_detail;
-    action_detail_handler.print    = swf_tag_action_print_detail;
-    action_detail_handler.destroy  = swf_tag_action_destroy_detail;
-    return &action_detail_handler;
+    return &swf_tag_action_detail_handler_table;
 }
 
 void *

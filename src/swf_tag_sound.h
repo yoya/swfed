@@ -20,7 +20,7 @@ typedef struct swf_tag_sound_detail_ {
     unsigned long sound_data_len;
 } swf_tag_sound_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_sound_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_sound_detail_handler(void);
 
 extern void *swf_tag_sound_create_detail(void);
 extern int swf_tag_sound_input_detail(swf_tag_t *tag, struct swf_object_ *swf);

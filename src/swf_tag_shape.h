@@ -44,8 +44,8 @@ typedef struct swf_tag_shape_detail_ {
 #define SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP 1
 } swf_tag_shape_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
-extern swf_tag_detail_handler_t *swf_tag_shape_cid_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_shape_cid_handler(void);
 
 extern void *swf_tag_shape_create_detail(void);
 extern int swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
