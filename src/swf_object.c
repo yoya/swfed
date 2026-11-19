@@ -454,13 +454,24 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
-        // rebuild detail to (raw)data if modified
+        /* For edited tags (detail only, no raw data) serialize the detail
+         * without the tag header. swf_tag_build() writes the tag header too
+         * and also caches the result into tag->data; using it here mixes the
+         * header into the returned buffer and poisons tag->data / tag->length
+         * for the subsequent output(). Use the detail handler's output
+         * directly, which returns just the tag body. */
         if ((tag->data == NULL) && tag->detail) {
-            bitstream_t *bs;
-            bs = bitstream_open();
-            swf_tag_build(bs, tag, swf);
-            tag->data = bitstream_steal(bs, &(tag->length));
-            bitstream_close(bs);
+            swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
+            swf_tag_detail_handler_t *handler =
+                (tag_info && tag_info->detail_handler)? tag_info->detail_handler(): NULL;
+            if (handler && handler->output) {
+                unsigned long data_len = 0;
+                unsigned char *data = handler->output(tag, &data_len, swf);
+                if (data) {
+                    tag->data = data;
+                    tag->length = data_len;
+                }
+            }
         }
         if (tag->data && (tag->length >= 2)) {
             *length = tag->length - 2;
