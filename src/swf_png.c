@@ -161,6 +161,28 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     *width = (unsigned short) png_width;
     *height = (unsigned short) png_height;
 
+    /* Let libpng turn every non-palette image into 8bit RGB or RGBA:
+     * 16bit -> 8bit, gray -> RGB, tRNS (gray / RGB) -> alpha channel. */
+    if (color_type != PNG_COLOR_TYPE_PALETTE) {
+        if (bpp == 16) {
+            png_set_strip_16(png_ptr);
+        }
+        if ((color_type == PNG_COLOR_TYPE_GRAY) ||
+            (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)) {
+            if (bpp < 8) {
+                png_set_expand_gray_1_2_4_to_8(png_ptr);
+            }
+            png_set_gray_to_rgb(png_ptr);
+        }
+        if (png_get_valid(png_ptr, png_info_ptr, PNG_INFO_tRNS)) {
+            png_set_tRNS_to_alpha(png_ptr);
+        }
+        png_read_update_info(png_ptr, png_info_ptr);
+        png_get_IHDR(png_ptr, png_info_ptr,
+                     &png_width, &png_height, &bpp, &color_type,
+                     NULL, NULL, NULL);
+    }
+
     if ((rgb15 > 0) && (color_type !=  PNG_COLOR_TYPE_RGB)) { // warning
         fprintf(stderr, "rgb15 is %d but color_type is not PNG24\n", rgb15);
     }
@@ -187,8 +209,6 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     case PNG_COLOR_TYPE_RGB_ALPHA:
         *format = 5;
         *tag_no = 36; /* DefineBitsLossless2 */
-        if (png_get_valid(png_ptr, png_info_ptr, PNG_INFO_tRNS))
-            png_set_tRNS_to_alpha(png_ptr);
         break;
     default:
         fprintf(stderr, "pngconv_png2lossless: color_type=%d not implemented yet.\n", color_type);
