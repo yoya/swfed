@@ -81,41 +81,46 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     int result;
     bitstream_t *bs;
     swf_tag_t *tag, *prev_tag;
-    // delete old tag if twice call
-    _swf_object_tag_close(swf->tag_head);
-    swf->tag_head = NULL;
-    swf->tag_tail = NULL;
+    /* Parse into temporaries first so a failure part-way through leaves the
+     * existing header / tag list untouched. The old content is only replaced
+     * once parsing succeeds. */
+    swf_header_t new_header;
+    swf_header_movie_t new_header_movie;
+    swf_tag_t *new_tag_head = NULL;
+    swf_tag_t *new_tag_tail = NULL;
+    memset(&new_header, 0, sizeof(new_header));
+    memset(&new_header_movie, 0, sizeof(new_header_movie));
 
     bs = bitstream_open();
     if (bitstream_input(bs, data, data_len)) {
         bitstream_close(bs);
         return 1;
     }
-    result = swf_header_parse(bs, &swf->header);
+    result = swf_header_parse(bs, &new_header);
     if (result) {
         bitstream_close(bs);
         return result;
     }
-    if (memcmp(swf->header.magic, "FWS", 3) == 0) {
+    if (memcmp(new_header.magic, "FWS", 3) == 0) {
         ; // OK
-    } else if (memcmp(swf->header.magic, "CWS", 3) == 0) {
+    } else if (memcmp(new_header.magic, "CWS", 3) == 0) {
         int result;
         unsigned char *old_buff_ref, *new_buff;
         unsigned long origsize, compsize;
-        if ((swf->header.file_length < SWF_HEADER_SIZE) ||
+        if ((new_header.file_length < SWF_HEADER_SIZE) ||
             (bs->data_len < SWF_HEADER_SIZE)) {
             fprintf(stderr, "swf_object_input: invalid length file_length=%lu data_len=%lu\n",
-                    swf->header.file_length, bs->data_len);
+                    new_header.file_length, bs->data_len);
             bitstream_close(bs);
             return 1; // FAILURE
         }
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
         compsize = bs->data_len - SWF_HEADER_SIZE;
-        origsize = swf->header.file_length - SWF_HEADER_SIZE;
+        origsize = new_header.file_length - SWF_HEADER_SIZE;
         /* deflate can't exceed ~1032:1; don't malloc impossible sizes */
         if (origsize / 1032 > compsize) {
             fprintf(stderr, "swf_object_input: file_length=%lu too large for compressed size=%lu\n",
-                    swf->header.file_length, compsize);
+                    new_header.file_length, compsize);
             bitstream_close(bs);
             return 1; // FAILURE
         }
@@ -142,22 +147,21 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         free(new_buff);
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
     } else {
-        fprintf(stderr, "swf_object_input: unknown magic %s\n", swf->header.magic);
+        fprintf(stderr, "swf_object_input: unknown magic %s\n", new_header.magic);
         bitstream_close(bs);
         return 1; // FAILURE
     }
-    result = swf_header_movie_parse(bs, &swf->header_movie);
+    result = swf_header_movie_parse(bs, &new_header_movie);
     if (result) {
         bitstream_close(bs);
         return result;
     }
-    swf->tag_head = NULL;
     prev_tag = NULL;
     while(1) {
         long pos;
         bitstream_align(bs);
         pos = bitstream_getbytepos(bs);
-        if ((pos == -1) || ((long) swf->header.file_length <= pos)) {
+        if ((pos == -1) || ((long) new_header.file_length <= pos)) {
             break;
         }
         tag = swf_tag_create(bs);
@@ -165,20 +169,27 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
             break; // finish (no end tag in _root)
         }
         if (prev_tag == NULL) {
-            swf->tag_head = tag;
+            new_tag_head = tag;
             tag->prev = tag->next = NULL;
         } else {
             prev_tag->next = tag;
             tag->prev = prev_tag;
             tag->next = NULL;
         }
-        swf->tag_tail = tag;
+        new_tag_tail = tag;
         if (tag->code == 0) { // END Tag
             break; // SUCCESS
         }
         prev_tag = tag;
     }
     bitstream_close(bs);
+
+    /* Commit: drop the old content and swap the new content in. */
+    _swf_object_tag_close(swf->tag_head);
+    swf->tag_head = new_tag_head;
+    swf->tag_tail = new_tag_tail;
+    swf->header = new_header;
+    swf->header_movie = new_header_movie;
     return 0;
 }
 
