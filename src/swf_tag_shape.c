@@ -584,12 +584,15 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
     if (shape_id != swf_tag_shape->shape_id) {
         return 1;
     }
-    // XXX: fix me.
+    // edges scale around the same base point as the rect (x_min, y_min)
+    if (swf_shape_record_edge_apply_factor(&(swf_tag_shape->shape_with_style.shape_records),
+                                           swf_tag_shape->rect.x_min,
+                                           swf_tag_shape->rect.y_min,
+                                           scale_x, scale_y, trans_x, trans_y)) {
+        return 1; // nothing changed
+    }
     swf_rect_apply_factor(&(swf_tag_shape->rect),
                           scale_x, scale_y, trans_x, trans_y);
-    // TODO: bitmap_ref check
-    swf_shape_record_edge_apply_factor(&(swf_tag_shape->shape_with_style.shape_records),
-                                       scale_x, scale_y, trans_x, trans_y);
     return 0;
 }
 
