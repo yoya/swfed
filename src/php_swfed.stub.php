@@ -33,7 +33,7 @@ class SWFEditor
 
     public function input(string $input): bool {}
     public function output(): false|string {}
-    public function swfInfo(): true {}
+    public function swfInfo(): bool {}
     public function _destroy_and_exit(): bool {} // for debug
 
     public function getHeaderInfo(): array {}
@@ -74,7 +74,7 @@ class SWFEditor
     public function replaceMovieClip(string $instance_name, string $swf_data, ?bool $unused_cid_purge = null): bool {}
     public function setCompressLevel(int $compress_level): bool {}
     public function rebuild(): bool {}
-    public function purgeUselessContents(): true {}
+    public function purgeUselessContents(): bool {}
     public function isShapeTagData(string $data): bool {}
     public function isBitmapTagData(string $data): bool {}
 }
