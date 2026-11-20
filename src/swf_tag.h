@@ -38,7 +38,7 @@ typedef struct swf_tag_detail_handler_ {
 typedef struct swf_tag_info_ {
     int id;
     const char *name;
-    swf_tag_detail_handler_t *(*detail_handler)(void);
+    const swf_tag_detail_handler_t *(*detail_handler)(void);
 } swf_tag_info_t;
 
 extern swf_tag_info_t *get_swf_tag_info(int tag_id);
