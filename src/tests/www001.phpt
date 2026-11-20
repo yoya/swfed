@@ -1,5 +1,5 @@
 --TEST--
-www/define.php: the player that the demo pages load (Flapp, Ruffle or none)
+www/define.php: the player that the demo pages load (Flapp or none)
 --SKIPIF--
 <?php
 // www/ is outside of the extension source: not there in some builds (Windows)
@@ -36,13 +36,9 @@ echo swfed_player(), ": module=", has($head, '<script type="module" src="https:/
      " pinned to a commit=", preg_match('#/gh/yoya/Flapp@[0-9a-f]{40}/web/flapp\.js"#', $head) ? 'yes' : 'no', "\n";
 echo swfed_swf_embed($src, $object), "\n";
 
-echo "== ruffle (not case sensitive)\n";
-setenv('SWFED_PLAYER', 'Ruffle');
-$head = swfed_player_head();
-echo swfed_player(), ": src=", has($head, 'src="https://unpkg.com/@ruffle-rs/ruffle@0.8.0/ruffle.js"'),
-     " integrity=", has($head, 'integrity="sha384-'), " crossorigin=", has($head, 'crossorigin="anonymous"'),
-     " autoplay=", has($head, 'autoplay: "on"'), "\n";
-echo swfed_swf_embed($src, $object), "\n";
+echo "== flapp (not case sensitive)\n";
+setenv('SWFED_PLAYER', 'Flapp');
+echo swfed_player(), "\n";
 
 echo "== none\n";
 setenv('SWFED_PLAYER', 'none');
@@ -53,10 +49,8 @@ echo "== a copy of your own (a path or an http(s) URL)\n";
 setenv('SWFED_PLAYER_URL', '/player/flapp.js');
 setenv('SWFED_PLAYER', 'flapp');
 echo trim(swfed_player_head()), "\n";
-setenv('SWFED_PLAYER', 'ruffle');
-setenv('SWFED_PLAYER_URL', 'https://example.org/r/ruffle.js');
-$head = swfed_player_head();
-echo "ruffle: src=", has($head, 'src="https://example.org/r/ruffle.js"'), " integrity=", has($head, 'integrity'), "\n";
+setenv('SWFED_PLAYER_URL', 'https://example.org/r/flapp.js');
+echo trim(swfed_player_head()), "\n";
 
 echo "== refused values are logged\n";
 foreach (array('javascript:alert(1)', 'data:text/javascript,alert(1)') as $url) {
@@ -87,16 +81,15 @@ setenv('SWFED_TMP_DIR', null);
 == flapp (default)
 flapp: module=yes pinned to a commit=yes
 <flapp-player src="./swf.php?id=1&amp;shape_id=2"></flapp-player>
-== ruffle (not case sensitive)
-ruffle: src=yes integrity=yes crossorigin=yes autoplay=yes
-<object>for Flash Player</object>
+== flapp (not case sensitive)
+flapp
 == none
 string(4) "none"
 string(0) ""
 <object>for Flash Player</object>
 == a copy of your own (a path or an http(s) URL)
 <script type="module" src="/player/flapp.js"></script>
-ruffle: src=yes integrity=no
+<script type="module" src="https://example.org/r/flapp.js"></script>
 == refused values are logged
 string(0) ""
 string(0) ""

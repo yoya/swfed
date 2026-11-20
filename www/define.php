@@ -127,23 +127,16 @@ if (! function_exists('multiply_unit')) {
 
 /*
  * The demo pages show SWF files. <object> / <embed> need Flash Player, and no
- * current browser runs it, so a player written in JavaScript plays them.
- * SWFED_PLAYER chooses it:
+ * current browser runs it, so Flapp (https://github.com/yoya/Flapp), a player
+ * written in JavaScript, plays them. The pages use its <flapp-player> element.
+ * flapp.js is loaded from jsDelivr, pinned to a commit.
  *
- * - flapp (default): Flapp (https://github.com/yoya/Flapp). The pages use its
- *   <flapp-player> element. flapp.js is loaded from jsDelivr, pinned to a commit.
- * - ruffle: Ruffle (https://ruffle.rs/), a Flash Player emulator that replaces
- *   <object> / <embed> in the browser. ruffle.js 0.8.0 is loaded from unpkg and
- *   checked with Subresource Integrity.
- * - none: nothing is loaded, <object> / <embed> are used as they are (for a
- *   browser that still has Flash Player).
- *
- * SWFED_PLAYER_URL: URL (http(s) or a path) of flapp.js / ruffle.js of your own
- * copy, instead of the one above.
+ * - SWFED_PLAYER=none: nothing is loaded, <object> / <embed> are used as they
+ *   are (for a browser that still has Flash Player).
+ * - SWFED_PLAYER_URL: URL (http(s) or a path) of flapp.js of your own copy,
+ *   instead of the one above.
  */
 define('SWFED_FLAPP_URL', 'https://cdn.jsdelivr.net/gh/yoya/Flapp@8aebb1f2f03b67a720f300283c0ee0798ba99f44/web/flapp.js');
-define('SWFED_RUFFLE_URL', 'https://unpkg.com/@ruffle-rs/ruffle@0.8.0/ruffle.js');
-define('SWFED_RUFFLE_INTEGRITY', 'sha384-QkUl27FYChnBloiwoEpIU1b1xXHyCq62i6CpX0taseumQpWzJjDjQAILMWBUBtTQ');
 
 function swfed_player() {
     $player = getenv('SWFED_PLAYER');
@@ -151,46 +144,31 @@ function swfed_player() {
         return 'flapp';
     }
     $player = strtolower($player);
-    if (! in_array($player, array('flapp', 'ruffle', 'none'), true)) {
-        error_log("swfed: unknown SWFED_PLAYER (flapp, ruffle or none): $player");
+    if (! in_array($player, array('flapp', 'none'), true)) {
+        error_log("swfed: unknown SWFED_PLAYER (flapp or none): $player");
         return 'none';
     }
     return $player;
 }
 
-/* the <script> tags of the player, for the <head> of the demo pages */
+/* the <script> tag of the player, for the <head> of the demo pages */
 function swfed_player_head() {
-    $player = swfed_player();
-    if ($player === 'none') {
+    if (swfed_player() === 'none') {
         return '';
     }
     $url = getenv('SWFED_PLAYER_URL');
-    $own = ($url !== false) && ($url !== '');
-    if ($own && ! preg_match('#^(https?://|/|\./)#i', $url)) {
+    if (($url === false) || ($url === '')) {
+        $url = SWFED_FLAPP_URL;
+    } elseif (! preg_match('#^(https?://|/|\./)#i', $url)) {
         error_log("swfed: SWFED_PLAYER_URL must be an http(s) URL or a path: $url");
         return '';
     }
-    if (! $own) {
-        $url = ($player === 'flapp') ? SWFED_FLAPP_URL : SWFED_RUFFLE_URL;
-    }
-    $src = htmlspecialchars($url, ENT_QUOTES);
-    if ($player === 'flapp') {
-        return '<script type="module" src="' . $src . "\"></script>\n";
-    }
-    // Ruffle: the demo SWFs have no sound to wait for, so play them without a click
-    $tag = "<script>window.RufflePlayer = window.RufflePlayer || {}; "
-         . "window.RufflePlayer.config = {autoplay: \"on\", unmuteOverlay: \"hidden\"};</script>\n"
-         . '<script src="' . $src . '"';
-    if (! $own) {
-        $tag .= ' integrity="' . SWFED_RUFFLE_INTEGRITY . '" crossorigin="anonymous"';
-    }
-    return $tag . "></script>\n";
+    return '<script type="module" src="' . htmlspecialchars($url, ENT_QUOTES) . "\"></script>\n";
 }
 
 /*
  * The markup that shows the SWF at $src: Flapp's <flapp-player>, or
- * $object_markup (the <object> / <embed> for Flash Player, which Ruffle
- * replaces in the browser).
+ * $object_markup (the <object> / <embed> for Flash Player).
  */
 function swfed_swf_embed($src, $object_markup) {
     if (swfed_player() === 'flapp') {

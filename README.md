@@ -685,19 +685,16 @@ php -d extension=swfed -S 127.0.0.1:8000
 ```
 
 The pages show SWF files, which need Flash Player when they are shown with
-`<object>` / `<embed>`, and no current browser runs it. So they load a player
-written in JavaScript. The environment variable `SWFED_PLAYER` chooses it:
+`<object>` / `<embed>`, and no current browser runs it. So they play the SWF
+with [Flapp](https://github.com/yoya/Flapp), a player written in JavaScript
+(the `<flapp-player>` element). `flapp.js` is loaded from jsDelivr, pinned to a
+commit. The SWF is shown at the size of its stage and starts playing without a
+click.
 
-| `SWFED_PLAYER` | player |
+| environment variable | |
 |---|---|
-| `flapp` (default) | [Flapp](https://github.com/yoya/Flapp). The pages use its `<flapp-player>` element. `flapp.js` is loaded from jsDelivr, pinned to a commit. The SWF is shown at the size of its stage. |
-| `ruffle` | [Ruffle](https://ruffle.rs/), a Flash Player emulator that replaces `<object>` / `<embed>` in the browser. `ruffle.js` 0.8.0 is loaded from unpkg, with a Subresource Integrity hash. |
-| `none` | Nothing is loaded: `<object>` / `<embed>` are used as they are (for a browser that still has Flash Player). |
-
-Both players start playing without a click (the browser allows sound only after
-the first click in the page). `SWFED_PLAYER_URL` is the URL
-(`http(s)://...` or a path) of your own copy of `flapp.js` / `ruffle.js`, for
-a network that can't reach jsDelivr or unpkg.
+| `SWFED_PLAYER=none` | Nothing is loaded: `<object>` / `<embed>` are used as they are (for a browser that still has Flash Player). |
+| `SWFED_PLAYER_URL` | URL (`http(s)://...` or a path) of your own copy of `flapp.js`, for a network that can't reach jsDelivr. |
 
 Uploaded files are kept in `swfed-<uid>/` under the system temporary directory
 (see `SWFED_TMP_DIR` in `www/define.php`) and removed after an hour.
