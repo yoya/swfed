@@ -37,8 +37,6 @@ typedef struct swf_tag_shape_detail_ {
    * parse context
    */ 
     swf_styles_count_t _current_styles_count;
-    int _current_fill_style_num;
-    int _current_line_style_num;
     signed /* twips */ _current_x, _current_y;
     int _parse_condition;
 #define SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP 1
