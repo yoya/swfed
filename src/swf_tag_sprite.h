@@ -15,7 +15,7 @@ typedef struct swf_tag_sprite_detail_ {
     swf_tag_t *tag;
 } swf_tag_sprite_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_sprite_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_sprite_detail_handler(void);
 
 extern void *swf_tag_sprite_create_detail(void);
 extern int swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf);

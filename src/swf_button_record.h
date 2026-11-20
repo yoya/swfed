@@ -23,9 +23,10 @@ typedef struct swf_button_record_ {
     int place_depth;
     swf_matrix_t place_matrix;
     swf_cxformwithalpha_t color_transform;
-// not implemented yet. (swf 8 later only)
-//    swf_filterlist_t *filter_list;
-//    int blend_mode;
+    // DefineButton2 (SWF 8 or later)
+    unsigned char *filter_list; // FILTERLIST kept as raw bytes
+    unsigned long filter_list_len;
+    int blend_mode;
     struct swf_button_record_ *next;
 } swf_button_record_t;
 

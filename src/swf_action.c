@@ -417,13 +417,170 @@ swf_action_data_print(unsigned char *action_data, unsigned short action_data_len
     return 0;
 }
 
+static int _swf_action_list_replace_strings(swf_action_list_t *action_list,
+                                            int *modified, y_keyvalue_t *kv);
+
+/* byte size of an action record */
+static unsigned long
+_swf_action_size(swf_action_t *action) {
+    return (action->action_id < 0x80) ? 1 : 3 + (unsigned long) action->action_length;
+}
+
+/* start offsets of each action, plus the total length at [count] */
+static long *
+_swf_action_list_offsets(swf_action_list_t *action_list, int *count) {
+    swf_action_t *action;
+    long *pos;
+    int n = 0, i = 0;
+    for (action = action_list->head ; action ; action = action->next) {
+        n++;
+    }
+    pos = malloc(sizeof(long) * (n + 1));
+    if (pos == NULL) {
+        return NULL;
+    }
+    pos[0] = 0;
+    for (action = action_list->head ; action ; action = action->next) {
+        pos[i + 1] = pos[i] + _swf_action_size(action);
+        i++;
+    }
+    *count = n;
+    return pos;
+}
+
+/* new offset of an old action boundary, or -1 */
+static long
+_swf_action_map_offset(long *old_pos, long *new_pos, int count, long offset) {
+    int i;
+    for (i = 0 ; i <= count ; i++) {
+        if (old_pos[i] == offset) {
+            return new_pos[i];
+        }
+    }
+    return -1;
+}
+
+/* re-point a 16bit field that counts bytes from old_base to old_base + old_value */
+static int
+_swf_action_fix_field(unsigned char *field, long old_base, long new_base,
+                      long old_value, long *old_pos, long *new_pos, int count,
+                      int is_signed) {
+    long target = _swf_action_map_offset(old_pos, new_pos, count, old_base + old_value);
+    long value;
+    if (target < 0) {
+        return 1;
+    }
+    value = target - new_base;
+    if (is_signed ? ((value < -32768) || (value > 32767)) : ((value < 0) || (value > 0xFFFF))) {
+        return 1;
+    }
+    field[0] = value & 0xff;
+    field[1] = (value >> 8) & 0xff;
+    return 0;
+}
+
+/* After strings changed length, fix the fields that count bytes:
+ * Jump / If BranchOffset, DefineFunction(2) codeSize, With Size, Try sizes. */
+static int
+_swf_action_list_fix_offsets(swf_action_list_t *action_list, long *old_pos, int count) {
+    swf_action_t *action;
+    long *new_pos;
+    int n = 0, i = 0, ret = 0;
+    new_pos = _swf_action_list_offsets(action_list, &n);
+    if ((new_pos == NULL) || (n != count)) {
+        free(new_pos);
+        return 1;
+    }
+    for (action = action_list->head ; action && (ret == 0) ; action = action->next, i++) {
+        unsigned char *d = action->action_data;
+        unsigned short len = action->action_length;
+        long old_end = old_pos[i + 1], new_end = new_pos[i + 1];
+        if ((action->action_id < 0x80) || (d == NULL)) {
+            continue;
+        }
+        switch (action->action_id) {
+          case 0x99: // Jump
+          case 0x9D: // If
+            if (len >= 2) {
+                long off = (short) (d[0] | (d[1] << 8));
+                ret = _swf_action_fix_field(d, old_end, new_end, off,
+                                            old_pos, new_pos, count, 1);
+            }
+            break;
+          case 0x9B: // DefineFunction: codeSize is the last UI16
+          case 0x8E: // DefineFunction2: codeSize is the last UI16
+            if (len >= 2) {
+                long size = d[len - 2] | (d[len - 1] << 8);
+                ret = _swf_action_fix_field(d + len - 2, old_end, new_end, size,
+                                            old_pos, new_pos, count, 0);
+            }
+            break;
+          case 0x94: // With: Size
+            if (len >= 2) {
+                long size = d[0] | (d[1] << 8);
+                ret = _swf_action_fix_field(d, old_end, new_end, size,
+                                            old_pos, new_pos, count, 0);
+            }
+            break;
+          case 0x8F: // Try: TrySize, CatchSize, FinallySize (blocks follow in order)
+            if (len >= 7) {
+                long try_size = d[1] | (d[2] << 8);
+                long catch_size = d[3] | (d[4] << 8);
+                long finally_size = d[5] | (d[6] << 8);
+                long old_try_end = old_end + try_size;
+                long old_catch_end = old_try_end + catch_size;
+                long new_try_end = _swf_action_map_offset(old_pos, new_pos, count, old_try_end);
+                long new_catch_end = _swf_action_map_offset(old_pos, new_pos, count, old_catch_end);
+                if ((new_try_end < 0) || (new_catch_end < 0)) {
+                    ret = 1;
+                    break;
+                }
+                ret = _swf_action_fix_field(d + 1, old_end, new_end, try_size,
+                                            old_pos, new_pos, count, 0) ||
+                      _swf_action_fix_field(d + 3, old_try_end, new_try_end, catch_size,
+                                            old_pos, new_pos, count, 0) ||
+                      _swf_action_fix_field(d + 5, old_catch_end, new_catch_end, finally_size,
+                                            old_pos, new_pos, count, 0);
+            }
+            break;
+        }
+    }
+    free(new_pos);
+    if (ret) {
+        fprintf(stderr, "swf_action_list_replace_strings: can't fix branch offsets / sizes\n");
+    }
+    return ret;
+}
+
 int
 swf_action_list_replace_strings(swf_action_list_t *action_list,
                                 int *modified, y_keyvalue_t *kv) {
-    swf_action_t *action;
+    int ret;
+    long *old_pos;
+    int count = 0, changed = 0;
     if (modified) {
         *modified = 0;
     }
+    old_pos = _swf_action_list_offsets(action_list, &count);
+    if (old_pos == NULL) {
+        return 1; // FAILURE
+    }
+    ret = _swf_action_list_replace_strings(action_list, &changed, kv);
+    if ((ret == 0) && changed) {
+        ret = _swf_action_list_fix_offsets(action_list, old_pos, count);
+    }
+    free(old_pos);
+    if (modified) {
+        *modified = changed;
+    }
+    return ret;
+}
+
+static int
+_swf_action_list_replace_strings(swf_action_list_t *action_list,
+                                 int *modified, y_keyvalue_t *kv) {
+    swf_action_t *action;
+    *modified = 0;
     for (action=action_list->head ; action ; action=action->next) {
         int type;
         unsigned char *token, *end;
