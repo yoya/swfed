@@ -7,7 +7,7 @@
 
 * require
 
- - php on unix
+ - PHP 7.2 or later, on a Unix-like OS
  - zlib
  - libpng and giflib
 
@@ -20,10 +20,12 @@
  echo $swf->output();
  
  - other sample code
-   https://osdn.jp/projects/swfed/scm/git/swfed/tree/master/sample/
+   https://github.com/yoya/swfed/tree/master/sample
+ - API reference (every method, its arguments and return values)
+   ../README.md
 
 
-* demo
+* demo (old pages, may no longer be available)
 
  - http://app.awm.jp/swfed/
  - http://diary.awm.jp/~yoya/?20080331#200803311 replace jpeg
@@ -36,8 +38,7 @@
 
 * download
 
- - https://osdn.jp/projects/swfed/releases/ release 
- - git://git.osdn.jp/gitroot/swfed/swfed.git
+ - https://github.com/yoya/swfed
 
 * install
 
@@ -45,4 +46,5 @@
 
 * more information
 
- - https://osdn.jp/projects/swfed/wiki/
+ - https://github.com/yoya/swfed (README.md)
+ - https://github.com/yoya/swfed/issues

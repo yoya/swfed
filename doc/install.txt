@@ -20,8 +20,10 @@ Password:
 - libpng, giflib (optional; without them PNG / GIF support is disabled)
 - liblzma (xz) (optional; without it LZMA compressed SWF (ZWS) can't be read)
 
-configure looks for the libraries with pkg-config, then under
-/usr/local, /usr, /opt/homebrew and /opt/local, and uses the first one found.
+configure first uses a library as it is when the compiler finds it without
+any option (system directories, the macOS SDK). Otherwise it looks for the
+library with pkg-config, then under /usr/local, /usr, /opt/homebrew and
+/opt/local, and uses the first one found.
 Use --with-zlib-dir=DIR / --with-png-dir=DIR / --with-gif-dir=DIR /
 --with-lzma-dir=DIR to give the install prefix explicitly, and
 --without-png-dir / --without-gif-dir / --without-lzma-dir to build without
