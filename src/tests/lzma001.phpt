@@ -33,6 +33,12 @@ $o2 = new SWFEditor();
 var_dump($o2->input($out));
 $o2->setHeaderInfo(array('compress' => false));
 var_dump($o2->output() === $ref->output());
+// every compress level (the LZMA preset) gives a ZWS that reads back to the same movie
+foreach (array(-1, 0, 9) as $level) {
+    $o->setCompressLevel($level);
+    $n = new SWFEditor();
+    var_dump($n->input($o->output()) && $n->getTagList() == $ref->getTagList());
+}
 
 // setHeaderInfo()
 function magic($o) { return substr($o->output(), 0, 3); }
@@ -70,6 +76,9 @@ bool(true)
 bool(true)
 bool(true)
 ZWS
+bool(true)
+bool(true)
+bool(true)
 bool(true)
 bool(true)
 bool(true)
