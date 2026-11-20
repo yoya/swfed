@@ -8,6 +8,7 @@
 #include <string.h>
 #include "bitstream.h"
 #include "swf_tag_place.h"
+#include "swf_button_record.h"
 #include "swf_action.h"
 #include "swf_object.h"
 
@@ -406,24 +407,20 @@ _get_le(unsigned char *d, int size) {
 }
 
 /*
- * Replace strings in the actions of CLIPACTIONS (onClipEvent), which are
- * kept as raw bytes. EventFlags are UI16 up to SWF 5 and UI32 from SWF 6.
+ * Replace strings in the actions of CLIPACTIONS (onClipEvent) at d[0..len).
+ * EventFlags are UI16 up to SWF 5 and UI32 from SWF 6.
+ * Returns 1 if the clip actions are broken. Otherwise *new_data is NULL when
+ * nothing changed, or a malloc'ed replacement of the whole CLIPACTIONS.
  */
-int
-swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
-                                     int *modified, int swf_version) {
-    swf_tag_place_detail_t *swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
-    int flag_size = (swf_version >= 6) ? 4 : 2;
-    unsigned char *d;
-    unsigned long len, pos;
+static int
+_clip_actions_replace_strings(unsigned char *d, unsigned long len,
+                              y_keyvalue_t *kv, int flag_size,
+                              unsigned char **new_data, unsigned long *new_len) {
+    unsigned long pos;
     bitstream_t *out;
     int changed = 0;
-    *modified = 0;
-    if ((swf_tag_place == NULL) || (swf_tag_place->clip_actions == NULL)) {
-        return 0;
-    }
-    d = swf_tag_place->clip_actions;
-    len = swf_tag_place->clip_actions_len;
+    *new_data = NULL;
+    *new_len = 0;
     if (len < (unsigned long) (2 + flag_size)) {
         return 1;
     }
@@ -486,11 +483,7 @@ swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
         pos += flag_size + 4 + size;
     }
     if (changed) {
-        unsigned long new_len;
-        free(swf_tag_place->clip_actions);
-        swf_tag_place->clip_actions = bitstream_steal(out, &new_len);
-        swf_tag_place->clip_actions_len = new_len;
-        *modified = 1;
+        *new_data = bitstream_steal(out, new_len);
     }
     bitstream_close(out);
     return 0;
@@ -498,4 +491,171 @@ swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
     fprintf(stderr, "swf_tag_place_replace_action_strings: broken clip actions\n");
     bitstream_close(out);
     return 1;
+}
+
+/*
+ * PlaceObject2: replace strings in the clip actions, which are kept as raw
+ * bytes in the detail.
+ */
+int
+swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                     int *modified, int swf_version) {
+    swf_tag_place_detail_t *swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
+    unsigned char *new_data;
+    unsigned long new_len;
+    *modified = 0;
+    if ((swf_tag_place == NULL) || (swf_tag_place->clip_actions == NULL)) {
+        return 0;
+    }
+    if (_clip_actions_replace_strings(swf_tag_place->clip_actions,
+                                      swf_tag_place->clip_actions_len, kv,
+                                      (swf_version >= 6) ? 4 : 2,
+                                      &new_data, &new_len)) {
+        return 1;
+    }
+    if (new_data) {
+        free(swf_tag_place->clip_actions);
+        swf_tag_place->clip_actions = new_data;
+        swf_tag_place->clip_actions_len = new_len;
+        *modified = 1;
+    }
+    return 0;
+}
+
+/*
+ * PlaceObject3: byte offset of CLIPACTIONS, which is the last field.
+ * *offset is 0 if there is none. Returns 1 if the fields before it are broken.
+ *
+ * Flags: HasClipActions, HasClipDepth, HasName, HasRatio, HasColorTransform,
+ * HasMatrix, HasCharacter, Move; (reserved), OpaqueBackground, HasVisible,
+ * HasImage, HasClassName, HasCacheAsBitmap, HasBlendMode, HasFilterList.
+ * Fields: Depth, ClassName, CharacterId, Matrix, ColorTransform, Ratio, Name,
+ * ClipDepth, SurfaceFilterList, BlendMode, BitmapCache, Visible,
+ * BackgroundColor, ClipActions.
+ */
+static int
+_place3_clip_actions_offset(swf_tag_t *tag, unsigned long *offset) {
+    unsigned char *d = tag->data;
+    unsigned long len = tag->length, pos;
+    bitstream_t *bs;
+    swf_matrix_t matrix;
+    swf_cxformwithalpha_t cxform;
+    int flags, flags2;
+    *offset = 0;
+    if ((tag->code != 70) || (d == NULL) || (len < 4)) {
+        return 1;
+    }
+    flags = d[0];
+    flags2 = d[1];
+    if ((flags & 0x80) == 0) { // ! HasClipActions
+        return 0;
+    }
+    bs = bitstream_open();
+    bitstream_input(bs, d, len);
+    bitstream_getbytesLE(bs, 2); // flags
+    bitstream_getbytesLE(bs, 2); // Depth
+    // ClassName: HasClassName, or HasImage and HasCharacter
+    if ((flags2 & 0x08) || ((flags2 & 0x10) && (flags & 0x02))) {
+        char *class_name = (char *) bitstream_outputstring(bs);
+        if (class_name == NULL) {
+            goto broken;
+        }
+        free(class_name);
+    }
+    if (flags & 0x02) { // HasCharacter
+        bitstream_getbytesLE(bs, 2);
+    }
+    if ((flags & 0x04) && swf_matrix_parse(bs, &matrix)) { // HasMatrix
+        goto broken;
+    }
+    if ((flags & 0x08) && swf_cxformwithalpha_parse(bs, &cxform)) { // HasColorTransform
+        goto broken;
+    }
+    bitstream_align(bs);
+    if (flags & 0x10) { // HasRatio
+        bitstream_getbytesLE(bs, 2);
+    }
+    if (flags & 0x20) { // HasName
+        char *name = (char *) bitstream_outputstring(bs);
+        if (name == NULL) {
+            goto broken;
+        }
+        free(name);
+    }
+    if (flags & 0x40) { // HasClipDepth
+        bitstream_getbytesLE(bs, 2);
+    }
+    if (flags2 & 0x01) { // HasFilterList
+        unsigned long filter_list_len;
+        pos = bitstream_getbytepos(bs);
+        if (pos >= len) {
+            goto broken;
+        }
+        filter_list_len = swf_filter_list_length(d + pos, len - pos);
+        if (filter_list_len == 0) {
+            goto broken;
+        }
+        bitstream_setpos(bs, pos + filter_list_len, 0);
+    }
+    if (flags2 & 0x02) { // HasBlendMode
+        bitstream_getbyte(bs);
+    }
+    if (flags2 & 0x04) { // HasCacheAsBitmap
+        bitstream_getbyte(bs);
+    }
+    if (flags2 & 0x20) { // HasVisible
+        bitstream_getbyte(bs);
+    }
+    if (flags2 & 0x40) { // OpaqueBackground: BackgroundColor (RGBA)
+        bitstream_getbytesLE(bs, 4);
+    }
+    pos = bitstream_getbytepos(bs);
+    bitstream_close(bs);
+    if (pos >= len) { // the clip actions are missing
+        return 1;
+    }
+    *offset = pos;
+    return 0;
+ broken:
+    bitstream_close(bs);
+    return 1;
+}
+
+/*
+ * PlaceObject3 has no detail handler: its raw data is edited in place.
+ * Only the clip actions (SWF 8+, so the event flags are UI32) are changed.
+ */
+int
+swf_tag_place3_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                      int *modified) {
+    unsigned long offset, new_len;
+    unsigned char *new_clip, *new_data;
+    *modified = 0;
+    if (_place3_clip_actions_offset(tag, &offset)) {
+        fprintf(stderr, "swf_tag_place3_replace_action_strings: broken PlaceObject3\n");
+        return 1;
+    }
+    if (offset == 0) { // no clip actions
+        return 0;
+    }
+    if (_clip_actions_replace_strings(tag->data + offset, tag->length - offset,
+                                      kv, 4, &new_clip, &new_len)) {
+        return 1;
+    }
+    if (new_clip == NULL) { // nothing to replace
+        return 0;
+    }
+    new_data = malloc(offset + new_len);
+    if (new_data == NULL) {
+        free(new_clip);
+        return 1;
+    }
+    memcpy(new_data, tag->data, offset);
+    memcpy(new_data + offset, new_clip, new_len);
+    free(new_clip);
+    free(tag->data);
+    tag->data = new_data;
+    tag->length = offset + new_len;
+    *modified = 1;
+    return 0;
 }

@@ -34,6 +34,9 @@ typedef struct swf_button_record_list_ {
     swf_button_record_t *head, *tail;
 } swf_button_record_list_t;
 
+/* byte length of the FILTERLIST at data[0..len), or 0 if broken (BUTTONRECORD, PlaceObject3) */
+extern unsigned long swf_filter_list_length(unsigned char *data, unsigned long len);
+
 extern int swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
 extern int swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record, swf_tag_t *tag);
 extern void swf_button_record_destroy(swf_button_record_t *button_record);

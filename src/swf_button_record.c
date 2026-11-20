@@ -10,8 +10,8 @@
 #include "swf_button_record.h"
 
 /* byte length of the FILTERLIST at data[0..len), or 0 if broken */
-static unsigned long
-filter_list_length(unsigned char *data, unsigned long len) {
+unsigned long
+swf_filter_list_length(unsigned char *data, unsigned long len) {
     unsigned long pos = 1, i, n;
     if (len < 1) {
         return 0;
@@ -81,7 +81,7 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
         bitstream_align(bs);
         if (button_record->button_has_filter_list) {
             unsigned long pos = bitstream_getbytepos(bs);
-            unsigned long len = filter_list_length(bitstream_buffer(bs, pos),
+            unsigned long len = swf_filter_list_length(bitstream_buffer(bs, pos),
                                                    bitstream_length(bs) - pos);
             if (len == 0) {
                 fprintf(stderr, "swf_button_record_parse: broken filter list\n");

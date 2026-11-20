@@ -1663,6 +1663,8 @@ _swf_object_replace_other_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
                 }
             }
         }
+    } else if (tag->code == 70) { // PlaceObject3: no detail, its raw data is edited in place
+        return swf_tag_place3_replace_action_strings(tag, kv, modified);
     } else if (tag->code == 26) { // PlaceObject2
         /* only those with HasClipActions need parsing */
         if (tag->data && ((tag->length < 1) || ! (tag->data[0] & 0x80))) {
@@ -1697,7 +1699,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isButtonTag(tag->code) || (tag->code == 26)) {
+        if (isButtonTag(tag->code) || (tag->code == 26) || (tag->code == 70)) {
             ret = _swf_object_replace_other_action_strings(tag, kv, swf, &m);
             if (ret) {
                 fprintf(stderr, "swf_object_replace_action_strings: button / clip actions failed\n");
@@ -1722,7 +1724,7 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                 int modified = 0;
                 swf_tag_t *t;
                 for (t = tag_sprite->tag ; t ; t = t->next) {
-                    if (t->code == 26) { // PlaceObject2 with onClipEvent
+                    if ((t->code == 26) || (t->code == 70)) { // PlaceObject2 / 3 with onClipEvent
                         ret = _swf_object_replace_other_action_strings(t, kv, swf, &m);
                         if (ret) {
                             break;
@@ -1897,46 +1899,6 @@ _swf_refcid_offsets_add(_swf_refcid_offsets_t *list, unsigned long offset,
     return 0;
 }
 
-// byte length of the FILTERLIST at data[0..len), or 0 if broken
-static unsigned long
-_swf_filter_list_length(unsigned char *data, unsigned long len) {
-    unsigned long pos = 1, i, n;
-    if (len < 1) {
-        return 0;
-    }
-    n = data[0]; // NumberOfFilters
-    for (i = 0 ; i < n ; i++) {
-        unsigned long size;
-        if (pos >= len) {
-            return 0;
-        }
-        switch (data[pos]) { // FilterID
-          case 0: size = 23; break; // DropShadow
-          case 1: size = 9; break;  // Blur
-          case 2: size = 15; break; // Glow
-          case 3: size = 27; break; // Bevel
-          case 4: // GradientGlow
-          case 7: // GradientBevel
-            if (pos + 1 >= len) {
-                return 0;
-            }
-            size = 1 + 5 * (unsigned long) data[pos + 1] + 19;
-            break;
-          case 5: // Convolution
-            if (pos + 2 >= len) {
-                return 0;
-            }
-            size = 15 + 4 * (unsigned long) data[pos + 1] * data[pos + 2];
-            break;
-          case 6: size = 80; break; // ColorMatrix
-          default:
-            return 0;
-        }
-        pos += 1 + size;
-    }
-    return (pos <= len) ? pos : 0;
-}
-
 // DefineButton, DefineButton2: CharacterID of each BUTTONRECORD
 static int
 _swf_button_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
@@ -1980,7 +1942,7 @@ _swf_button_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
                 if (pos > length) {
                     break;
                 }
-                filter_list_len = _swf_filter_list_length(data + pos, length - pos);
+                filter_list_len = swf_filter_list_length(data + pos, length - pos);
                 if (filter_list_len == 0) {
                     break;
                 }
