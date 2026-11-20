@@ -1573,6 +1573,7 @@ _swf_object_movieclip_tag_kind(int tag_no) {
       case 46: // DefineMorphShape
       case 48: // DefineFont2
       case 56: // ExportAssets
+      case 59: // DoInitAction (SpriteID refers to a DefineSprite)
       case 60: // DefineVideoStream
       case 62: // DefineFontInfo2
       case 73: // DefineFontAlignZones
@@ -1599,7 +1600,6 @@ _swf_object_movieclip_tag_kind(int tag_no) {
       case 28: // RemoveObject2
       case 43: // FrameLabel
       case 45: // SoundStreamHead2
-      case 59: // DoInitAction
       case 61: // VideoFrame
       case 66: // SetTabIndex
       case 70: // PlaceObject3
@@ -1611,60 +1611,410 @@ _swf_object_movieclip_tag_kind(int tag_no) {
 }
 
 /*
- * tags (without detail handler) whose first UI16 is the ID of
- * a character defined by another tag
+ * tags whose first UI16 is the ID of a character defined by another tag
  */
 static int
 _swf_object_is_first_refcid_tag(int tag_no) {
     switch (tag_no) {
       case 3:  // FreeCharacter: CharacterId
+      case 5:  // RemoveObject: CharacterId, Depth (RemoveObject2 has Depth only)
+      case 13: // DefineFontInfo: FontID
       case 15: // StartSound: SoundId
       case 23: // DefineButtonCxform: ButtonId
+      case 59: // DoInitAction: SpriteID
       case 61: // VideoFrame: StreamID
       case 62: // DefineFontInfo2: FontID
       case 73: // DefineFontAlignZones: FontID
       case 74: // CSMTextSettings: TextID
       case 78: // DefineScalingGrid: CharacterId
+      case 88: // DefineFontName: FontID
         return 1;
     }
     return 0;
 }
 
-static void
-_swf_object_replace_first_refcid(swf_tag_t *tag, trans_table_t *cid_trans_table) {
-    unsigned char *data = tag->data;
-    int refcid, to_refcid;
-    if ((data == NULL) || (tag->length < 2)) {
-        return;
-    }
-    refcid = GetUShortLE(data);
-    to_refcid = trans_table_get(cid_trans_table, refcid);
-    if ((to_refcid > 0) && (to_refcid != refcid)) {
-        PutUShortLE(data, to_refcid);
-    }
+// definition tags that have their own character ID
+static int
+_swf_object_movieclip_defines_cid(int tag_no) {
+    return (_swf_object_movieclip_tag_kind(tag_no) == SWF_MOVIECLIP_TAG_DEFINE) &&
+        (! _swf_object_is_first_refcid_tag(tag_no)) &&
+        (tag_no != 17) && (tag_no != 56); // DefineButtonSound, ExportAssets
 }
 
-// ExportAssets: Count, { Tag(CID), Name }
-static void
-_swf_object_replace_export_refcid(swf_tag_t *tag, trans_table_t *cid_trans_table) {
+/*
+ * byte offsets of the character IDs that a tag refers to in its raw data
+ */
+typedef struct _swf_refcid_offsets_ {
+    unsigned long *offset;
+    int num, alloc;
+} _swf_refcid_offsets_t;
+
+static int
+_swf_refcid_offsets_add(_swf_refcid_offsets_t *list, unsigned long offset,
+                        unsigned long length) {
+    if (offset + 2 > length) {
+        return 1; // broken
+    }
+    if (list->num >= list->alloc) {
+        int alloc = list->alloc ? list->alloc * 2 : 8;
+        unsigned long *tmp = realloc(list->offset, sizeof(*tmp) * alloc);
+        if (tmp == NULL) {
+            return 1;
+        }
+        list->offset = tmp;
+        list->alloc = alloc;
+    }
+    list->offset[list->num++] = offset;
+    return 0;
+}
+
+// byte length of the FILTERLIST at data[0..len), or 0 if broken
+static unsigned long
+_swf_filter_list_length(unsigned char *data, unsigned long len) {
+    unsigned long pos = 1, i, n;
+    if (len < 1) {
+        return 0;
+    }
+    n = data[0]; // NumberOfFilters
+    for (i = 0 ; i < n ; i++) {
+        unsigned long size;
+        if (pos >= len) {
+            return 0;
+        }
+        switch (data[pos]) { // FilterID
+          case 0: size = 23; break; // DropShadow
+          case 1: size = 9; break;  // Blur
+          case 2: size = 15; break; // Glow
+          case 3: size = 27; break; // Bevel
+          case 4: // GradientGlow
+          case 7: // GradientBevel
+            if (pos + 1 >= len) {
+                return 0;
+            }
+            size = 1 + 5 * (unsigned long) data[pos + 1] + 19;
+            break;
+          case 5: // Convolution
+            if (pos + 2 >= len) {
+                return 0;
+            }
+            size = 15 + 4 * (unsigned long) data[pos + 1] * data[pos + 2];
+            break;
+          case 6: size = 80; break; // ColorMatrix
+          default:
+            return 0;
+        }
+        pos += 1 + size;
+    }
+    return (pos <= len) ? pos : 0;
+}
+
+// DefineButton, DefineButton2: CharacterID of each BUTTONRECORD
+static int
+_swf_button_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
+    unsigned char *data = tag->data;
+    unsigned long length = tag->length, pos;
+    bitstream_t *bs;
+    swf_matrix_t matrix;
+    swf_cxformwithalpha_t cxform;
+    int flags, ret = 1;
+    bs = bitstream_open();
+    bitstream_input(bs, data, length);
+    bitstream_getbytesLE(bs, 2); // ButtonId
+    if (tag->code == 34) { // DefineButton2
+        bitstream_getbyte(bs);       // TrackAsMenu
+        bitstream_getbytesLE(bs, 2); // ActionOffset
+    }
+    while (1) {
+        bitstream_align(bs);
+        flags = bitstream_getbyte(bs);
+        if (flags == 0) { // CharacterEndFlag
+            ret = 0;
+            break;
+        }
+        if ((flags < 0) ||
+            _swf_refcid_offsets_add(list, bitstream_getbytepos(bs), length)) {
+            break;
+        }
+        bitstream_getbytesLE(bs, 2); // CharacterID
+        bitstream_getbytesLE(bs, 2); // PlaceDepth
+        if (swf_matrix_parse(bs, &matrix)) {
+            break;
+        }
+        if (tag->code == 34) {
+            if (swf_cxformwithalpha_parse(bs, &cxform)) {
+                break;
+            }
+            bitstream_align(bs);
+            if (flags & 0x10) { // ButtonHasFilterList
+                unsigned long filter_list_len;
+                pos = bitstream_getbytepos(bs);
+                if (pos > length) {
+                    break;
+                }
+                filter_list_len = _swf_filter_list_length(data + pos, length - pos);
+                if (filter_list_len == 0) {
+                    break;
+                }
+                bitstream_setpos(bs, pos + filter_list_len, 0);
+            }
+            if (flags & 0x20) { // ButtonHasBlendMode
+                bitstream_getbyte(bs);
+            }
+        }
+    }
+    bitstream_close(bs);
+    return ret;
+}
+
+// DefineText, DefineText2: FontID of each TEXTRECORD
+static int
+_swf_text_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
+    unsigned long length = tag->length, pos, bits;
+    bitstream_t *bs;
+    swf_rect_t rect;
+    swf_matrix_t matrix;
+    int flags, glyph_bits, advance_bits, glyph_count, ret = 1;
+    bs = bitstream_open();
+    bitstream_input(bs, tag->data, length);
+    bitstream_getbytesLE(bs, 2); // CharacterID
+    if (swf_rect_parse(bs, &rect) || swf_matrix_parse(bs, &matrix)) {
+        bitstream_close(bs);
+        return 1;
+    }
+    bitstream_align(bs);
+    glyph_bits = bitstream_getbyte(bs);
+    advance_bits = bitstream_getbyte(bs);
+    while ((glyph_bits >= 0) && (advance_bits >= 0)) {
+        bitstream_align(bs);
+        flags = bitstream_getbyte(bs);
+        if (flags == 0) { // EndOfRecordsFlag
+            ret = 0;
+            break;
+        }
+        if (flags < 0) {
+            break;
+        }
+        if (flags & 0x08) { // StyleFlagsHasFont
+            if (_swf_refcid_offsets_add(list, bitstream_getbytepos(bs), length)) {
+                break;
+            }
+            bitstream_getbytesLE(bs, 2); // FontID
+        }
+        if (flags & 0x04) { // StyleFlagsHasColor: RGB, RGBA in DefineText2
+            bitstream_getbytesLE(bs, (tag->code == 33) ? 4 : 3);
+        }
+        if (flags & 0x01) { // StyleFlagsHasXOffset
+            bitstream_getbytesLE(bs, 2);
+        }
+        if (flags & 0x02) { // StyleFlagsHasYOffset
+            bitstream_getbytesLE(bs, 2);
+        }
+        if (flags & 0x08) { // TextHeight
+            bitstream_getbytesLE(bs, 2);
+        }
+        glyph_count = bitstream_getbyte(bs);
+        if (glyph_count < 0) {
+            break;
+        }
+        bits = (unsigned long) glyph_count * (glyph_bits + advance_bits);
+        pos = bitstream_getbytepos(bs) + (bits + 7) / 8;
+        if ((pos > length) || bitstream_setpos(bs, pos, 0)) {
+            break;
+        }
+    }
+    bitstream_close(bs);
+    return ret;
+}
+
+// DefineButtonSound: ButtonId, ButtonSoundChar0-3 (each followed by SOUNDINFO)
+static int
+_swf_button_sound_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
     unsigned char *data = tag->data, *p;
+    unsigned long length = tag->length, pos;
+    int i, flags;
+    if (_swf_refcid_offsets_add(list, 0, length)) { // ButtonId
+        return 1;
+    }
+    pos = 2;
+    for (i = 0 ; i < 4 ; i++) {
+        if (pos + 2 > length) {
+            return 1;
+        }
+        p = data + pos;
+        if (GetUShortLE(p) == 0) { // no sound
+            pos += 2;
+            continue;
+        }
+        _swf_refcid_offsets_add(list, pos, length);
+        pos += 2;
+        if (pos >= length) {
+            return 1;
+        }
+        flags = data[pos++]; // SOUNDINFO
+        if (flags & 0x01) { // HasInPoint
+            pos += 4;
+        }
+        if (flags & 0x02) { // HasOutPoint
+            pos += 4;
+        }
+        if (flags & 0x04) { // HasLoops
+            pos += 2;
+        }
+        if (flags & 0x08) { // HasEnvelope
+            if (pos >= length) {
+                return 1;
+            }
+            pos += 1 + 8 * (unsigned long) data[pos];
+        }
+        if (pos > length) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// ExportAssets: Count, { Tag, Name }
+static int
+_swf_export_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
+    unsigned char *data = tag->data;
     unsigned long length = tag->length, pos, i, count;
-    if ((data == NULL) || (length < 2)) {
-        return;
+    if (length < 2) {
+        return 1;
     }
     count = GetUShortLE(data);
     pos = 2;
-    for (i = 0 ; (i < count) && (pos + 2 <= length) ; i++) {
-        int refcid, to_refcid;
-        p = data + pos;
-        refcid = GetUShortLE(p);
-        to_refcid = trans_table_get(cid_trans_table, refcid);
-        if ((to_refcid > 0) && (to_refcid != refcid)) {
-            PutUShortLE(p, to_refcid);
+    for (i = 0 ; i < count ; i++) {
+        if (_swf_refcid_offsets_add(list, pos, length)) {
+            return 1;
         }
         for (pos += 2 ; (pos < length) && data[pos] ; pos++);
-        pos++; // NUL
+        if (pos >= length) {
+            return 1; // no NUL
+        }
+        pos++;
     }
+    return 0;
+}
+
+static int
+_swf_object_refcid_offsets(swf_tag_t *tag, _swf_refcid_offsets_t *list) {
+    int tag_no = tag->code;
+    if ((! _swf_object_is_first_refcid_tag(tag_no)) &&
+        (! isButtonTag(tag_no)) && (tag_no != 11) && (tag_no != 33) &&
+        (tag_no != 17) && (tag_no != 56)) {
+        return 0; // no reference in the raw data
+    }
+    if (tag->data == NULL) {
+        return 1;
+    }
+    switch (tag_no) {
+      case 7:  // DefineButton
+      case 34: // DefineButton2
+        return _swf_button_refcid_offsets(tag, list);
+      case 11: // DefineText
+      case 33: // DefineText2
+        return _swf_text_refcid_offsets(tag, list);
+      case 17: // DefineButtonSound
+        return _swf_button_sound_refcid_offsets(tag, list);
+      case 56: // ExportAssets
+        return _swf_export_refcid_offsets(tag, list);
+    }
+    return _swf_refcid_offsets_add(list, 0, tag->length); // first UI16
+}
+
+// new ID of a character that the inserted SWF defines, 0 if it doesn't define
+static int
+_swf_object_movieclip_trans_cid(trans_table_t *cid_trans_table, int cid) {
+    int to_cid = trans_table_get(cid_trans_table, cid);
+    return (to_cid > 0) ? to_cid : 0;
+}
+
+/*
+ * follow the change of the character IDs that a tag of the inserted SWF
+ * refers to. with dry_run, only check that the inserted SWF defines them.
+ * returns 1 if the tag refers to a character the inserted SWF doesn't
+ * define, or if it is broken.
+ */
+static int
+_swf_object_movieclip_replace_refcids(swf_tag_t *tag,
+                                      trans_table_t *cid_trans_table,
+                                      int dry_run) {
+    int tag_no = tag->code, refcid = 0, to_refcid, i, ret = 0;
+    if (isSpriteTag(tag_no)) {
+        swf_tag_sprite_detail_t *tag_sprite;
+        swf_tag_t *t;
+        tag_sprite = swf_tag_create_input_detail(tag, NULL);
+        if (tag_sprite == NULL) {
+            fprintf(stderr, "swf_object_replace_movieclip: broken DefineSprite in swf_data\n");
+            return 1;
+        }
+        for (t = tag_sprite->tag ; t ; t = t->next) {
+            if (_swf_object_movieclip_replace_refcids(t, cid_trans_table, dry_run)) {
+                return 1;
+            }
+        }
+        if (! dry_run) { // rebuild from the inner tags
+            free(tag->data);
+            tag->data = NULL;
+        }
+        return 0;
+    }
+    if (isPlaceTag(tag_no) || (tag_no == 70) || (tag_no == 37)) { // PlaceObject, 2, 3, DefineEditText
+        refcid = swf_tag_get_refcid(tag);
+        if (refcid <= 0) {
+            return 0;
+        }
+        to_refcid = _swf_object_movieclip_trans_cid(cid_trans_table, refcid);
+        if (to_refcid == 0) {
+            ret = 1;
+        } else if ((! dry_run) && (to_refcid != refcid)) {
+            swf_tag_replace_refcid(tag, to_refcid);
+        }
+    } else if (isShapeTag(tag_no)) {
+        int *bitmap_id_list, bitmap_id_list_num;
+        bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
+        if (bitmap_id_list == NULL) {
+            return 0;
+        }
+        for (i = 0 ; i < bitmap_id_list_num ; i++) {
+            refcid = bitmap_id_list[i];
+            to_refcid = _swf_object_movieclip_trans_cid(cid_trans_table, refcid);
+            if (to_refcid == 0) {
+                ret = 1;
+                break;
+            }
+        }
+        free(bitmap_id_list);
+        if ((ret == 0) && (! dry_run)) {
+            /* all the bitmap fills at once. replacing the IDs one by one
+             * chains when the new ID of a bitmap is another one's old ID. */
+            swf_tag_shape_bitmap_replace_refcid_by_table(tag, cid_trans_table);
+        }
+    } else { // in the raw data
+        _swf_refcid_offsets_t list = { NULL, 0, 0 };
+        if (_swf_object_refcid_offsets(tag, &list)) {
+            fprintf(stderr, "swf_object_replace_movieclip: broken tag %d in swf_data\n", tag_no);
+            free(list.offset);
+            return 1;
+        }
+        for (i = 0 ; i < list.num ; i++) {
+            unsigned char *p = tag->data + list.offset[i];
+            refcid = GetUShortLE(p);
+            to_refcid = _swf_object_movieclip_trans_cid(cid_trans_table, refcid);
+            if (to_refcid == 0) {
+                ret = 1;
+                break;
+            }
+            if (! dry_run) {
+                PutUShortLE(p, to_refcid);
+            }
+        }
+        free(list.offset);
+    }
+    if (ret) {
+        fprintf(stderr, "swf_object_replace_movieclip: tag %d refers to character %d that swf_data doesn't define\n", tag_no, refcid);
+    }
+    return ret;
 }
 
 static swf_tag_t *
@@ -1721,35 +2071,6 @@ _swf_object_merge_jpegtables(swf_object_t *swf, swf_object_t *to_swf) {
         }
     }
     return 0;
-}
-
-/*
- * replacce reference side CID value
- */
-static void
-trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_table) {
-    for ( ; tag ; tag=tag->next) {
-        int tag_no = tag->code;
-        if (isSpriteTag(tag_no)) {
-            swf_tag_sprite_detail_t *tag_sprite;
-            tag_sprite = swf_tag_create_input_detail(tag, NULL);
-            if (tag_sprite == NULL) {
-                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed\n");
-                continue;
-            }
-            trans_table_replace_refcid_recursive(tag_sprite->tag, cid_trans_table);
-        } else if (_swf_object_is_first_refcid_tag(tag_no)) {
-            _swf_object_replace_first_refcid(tag, cid_trans_table);
-        } else if (isPlaceTag(tag_no) || (tag_no == 70)) { // PlaceObject, 2, 3
-            int refcid = swf_tag_get_refcid(tag);
-            if (refcid > 0) {
-                int to_refcid = trans_table_get(cid_trans_table, refcid);
-                if (refcid != to_refcid) {
-                    swf_tag_replace_refcid(tag, to_refcid);
-                }
-            }
-        }
-    }
 }
 
 // return Sprite tag mapped target path
@@ -1917,7 +2238,34 @@ swf_object_replace_movieclip(swf_object_t *swf,
             trans_table_set(cid_trans_table, cid, TRANS_TABLE_RESERVE_ID);
         }
     }
-//    trans_table_print(cid_trans_table);
+    // new CID of the characters the inserted SWF defines
+    for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
+        int to_cid;
+        if (! _swf_object_movieclip_defines_cid(tag->code)) {
+            continue;
+        }
+        cid = swf_tag_get_cid(tag);
+        if (cid <= 0) {
+            continue;
+        }
+        to_cid = trans_table_get(cid_trans_table, cid);
+        if (to_cid == TRANS_TABLE_RESERVE_ID) {
+            to_cid = trans_table_get_freeid(cid_trans_table);
+            trans_table_set(cid_trans_table, cid, to_cid);
+            trans_table_set(cid_trans_table, to_cid, TRANS_TABLE_RESERVE_ID);
+        } else if (to_cid == 0) {
+            trans_table_set(cid_trans_table, cid, cid);
+        }
+    }
+    // every character referred to must be the one the inserted SWF defines
+    for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
+        if ((_swf_object_movieclip_tag_kind(tag->code) != SWF_MOVIECLIP_TAG_DROP) &&
+            _swf_object_movieclip_replace_refcids(tag, cid_trans_table, 1)) {
+            trans_table_close(cid_trans_table);
+            swf_object_close(swf4sprite);
+            return 1;
+        }
+    }
     
     // clean up innner SpriteTag
     tag_info = get_swf_tag_info(sprite_tag->code);
@@ -1939,49 +2287,20 @@ swf_object_replace_movieclip(swf_object_t *swf,
           default: // SWF_MOVIECLIP_TAG_DROP
             break;
           case SWF_MOVIECLIP_TAG_DEFINE:
-            if (tag_no == 56) { // ExportAssets
-                _swf_object_replace_export_refcid(tag, cid_trans_table);
-            } else if (_swf_object_is_first_refcid_tag(tag_no)) {
-                _swf_object_replace_first_refcid(tag, cid_trans_table);
-            }
             // change CID
-            cid = swf_tag_get_cid(tag);
-            if (cid > 0) {
-                int to_cid;
-                to_cid = trans_table_get(cid_trans_table, cid);
-                if (to_cid == TRANS_TABLE_RESERVE_ID) {
-                    to_cid = trans_table_get_freeid(cid_trans_table);
-                    trans_table_set(cid_trans_table, cid, to_cid);
-                    trans_table_set(cid_trans_table, to_cid, TRANS_TABLE_RESERVE_ID);
-                } else if (to_cid == 0) {
-                    trans_table_set(cid_trans_table, cid, cid);
-                    to_cid = cid;
-                }
-                if (cid != to_cid) {
-                    if (swf_tag_replace_cid(tag, to_cid)) {
-                        fprintf(stderr, "swf_object_replace_movieclip: swf_tag_replace_cid %d => %d failed\n", cid, to_cid);
-                        // no stop
+            if (_swf_object_movieclip_defines_cid(tag_no)) {
+                cid = swf_tag_get_cid(tag);
+                if (cid > 0) {
+                    int to_cid = trans_table_get(cid_trans_table, cid);
+                    if ((to_cid > 0) && (cid != to_cid)) {
+                        if (swf_tag_replace_cid(tag, to_cid)) {
+                            fprintf(stderr, "swf_object_replace_movieclip: swf_tag_replace_cid %d => %d failed\n", cid, to_cid);
+                            // no stop
+                        }
                     }
                 }
             }
-            if (isShapeTag(tag_no)) {
-                swf_tag_shape_bitmap_replace_refcid_by_table(tag, cid_trans_table);
-            } else if (isSpriteTag(tag_no)){
-                swf_tag_sprite_detail_t *s;
-                s = tag->detail; // created by the nested sprite check above
-                trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
-                free(tag->data);
-                tag->data = NULL;
-            } else {
-                int refcid, to_refcid;                
-                refcid = swf_tag_get_refcid(tag);
-                if (refcid > 0) {
-                    to_refcid = trans_table_get(cid_trans_table, refcid);
-                    if (refcid != to_refcid) {
-                        swf_tag_replace_refcid(tag, to_refcid);
-                    }
-                }
-            }
+            _swf_object_movieclip_replace_refcids(tag, cid_trans_table, 0);
             // extract tag before SpriteTag
             {
                 swf_tag_t *inserted = swf_tag_move(tag);
@@ -2003,18 +2322,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
           case SWF_MOVIECLIP_TAG_CONTROL:
             // insert into Sprite
             // follow Character ID change
-            if (_swf_object_is_first_refcid_tag(tag_no)) {
-                _swf_object_replace_first_refcid(tag, cid_trans_table);
-            } else if (isPlaceTag(tag_no) || (tag_no == 70)) { // PlaceObject, 2, 3
-                int refcid, to_refcid;
-                refcid = swf_tag_get_refcid(tag);
-                if (refcid > 0) {
-                    to_refcid = trans_table_get(cid_trans_table, refcid);
-                    if (refcid != to_refcid) {
-                        swf_tag_replace_refcid(tag, to_refcid);
-                    }
-                }
-            }
+            _swf_object_movieclip_replace_refcids(tag, cid_trans_table, 0);
             // inplant tag to Sprite
             if (sprite_tag_tail == NULL) {
                 swf_tag_sprite->tag = swf_tag_move(tag);
