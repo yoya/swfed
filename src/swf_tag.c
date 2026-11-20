@@ -67,6 +67,7 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 83, "DefineShape4",  swf_tag_shape_detail_handler },
     { 84, "DefineMorphShape2", swf_tag_shape_detail_handler },
     { 88, "DefineFontName", NULL } ,
+    { 90, "DefineBitsJPEG4", swf_tag_jpeg3_detail_handler },
     { 777,"Reflex", NULL } ,
 };
 
@@ -156,6 +157,7 @@ static int swf_tag_and_length_build(bitstream_t *bs, swf_tag_t *tag) {
           case 6:  // DefineBitsJPEG
           case 21: // DefineBitsJPEG2
           case 35: // DefineBitsJPEG3
+          case 90: // DefineBitsJPEG4
           case 20: // DefineBitsLossless
           case 36: // DefineBitsLossless2
           case 19: // SoundStreamBlock
@@ -663,7 +665,7 @@ swf_tag_get_jpeg_data(swf_tag_t *tag, unsigned long *length, int image_id, swf_t
         return NULL;
     }
     tag_info = get_swf_tag_info(tag->code);
-    if ((tag->code != 6) && (tag->code != 21) && (tag->code != 35)) {
+    if (! isBitsJPEGTag(tag->code)) {
         return NULL;
     }
     if (swf_tag_create_input_detail(tag, NULL) == NULL) {
@@ -691,7 +693,7 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         fprintf(stderr, "swf_tag_get_alpha_data: length == NULL\n");
         return NULL;
     }
-    if (tag->code != 35) { // ! DefineBitsJPEG3
+    if ((tag->code != 35) && (tag->code != 90)) { // ! DefineBitsJPEG3,4
         return NULL;
     }
     if (swf_tag_get_cid(tag) != image_id) {
@@ -733,6 +735,19 @@ swf_tag_commit_work(swf_tag_t *tag, swf_tag_t *work, int result) {
     return 0;
 }
 
+/* DeblockParam of a DefineBitsJPEG4 tag, whether its detail is parsed or not */
+static unsigned short
+swf_tag_jpeg4_get_deblock_param(swf_tag_t *tag) {
+    if (tag->detail) {
+        return ((swf_tag_jpeg_detail_t *) tag->detail)->deblock_param;
+    }
+    if (tag->data && (tag->length >= 2 + 4 + 2)) { // CharacterID, AlphaDataOffset
+        unsigned char *data = tag->data + 2 + 4;
+        return GetUShortLE(data);
+    }
+    return 0;
+}
+
 int
 swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                           unsigned char *jpeg_data,
@@ -760,9 +775,21 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     if (detail_handler->get_cid(tag) !=  image_id) {
         return 1;
     }
-    swf_tag_init_work(&work, (alpha_data && (alpha_data_len > 0)) ? 35 : 21); // JPEG3 : JPEG2
+    /*
+     * with alpha: DefineBitsJPEG4 stays (keeps DeblockParam), else JPEG3.
+     * without alpha: JPEG2, the same as JPEG3 (JPEG4 needs w*h bytes of alpha).
+     */
+    if (alpha_data && (alpha_data_len > 0)) {
+        swf_tag_init_work(&work, (tag->code == 90) ? 90 : 35); // JPEG4 : JPEG3
+    } else {
+        swf_tag_init_work(&work, 21); // JPEG2
+    }
     if (work.detail == NULL) {
         return 1;
+    }
+    if (work.code == 90) { // carry DeblockParam over to the new detail
+        swf_tag_jpeg_detail_t *work_jpeg = (swf_tag_jpeg_detail_t *) work.detail;
+        work_jpeg->deblock_param = swf_tag_jpeg4_get_deblock_param(tag);
     }
     if (without_converting) {
         result= swf_tag_jpeg_replace_bitmap_data(work.detail, image_id,

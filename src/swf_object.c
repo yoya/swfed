@@ -1227,7 +1227,7 @@ swf_object_get_jpegdata(swf_object_t *swf, unsigned long *length, int image_id) 
             continue;
         }
         // ! DefineBitsJPEG(1),2,3
-        if ((tag->code != 6) && (tag->code != 21) && (tag->code != 35)) {
+        if (! isBitsJPEGTag(tag->code)) {
             continue;
         }
         data = swf_tag_get_jpeg_data(tag, length, image_id, tag_jpegtables);
@@ -1248,7 +1248,7 @@ swf_object_get_alphadata(swf_object_t *swf, unsigned long *length, int image_id)
         return NULL;
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (tag->code != 35) { // ! DefineBitsJPEG3
+        if ((tag->code != 35) && (tag->code != 90)) { // ! DefineBitsJPEG3,4
             continue;
         }
         data = swf_tag_get_alpha_data(tag, length, image_id);

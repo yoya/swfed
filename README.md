@@ -237,7 +237,7 @@ it to 6.
 
 zlib level used by `output()` for `CWS` files (for `ZWS` files, the LZMA preset:
 `0` to `9`, and `-1` means the LZMA default) and for the zlib data inside
-`DefineBitsJPEG3` (alpha) and `DefineBitsLossless`/`DefineBitsLossless2` tags
+`DefineBitsJPEG3`/`DefineBitsJPEG4` (alpha) and `DefineBitsLossless`/`DefineBitsLossless2` tags
 that swfed rebuilds. `-1` (zlib default, the initial value) to `9`. Out of range:
 `E_WARNING` and `false`.
 
@@ -282,7 +282,7 @@ Returns parsed information about the tag at `$index`. Keys by tag type:
 
 | tag (code) | keys |
 |---|---|
-| DefineBitsJPEG (6), DefineBitsJPEG2 (21), DefineBitsJPEG3 (35) | `image_id`, `jpeg_data_len`, `alpha_data_len` (only if there is alpha data) |
+| DefineBitsJPEG (6), DefineBitsJPEG2 (21), DefineBitsJPEG3 (35), DefineBitsJPEG4 (90) | `image_id`, `jpeg_data_len`, `alpha_data_len` (only if there is alpha data) |
 | DefineBitsLossless (20), DefineBitsLossless2 (36) | `image_id`, `format` (3 = 8-bit colormap, 4 = 15-bit RGB, 5 = 32-bit), `width`, `height`, `colormap_count` (format 3 only) |
 | DefineSound (14) | `sound_id`, `format`, `rate`, `is_16bits`, `is_stereo`, `sound_samples_count`, `sound_data_len` (raw SWF field values) |
 | DoAction (12), DoInitAction (59) | `action_list_count` (missing if empty), `action_sprite` (DoInitAction only) |
@@ -354,7 +354,7 @@ checked. Does not use the loaded movie.
 #### `isBitmapTagData(string $data): bool`
 
 Same as `isShapeTagData()` for `DefineBitsJPEG`, `DefineBitsJPEG2`,
-`DefineBitsJPEG3`, `DefineBitsLossless` and `DefineBitsLossless2`.
+`DefineBitsJPEG3`, `DefineBitsJPEG4`, `DefineBitsLossless` and `DefineBitsLossless2`.
 
 ### Shapes
 
@@ -422,20 +422,21 @@ is not a bitmap or the JPEG size cannot be read.
 
 #### `getJpegData(int $image_id): string|false`
 
-Returns the image of a `DefineBitsJPEG`/`2`/`3` tag as a normal JPEG file (for
+Returns the image of a `DefineBitsJPEG`/`2`/`3`/`4` tag as a normal JPEG file (for
 `DefineBitsJPEG` the shared `JPEGTables` are merged in). Returns `false` if there
 is no JPEG tag with that ID.
 
 #### `getJpegAlpha(int $image_id): string|false`
 
-Returns the alpha channel of a `DefineBitsJPEG3` tag, uncompressed: one byte per
-pixel, width × height bytes. Returns `false` if the tag is not `DefineBitsJPEG3`
-or has no alpha data.
+Returns the alpha channel of a `DefineBitsJPEG3` or `DefineBitsJPEG4` tag,
+uncompressed: one byte per pixel, width × height bytes. Returns `false` if the
+tag is neither of them or has no alpha data.
 
 #### `replaceJpegData(int $image_id, string $jpeg [, string $alpha]): bool`
 
 Replaces bitmap `$image_id` with JPEG data. Without `$alpha` (or with `''`) the
-tag becomes `DefineBitsJPEG2`; with `$alpha` it becomes `DefineBitsJPEG3`.
+tag becomes `DefineBitsJPEG2`; with `$alpha` it becomes `DefineBitsJPEG3`, or
+stays `DefineBitsJPEG4` (keeping its `DeblockParam`) if it already was one.
 `$alpha` is uncompressed alpha data in the `getJpegAlpha()` format; swfed
 compresses it. Neither the JPEG data nor the alpha length is checked, so this
 returns `true` for non-JPEG data. Returns `false` if there is no bitmap with that

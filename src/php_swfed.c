@@ -503,6 +503,7 @@ static int swfed_tag_detail_supported(int code) {
       case 2: case 4: case 6: case 12: case 14: case 20: case 21: case 22:
       case 26: case 32: case 35: case 36: case 37: case 39: case 46: case 59:
       case 83: case 84:
+      case 90:
         return 1;
     }
     return 0;
@@ -586,6 +587,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
       case 6:  // DefineBitsJPEG
       case 21: // DefineBitsJPEG2
       case 35: // DefineBitsJPEG3
+      case 90: // DefineBitsJPEG4
         tag_jpeg = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "image_id", tag_jpeg->image_id);

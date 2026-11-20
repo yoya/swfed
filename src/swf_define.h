@@ -108,8 +108,8 @@ static inline double swfed_get_double_ieee(const unsigned char *data) {
 
 // tag
 
-// DefineBitsJPEG1,2,3
-#define isBitsJPEGTag(tag) (((tag) == 6) || ((tag) == 21) || ((tag) == 35))
+// DefineBitsJPEG1,2,3,4
+#define isBitsJPEGTag(tag) (((tag) == 6) || ((tag) == 21) || ((tag) == 35) || ((tag) == 90))
 // DefineLossless1,2
 #define isBitsLosslessTag(tag) (((tag) == 20) || ((tag) == 36))
 #define isBitmapTag(tag) (isBitsJPEGTag(tag) || isBitsLosslessTag(tag))
