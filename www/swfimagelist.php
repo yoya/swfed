@@ -19,10 +19,7 @@ $tag_list = $swf->getTagList();
 foreach ($tag_list as $tag_seqno => &$tagblock) {
 	$tagblock['detail_info'] = $swf->getTagDetail($tag_seqno);
 }
-
-// getTagDetail 後に getShape が動かないバグの対処で仕方なく
-$swf = new SWFEditor();
-$swf->input($swfdata);
+unset($tagblock);
 
 foreach ($tag_list as $tag_seqno => $tagblock) {
     $tag= $tagblock['tag'];

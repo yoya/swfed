@@ -11,7 +11,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_SWFEditor_output, 0, 0, MAY_BE_FALSE|MAY_BE_STRING)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_swfInfo, 0, 0, IS_TRUE, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_swfInfo, 0, 0, _IS_BOOL, 0)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor__destroy_and_exit, 0, 0, _IS_BOOL, 0)
@@ -31,7 +31,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_MASK_EX(arginfo_class_SWFEditor_getTagDetail, 0,
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_SWFEditor_getTagData arginfo_class_SWFEditor_getTagDetail
+#define arginfo_class_SWFEditor_getTagData arginfo_class_SWFEditor_getJpegData
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceTagData, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
@@ -51,9 +51,9 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceTagContentsByCID arginfo_class_SWFEditor_replaceTagDataByCID
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 2, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 1, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
-	ZEND_ARG_TYPE_INFO(0, index_sprint, IS_LONG, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, index_sprint, IS_LONG, 1, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_printTagData, 0, 1, _IS_BOOL, 0)
@@ -80,27 +80,27 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_getJpegAlpha arginfo_class_SWFEditor_getJpegData
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceJpegData, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceJpegData, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, alpha_data, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, alpha_data, IS_STRING, 1, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_getPNGData arginfo_class_SWFEditor_getJpegData
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replacePNGData, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replacePNGData, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, index, IS_LONG, 0)
 	ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, option, IS_STRING, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, option, IS_ARRAY, 1, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceGIFData arginfo_class_SWFEditor_replaceTagData
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceBitmapData, 0, 4, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceBitmapData, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, arg1, IS_MIXED, 0)
 	ZEND_ARG_TYPE_INFO(0, data, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, data_alpha, IS_STRING, 1)
-	ZEND_ARG_TYPE_INFO(0, arg4, IS_MIXED, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, data_alpha, IS_STRING, 1, "null")
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, arg4, IS_MIXED, 0, "null")
 ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_convertBitmapDataToJpegTag arginfo_class_SWFEditor__destroy_and_exit
@@ -122,7 +122,7 @@ ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_applyShapeRectFa
 	ZEND_ARG_TYPE_INFO(0, trans_y, IS_LONG, 0)
 ZEND_END_ARG_INFO()
 
-#define arginfo_class_SWFEditor_getSoundData arginfo_class_SWFEditor_getTagDetail
+#define arginfo_class_SWFEditor_getSoundData arginfo_class_SWFEditor_getJpegData
 
 #define arginfo_class_SWFEditor_replaceMLDData arginfo_class_SWFEditor_replaceTagData
 
@@ -145,10 +145,10 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceActionStrings arginfo_class_SWFEditor_setActionVariables
 
-ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceMovieClip, 0, 3, _IS_BOOL, 0)
+ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_replaceMovieClip, 0, 2, _IS_BOOL, 0)
 	ZEND_ARG_TYPE_INFO(0, instance_name, IS_STRING, 0)
 	ZEND_ARG_TYPE_INFO(0, swf_data, IS_STRING, 0)
-	ZEND_ARG_TYPE_INFO(0, unused_cid_purge, _IS_BOOL, 1)
+	ZEND_ARG_TYPE_INFO_WITH_DEFAULT_VALUE(0, unused_cid_purge, _IS_BOOL, 1, "null")
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_WITH_RETURN_TYPE_INFO_EX(arginfo_class_SWFEditor_setCompressLevel, 0, 1, _IS_BOOL, 0)

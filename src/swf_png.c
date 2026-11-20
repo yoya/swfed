@@ -80,6 +80,20 @@ png_data_write(png_structp png_ptr, my_png_buffer *png_buff) {
                      (png_rw_ptr)png_data_write_func, NULL);
 }
 
+/* SWF Lossless2 keeps premultiplied colors, PNG keeps straight alpha */
+static unsigned char
+unpremultiply(int c, int a) {
+    int v;
+    if (a == 0) {
+        return 0;
+    }
+    if (a == 255) {
+        return (unsigned char) c;
+    }
+    v = (c * 255 + a / 2) / a;
+    return (unsigned char) ((v > 255) ? 255 : v);
+}
+
 /*
  *
  */
@@ -161,6 +175,28 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     *width = (unsigned short) png_width;
     *height = (unsigned short) png_height;
 
+    /* Let libpng turn every non-palette image into 8bit RGB or RGBA:
+     * 16bit -> 8bit, gray -> RGB, tRNS (gray / RGB) -> alpha channel. */
+    if (color_type != PNG_COLOR_TYPE_PALETTE) {
+        if (bpp == 16) {
+            png_set_strip_16(png_ptr);
+        }
+        if ((color_type == PNG_COLOR_TYPE_GRAY) ||
+            (color_type == PNG_COLOR_TYPE_GRAY_ALPHA)) {
+            if (bpp < 8) {
+                png_set_expand_gray_1_2_4_to_8(png_ptr);
+            }
+            png_set_gray_to_rgb(png_ptr);
+        }
+        if (png_get_valid(png_ptr, png_info_ptr, PNG_INFO_tRNS)) {
+            png_set_tRNS_to_alpha(png_ptr);
+        }
+        png_read_update_info(png_ptr, png_info_ptr);
+        png_get_IHDR(png_ptr, png_info_ptr,
+                     &png_width, &png_height, &bpp, &color_type,
+                     NULL, NULL, NULL);
+    }
+
     if ((rgb15 > 0) && (color_type !=  PNG_COLOR_TYPE_RGB)) { // warning
         fprintf(stderr, "rgb15 is %d but color_type is not PNG24\n", rgb15);
     }
@@ -187,8 +223,6 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     case PNG_COLOR_TYPE_RGB_ALPHA:
         *format = 5;
         *tag_no = 36; /* DefineBitsLossless2 */
-        if (png_get_valid(png_ptr, png_info_ptr, PNG_INFO_tRNS))
-            png_set_tRNS_to_alpha(png_ptr);
         break;
     default:
         fprintf(stderr, "pngconv_png2lossless: color_type=%d not implemented yet.\n", color_type);
@@ -284,6 +318,23 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
             bitstream_input(bs, png_image_data[y], rowbytes);
             for (x=0 ; x < png_width ; x++) {
                 indices_data[i] = bitstream_getbits(bs, bpp);
+                if (indices_data[i] >= palette_num) {
+                    /* libpng doesn't reject this on read, but writing it back
+                     * (getPNGData etc.) fails, and color lookups overrun */
+                    fprintf(stderr, "pngconv_png2lossless: color index(%d) >= palette_num(%d)\n",
+                            indices_data[i], palette_num);
+                    bitstream_close(bs);
+                    free(*colormap);
+                    *colormap = NULL;
+                    free(indices_data);
+                    for (y=0 ; y < png_height ; y++) {
+                        free(png_image_data[y]);
+                    }
+                    free(png_image_data);
+                    png_destroy_read_struct((png_structpp) &png_ptr,
+                                            (png_infopp) &png_info_ptr, NULL);
+                    return NULL;
+                }
                 i++;
             }
             while (i % 4) { i++; } // 4byte alignment
@@ -356,6 +407,15 @@ pngconv_lossless2png(void *image_data,
         fprintf(stderr, "jpegconv_lossless2png: format=%d not implemented yes.\n", format);
         return NULL;
     }
+    if ((width == 0) || (height == 0)) {
+        fprintf(stderr, "pngconv_lossless2png: invalid size width=%u height=%u\n",
+                width, height);
+        return NULL;
+    }
+    /* must be initialized before setjmp(): the error handler frees it */
+    png_buff.data = NULL;
+    png_buff.data_len = 0;
+    png_buff.data_offset = 0;
     png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
     if (! png_ptr) {
         fprintf(stderr, "jpegconv_lossless2png: can't create write_struct\n");
@@ -426,13 +486,14 @@ pngconv_lossless2png(void *image_data,
             int num_trans = 0;
             png_color_16p trans_values = NULL;
             for (i=0 ; i < index_data_count ; i++) {
-                png_palette[i].red   = rgba_list[i].red;
-                png_palette[i].green = rgba_list[i].green;
-                png_palette[i].blue  = rgba_list[i].blue;
+                int a = rgba_list[i].alpha;
+                png_palette[i].red   = unpremultiply(rgba_list[i].red,   a);
+                png_palette[i].green = unpremultiply(rgba_list[i].green, a);
+                png_palette[i].blue  = unpremultiply(rgba_list[i].blue,  a);
             }
-            // scanning to end of transparent pixel
+            // tRNS covers up to the last non-opaque color
             for (i = index_data_count - 1 ; 0 <= i ; i--) {
-                if (rgba_list[i].alpha < 254) { // 254 XXX
+                if (rgba_list[i].alpha < 255) {
                     break;
                 }
             }
@@ -450,8 +511,9 @@ pngconv_lossless2png(void *image_data,
         }
         png_set_PLTE( png_ptr, png_info_ptr, png_palette, index_data_count);
         free(png_palette);
+        png_palette = NULL;
     }
-    png_image_data = (png_bytepp) malloc(png_height * sizeof(png_bytep));
+    png_image_data = (png_bytepp) calloc(png_height, sizeof(png_bytep));
     if (color_type == PNG_COLOR_TYPE_PALETTE) {
         for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
@@ -476,17 +538,15 @@ pngconv_lossless2png(void *image_data,
         for (y=0 ; y < png_height ; y++) {
             png_image_data[y] = (png_bytep) malloc(png_get_rowbytes(png_ptr, png_info_ptr));
             for (x=0 ; x < png_width ; x++) {
-                png_image_data[y][4*x]   = argb_list[x+y*png_width].red;
-                png_image_data[y][4*x+1] = argb_list[x+y*png_width].green;
-                png_image_data[y][4*x+2] = argb_list[x+y*png_width].blue;
-                png_image_data[y][4*x+3] = argb_list[x+y*png_width].alpha;
+                int a = argb_list[x+y*png_width].alpha;
+                png_image_data[y][4*x]   = unpremultiply(argb_list[x+y*png_width].red,   a);
+                png_image_data[y][4*x+1] = unpremultiply(argb_list[x+y*png_width].green, a);
+                png_image_data[y][4*x+2] = unpremultiply(argb_list[x+y*png_width].blue,  a);
+                png_image_data[y][4*x+3] = a;
             }
         }
         
     }
-    png_buff.data = NULL;
-    png_buff.data_len = 0;
-    png_buff.data_offset = 0;
     png_data_write((png_structp) png_ptr, (my_png_buffer*) &png_buff);
 
     png_write_info(png_ptr, png_info_ptr);
