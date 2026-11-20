@@ -7,8 +7,13 @@ if (! file_exists(__DIR__ . '/../../www/define.php')) {
     die('skip no www/');
 }
 ?>
+--INI--
+pcre.jit=0
 --FILE--
 <?php
+// pcre.jit=0: on x86_64, valgrind (run-tests.php -m) reports "conditional jump
+// depends on uninitialised value" in the PCRE JIT code of the preg_match() in
+// define.php, and the report is gone with pcre.jit=0
 
 $dir = sys_get_temp_dir() . '/swfed-www001-' . getmypid();
 putenv("SWFED_TMP_DIR=$dir");
