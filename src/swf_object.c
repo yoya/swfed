@@ -1400,7 +1400,8 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(tag, NULL);
             if (tag_sprite == NULL) {
-                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed");
+                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed\n");
+                continue;
             }
             trans_table_replace_refcid_recursive(tag_sprite->tag, cid_trans_table);
         } else if (isPlaceTag(tag_no)) {
@@ -1531,7 +1532,31 @@ swf_object_replace_movieclip(swf_object_t *swf,
         swf_object_close(swf4sprite);
         return ret;
     }
-    
+
+    /* A DefineSprite can't contain definition tags such as DefineSprite.
+     * Reject nested sprites before touching swf: walking them would copy
+     * every inner level again, costing memory quadratic to the depth. */
+    for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
+        swf_tag_sprite_detail_t *s;
+        swf_tag_t *t;
+        if (! isSpriteTag(tag->code)) {
+            continue;
+        }
+        s = swf_tag_create_input_detail(tag, swf4sprite);
+        if (s == NULL) {
+            fprintf(stderr, "swf_object_replace_movieclip: broken DefineSprite in swf_data\n");
+            swf_object_close(swf4sprite);
+            return 1;
+        }
+        for (t = s->tag ; t ; t = t->next) {
+            if (isSpriteTag(t->code)) {
+                fprintf(stderr, "swf_object_replace_movieclip: nested DefineSprite in swf_data\n");
+                swf_object_close(swf4sprite);
+                return 1;
+            }
+        }
+    }
+
     // old CID
     cid_trans_table = trans_table_open();
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
@@ -1635,10 +1660,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 }
             } else if (isSpriteTag(tag_no)){
                 swf_tag_sprite_detail_t *s;
-                s = swf_tag_create_input_detail(tag, swf);
-                if (s == NULL) {
-                    fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
-                }
+                s = tag->detail; // created by the nested sprite check above
                 trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
                 free(tag->data);
                 tag->data = NULL;
