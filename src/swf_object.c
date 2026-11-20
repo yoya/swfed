@@ -1878,6 +1878,7 @@ swf_object_is_shape_tagdata(unsigned char *data, int data_len) {
         if (isShapeTag(tag->code)) {
             ret = 1; // TRUE
         }
+        swf_tag_destroy(tag);
     }
     bitstream_close(bs);
     return ret;
@@ -1896,6 +1897,7 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
         if (isBitmapTag(tag->code)) {
             ret = 1; // TRUE
         }
+        swf_tag_destroy(tag);
     }
     bitstream_close(bs);
     return ret;
