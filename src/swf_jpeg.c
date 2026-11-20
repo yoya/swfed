@@ -15,18 +15,26 @@
 static unsigned long
 jpeg_image_length(unsigned char *data, unsigned long data_len) {
     jpeg_segment_t *seg = jpeg_segment_parse(data, data_len, 1); // scan every marker
-    jpeg_segment_node_t *node, *last_sos = NULL;
+    jpeg_segment_node_t *node, *last_scan = NULL;
     unsigned long len = data_len;
     if (seg == NULL) {
         return data_len;
     }
     for (node = seg->head ; node ; node = node->next) {
-        if (node->marker == 0xDA) {
-            last_sos = node;
-        } else if ((node->marker == 0xD9) && last_sos && last_sos->data_ref) {
-            unsigned long end = (last_sos->data_ref - data) + last_sos->data_len + 2;
-            if (end <= data_len) {
-                len = end;
+        /* The scan data is split at every restart marker: each RSTn is a node
+         * of its own, so the last scan data is the last SOS or RSTn node. */
+        if ((node->marker == 0xDA) ||
+            ((0xD0 <= node->marker) && (node->marker <= 0xD7))) {
+            last_scan = node;
+        } else if ((node->marker == 0xD9) && last_scan && last_scan->data_ref) {
+            unsigned long end = (last_scan->data_ref - data) + last_scan->data_len;
+            while ((end < data_len) && (data[end] == 0xFF)) { // fill bytes before EOI
+                end++;
+            }
+            /* EOI must follow the scan data. If some other marker comes
+             * between, keep everything as it was. */
+            if ((end < data_len) && (data[end] == 0xD9)) {
+                len = end + 1;
             }
             break;
         }
