@@ -223,6 +223,27 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     return 0;
 }
 
+/* tag->length is only updated when the tag is written out, so an edited tag
+ * (detail only, no raw data) is serialized here to get its real length */
+unsigned long
+swf_tag_get_length(swf_tag_t *tag, struct swf_object_ *swf) {
+    if ((tag->data == NULL) && tag->detail) {
+        swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
+        if (tag_info && tag_info->detail_handler) {
+            const swf_tag_detail_handler_t *handler = tag_info->detail_handler();
+            if (handler->output) {
+                unsigned long length = 0;
+                unsigned char *data = handler->output(tag, &length, swf);
+                if (data) {
+                    free(data);
+                    tag->length = length;
+                }
+            }
+        }
+    }
+    return tag->length;
+}
+
 int
 swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
