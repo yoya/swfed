@@ -1,5 +1,5 @@
 --TEST--
-www/define.php: the script tag of Ruffle that the demo pages include
+www/define.php: the player that the demo pages load (Flapp, Ruffle or none)
 --SKIPIF--
 <?php
 // www/ is outside of the extension source: not there in some builds (Windows)
@@ -15,56 +15,94 @@ putenv("SWFED_TMP_DIR=$dir");
 ini_set('error_log', "$dir.log");
 require __DIR__ . '/../../www/define.php';
 
-function ruffle_tag($url) {
-    if ($url === null) {
-        putenv('SWFED_RUFFLE_URL'); // unset
+function setenv($name, $value) {
+    if ($value === null) {
+        putenv($name); // unset
     } else {
-        putenv("SWFED_RUFFLE_URL=$url");
+        putenv("$name=$value");
     }
-    return swfed_ruffle_script_tag();
 }
-function has($tag, $needle) {
-    return (strpos($tag, $needle) !== false) ? 'yes' : 'no';
+function has($s, $needle) {
+    return (strpos($s, $needle) !== false) ? 'yes' : 'no';
 }
+$object = '<object>for Flash Player</object>';
+$src = './swf.php?id=1&shape_id=2';
 
-// default: the pinned version on unpkg, checked with Subresource Integrity, played without a click
-$tag = ruffle_tag(null);
-echo "default: pinned=", has($tag, 'src="https://unpkg.com/@ruffle-rs/ruffle@0.8.0/ruffle.js"'),
-     " integrity=", has($tag, 'integrity="sha384-'), " crossorigin=", has($tag, 'crossorigin="anonymous"'),
-     " autoplay=", has($tag, 'autoplay: "on"'), "\n";
+echo "== flapp (default)\n";
+setenv('SWFED_PLAYER', null);
+setenv('SWFED_PLAYER_URL', null);
+$head = swfed_player_head();
+echo swfed_player(), ": module=", has($head, '<script type="module" src="https://cdn.jsdelivr.net/gh/yoya/Flapp@'),
+     " pinned to a commit=", preg_match('#/gh/yoya/Flapp@[0-9a-f]{40}/web/flapp\.js"#', $head) ? 'yes' : 'no', "\n";
+echo swfed_swf_embed($src, $object), "\n";
 
-// an empty value: no emulator (a browser with Flash Player)
-var_dump(ruffle_tag(''));
+echo "== ruffle (not case sensitive)\n";
+setenv('SWFED_PLAYER', 'Ruffle');
+$head = swfed_player_head();
+echo swfed_player(), ": src=", has($head, 'src="https://unpkg.com/@ruffle-rs/ruffle@0.8.0/ruffle.js"'),
+     " integrity=", has($head, 'integrity="sha384-'), " crossorigin=", has($head, 'crossorigin="anonymous"'),
+     " autoplay=", has($head, 'autoplay: "on"'), "\n";
+echo swfed_swf_embed($src, $object), "\n";
 
-// a copy of your own: a path or an http(s) URL, without the integrity of the default
-foreach (array('/ruffle/ruffle.js', './ruffle.js', 'https://example.org/r/ruffle.js') as $url) {
-    $tag = ruffle_tag($url);
-    echo $url, ": src=", has($tag, 'src="' . $url . '"'), " integrity=", has($tag, 'integrity'), "\n";
+echo "== none\n";
+setenv('SWFED_PLAYER', 'none');
+var_dump(swfed_player(), swfed_player_head());
+echo swfed_swf_embed($src, $object), "\n";
+
+echo "== a copy of your own (a path or an http(s) URL)\n";
+setenv('SWFED_PLAYER_URL', '/player/flapp.js');
+setenv('SWFED_PLAYER', 'flapp');
+echo trim(swfed_player_head()), "\n";
+setenv('SWFED_PLAYER', 'ruffle');
+setenv('SWFED_PLAYER_URL', 'https://example.org/r/ruffle.js');
+$head = swfed_player_head();
+echo "ruffle: src=", has($head, 'src="https://example.org/r/ruffle.js"'), " integrity=", has($head, 'integrity'), "\n";
+
+echo "== refused values are logged\n";
+foreach (array('javascript:alert(1)', 'data:text/javascript,alert(1)') as $url) {
+    setenv('SWFED_PLAYER_URL', $url);
+    var_dump(swfed_player_head());
 }
+setenv('SWFED_PLAYER_URL', null);
+setenv('SWFED_PLAYER', 'bogus');
+var_dump(swfed_player());
+$log = file_get_contents("$dir.log");
+echo "logged: ", substr_count($log, 'SWFED_PLAYER_URL must be'), " ", substr_count($log, 'unknown SWFED_PLAYER'), "\n";
 
-// anything else is refused (and logged)
-var_dump(ruffle_tag('javascript:alert(1)'));
-var_dump(ruffle_tag('data:text/javascript,alert(1)'));
-echo "logged: ", (substr_count(file_get_contents("$dir.log"), 'SWFED_RUFFLE_URL must be') == 2) ? 'twice' : 'no', "\n";
+echo "== escaped in the attributes\n";
+setenv('SWFED_PLAYER', 'flapp');
+setenv('SWFED_PLAYER_URL', '/p.js"><script>alert(1)</script>');
+$head = swfed_player_head();
+echo has($head, '<script>alert'), " ", has($head, '&quot;&gt;&lt;script&gt;'), "\n";
+echo swfed_swf_embed('./a.swf?x="><b>', $object), "\n";
 
-// the URL is escaped in the attribute
-$tag = ruffle_tag('/r.js"><script>alert(1)</script>');
-echo "escaped: ", has($tag, '<script>alert') , " ", has($tag, '&quot;&gt;&lt;script&gt;'), "\n";
-
-putenv('SWFED_RUFFLE_URL');
-putenv('SWFED_TMP_DIR');
+setenv('SWFED_PLAYER', null);
+setenv('SWFED_PLAYER_URL', null);
+setenv('SWFED_TMP_DIR', null);
 @rmdir($dir);
 @unlink("$dir.log");
 ?>
 ===DONE===
 --EXPECT--
-default: pinned=yes integrity=yes crossorigin=yes autoplay=yes
+== flapp (default)
+flapp: module=yes pinned to a commit=yes
+<flapp-player src="./swf.php?id=1&amp;shape_id=2"></flapp-player>
+== ruffle (not case sensitive)
+ruffle: src=yes integrity=yes crossorigin=yes autoplay=yes
+<object>for Flash Player</object>
+== none
+string(4) "none"
 string(0) ""
-/ruffle/ruffle.js: src=yes integrity=no
-./ruffle.js: src=yes integrity=no
-https://example.org/r/ruffle.js: src=yes integrity=no
+<object>for Flash Player</object>
+== a copy of your own (a path or an http(s) URL)
+<script type="module" src="/player/flapp.js"></script>
+ruffle: src=yes integrity=no
+== refused values are logged
 string(0) ""
 string(0) ""
-logged: twice
-escaped: no yes
+string(4) "none"
+logged: 2 1
+== escaped in the attributes
+no yes
+<flapp-player src="./a.swf?x=&quot;&gt;&lt;b&gt;"></flapp-player>
 ===DONE===
