@@ -29,6 +29,9 @@ typedef struct swf_tag_place_detail_ {
     int ratio;  // PlaceObject2
     char *name; // PlaceObject2
     int clip_depth; // PlaceObject2
+    // CLIPACTIONS kept as raw bytes (event flag sizes depend on the SWF version)
+    unsigned char *clip_actions; // PlaceObject2
+    unsigned long clip_actions_len;
 } swf_tag_place_detail_t;
 
 extern const swf_tag_detail_handler_t *swf_tag_place_detail_handler(void);
