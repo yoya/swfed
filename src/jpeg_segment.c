@@ -93,10 +93,15 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
     int marker1;
     unsigned len;
     int eoi_found = 0;
+    unsigned long garbage = 0;
     bs = bitstream_open();
     bitstream_input(bs, data, data_len);
     jpeg_seg = jpeg_segment_create();
-    
+    if (jpeg_seg == NULL) {
+        bitstream_close(bs);
+        return NULL;
+    }
+
     while((marker1 = bitstream_getbyte(bs)) >= 0) {
         int marker2;
         int next_marker2;
@@ -104,10 +109,15 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
             if (eoi_found) {
                 break;
             }
-            fprintf(stderr, "jpeg_segment_parse: marker1=0x%02X\n", marker1);
+            if (garbage == 0) {
+                fprintf(stderr, "jpeg_segment_parse: skipping non-marker bytes (first=0x%02X)\n", marker1);
+            }
+            garbage++;
 	    continue;
         }
-        marker2 = bitstream_getbyte(bs);
+        do { // 0xFF fill bytes may precede a marker
+            marker2 = bitstream_getbyte(bs);
+        } while (marker2 == 0xFF);
         switch(marker2) {
             unsigned long sos_offset;
           case -1:
@@ -162,6 +172,7 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
                       (pos > data_len) || (data_len - pos < seg_len - 2)) {
                       fprintf(stderr, "jpeg_segment_parse: broken segment length (marker=0x%02X len=%lu pos=%lu data_len=%lu)\n",
                               marker2, seg_len, pos, data_len);
+                      jpeg_seg->broken = 1;
                       bitstream_close(bs);
                       return jpeg_seg;
                   }
@@ -193,6 +204,29 @@ unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,
     unsigned char *data;
     *length = 0;
     for (node=jpeg_seg->head ; node ; node=node->next) {
+        if (node->marker == marker) {
+            data = node->data_ref;
+            *length = node->data_len;
+            node->marker = -1; // remove mark;
+            node->data_ref = NULL;
+            node->data_len = 0;
+            return data;
+        }
+    }
+    return NULL;
+}
+
+/* like jpeg_segment_steal_node(), but only nodes before the first stop_marker */
+unsigned char *jpeg_segment_steal_node_before(jpeg_segment_t *jpeg_seg,
+                                              int marker, int stop_marker,
+                                              unsigned long *length) {
+    jpeg_segment_node_t *node;
+    unsigned char *data;
+    *length = 0;
+    for (node=jpeg_seg->head ; node ; node=node->next) {
+        if (node->marker == stop_marker) {
+            break;
+        }
         if (node->marker == marker) {
             data = node->data_ref;
             *length = node->data_len;
