@@ -32,7 +32,7 @@ static int _swf_object_replace_tag(swf_object_t *swf,
                                    swf_tag_t *old_tag, swf_tag_t *new_tag);
 static void _swf_object_tag_close(swf_tag_t *tag_head);
 #ifdef HAVE_LZMA
-static int _swf_object_lzma_uncompress(swf_object_t *swf, bitstream_t *bs);
+static int _swf_object_lzma_uncompress(swf_header_t *header, bitstream_t *bs);
 static int _swf_object_lzma_compress(swf_object_t *swf, bitstream_t *bs);
 #endif
 
@@ -153,9 +153,9 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         bitstream_putstring(bs, new_buff, origsize);
         free(new_buff);
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
-    } else if (memcmp(swf->header.magic, "ZWS", 3) == 0) {
+    } else if (memcmp(new_header.magic, "ZWS", 3) == 0) {
 #ifdef HAVE_LZMA
-        if (_swf_object_lzma_uncompress(swf, bs)) {
+        if (_swf_object_lzma_uncompress(&new_header, bs)) {
             bitstream_close(bs);
             return 1; // FAILURE
         }
@@ -346,21 +346,21 @@ _swf_object_lzma_error(char *func, lzma_ret ret) {
 }
 
 static int
-_swf_object_lzma_uncompress(swf_object_t *swf, bitstream_t *bs) {
+_swf_object_lzma_uncompress(swf_header_t *header, bitstream_t *bs) {
     unsigned char alone_header[SWF_LZMA_ALONE_HEADER_SIZE];
     unsigned char *data_ref, *new_buff, *tmp;
     unsigned long origsize, alloc_len, dict_size;
     lzma_stream strm = LZMA_STREAM_INIT;
     lzma_ret ret;
     int i, header_fed = 0;
-    if ((swf->header.file_length < SWF_HEADER_SIZE) ||
+    if ((header->file_length < SWF_HEADER_SIZE) ||
         (bs->data_len < SWF_LZMA_DATA_OFFSET)) {
         fprintf(stderr, "swf_object_input: invalid length file_length=%lu data_len=%lu\n",
-                swf->header.file_length, bs->data_len);
+                header->file_length, bs->data_len);
         return 1;
     }
     data_ref = bitstream_buffer(bs, 0);
-    origsize = swf->header.file_length - SWF_HEADER_SIZE;
+    origsize = header->file_length - SWF_HEADER_SIZE;
     memcpy(alone_header, data_ref + SWF_HEADER_SIZE + SWF_LZMA_COMPSIZE_SIZE,
            SWF_LZMA_PROPS_SIZE);
     // a dictionary larger than the whole movie is never used
@@ -432,7 +432,7 @@ _swf_object_lzma_uncompress(swf_object_t *swf, bitstream_t *bs) {
     }
     if (strm.total_out != origsize) {
         fprintf(stderr, "swf_object_input: lzma uncompressed size=%llu != file_length=%lu - %d\n",
-                (unsigned long long) strm.total_out, swf->header.file_length, SWF_HEADER_SIZE);
+                (unsigned long long) strm.total_out, header->file_length, SWF_HEADER_SIZE);
         free(new_buff);
         lzma_end(&strm);
         return 1;
