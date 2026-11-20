@@ -5,8 +5,49 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "bitstream.h"
 #include "swf_button_record.h"
+
+/* byte length of the FILTERLIST at data[0..len), or 0 if broken */
+static unsigned long
+filter_list_length(unsigned char *data, unsigned long len) {
+    unsigned long pos = 1, i, n;
+    if (len < 1) {
+        return 0;
+    }
+    n = data[0]; // NumberOfFilters
+    for (i = 0 ; i < n ; i++) {
+        unsigned long size;
+        if (pos >= len) {
+            return 0;
+        }
+        switch (data[pos]) { // FilterID
+          case 0: size = 23; break; // DropShadow
+          case 1: size = 9; break;  // Blur
+          case 2: size = 15; break; // Glow
+          case 3: size = 27; break; // Bevel
+          case 4: // GradientGlow
+          case 7: // GradientBevel
+            if (pos + 1 >= len) {
+                return 0;
+            }
+            size = 1 + 5 * (unsigned long) data[pos + 1] + 19;
+            break;
+          case 5: // Convolution
+            if (pos + 2 >= len) {
+                return 0;
+            }
+            size = 15 + 4 * (unsigned long) data[pos + 1] * data[pos + 2];
+            break;
+          case 6: size = 80; break; // ColorMatrix
+          default:
+            return 0;
+        }
+        pos += 1 + size;
+    }
+    return (pos <= len) ? pos : 0;
+}
 
 int
 swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
@@ -37,10 +78,26 @@ swf_button_record_parse(bitstream_t *bs, swf_button_record_t *button_record,
             fprintf(stderr, "swf_button_record_parse: swf_matrix_parse failed\n");
             return ret;
         }
+        bitstream_align(bs);
+        if (button_record->button_has_filter_list) {
+            unsigned long pos = bitstream_getbytepos(bs);
+            unsigned long len = filter_list_length(bitstream_buffer(bs, pos),
+                                                   bitstream_length(bs) - pos);
+            if (len == 0) {
+                fprintf(stderr, "swf_button_record_parse: broken filter list\n");
+                return 1;
+            }
+            button_record->filter_list = malloc(len);
+            if (button_record->filter_list == NULL) {
+                return 1;
+            }
+            bitstream_getstring(bs, button_record->filter_list, len);
+            button_record->filter_list_len = len;
+        }
+        if (button_record->button_has_blend_mode) {
+            button_record->blend_mode = bitstream_getbyte(bs);
+        }
     }
-    //
-    // FilterList, BlendMode
-    //
     return 0;
 }
 
@@ -48,9 +105,7 @@ void
 swf_button_record_destroy(swf_button_record_t *button_record) {
     (void) button_record;
     if (button_record) {
-        //
-        // FilterList free
-        //
+        free(button_record->filter_list);
         free(button_record);
     }
     return ;
@@ -60,6 +115,7 @@ int
 swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record,
     swf_tag_t *tag) {
     int ret;
+    bitstream_align(bs); // the previous record may end in the middle of a byte
     bitstream_putbits(bs, 0, 2);
     bitstream_putbit(bs, button_record->button_has_blend_mode);
     bitstream_putbit(bs, button_record->button_has_filter_list);
@@ -81,10 +137,14 @@ swf_button_record_build(bitstream_t *bs, swf_button_record_t *button_record,
             fprintf(stderr, "swf_button_record_build: swf_matrix_build failed\n");
             return ret;
         }
+        bitstream_align(bs);
+        if (button_record->button_has_filter_list && button_record->filter_list) {
+            bitstream_putstring(bs, button_record->filter_list, button_record->filter_list_len);
+        }
+        if (button_record->button_has_blend_mode) {
+            bitstream_putbyte(bs, button_record->blend_mode);
+        }
     }
-    //
-    // FilterList, BlendMode
-    //
     return 0;
 }
 
@@ -107,10 +167,10 @@ swf_button_record_print(swf_button_record_t *button_record, int indent_depth,
     swf_matrix_print(&(button_record->place_matrix), indent_depth);
     if (tag->code == 34) { // DefineButton2
         swf_cxformwithalpha_print(&(button_record->color_transform), indent_depth);
+        print_indent(indent_depth);
+        printf("filter_list_len=%lu blend_mode=%d\n",
+               button_record->filter_list_len, button_record->blend_mode);
     }
-    //
-    // FilterList, BlendMode
-    //
     return 0;
 }
 

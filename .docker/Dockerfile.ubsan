@@ -1,0 +1,23 @@
+# swfed built with UndefinedBehaviorSanitizer: any undefined behavior aborts the test.
+# (AddressSanitizer can't be used with a non-instrumented PHP, which loads
+# extensions with RTLD_DEEPBIND. Memory errors are checked by Dockerfile.valgrind.)
+FROM php:8.3-cli
+
+SHELL ["/bin/bash", "-c"]
+
+RUN apt-get -y update && \
+        apt-get install -y build-essential libpng-dev libgif-dev
+COPY . /tmp/ext
+
+WORKDIR /tmp/ext/src
+
+# libtool drops -fsanitize from the link of the module: link libubsan explicitly
+RUN phpize && \
+    ./configure CFLAGS="-g -O1 -fno-omit-frame-pointer -fsanitize=undefined -fno-sanitize-recover=undefined" && \
+    sed -i -e 's/^SWFED_SHARED_LIBADD = /&-lubsan /' Makefile && \
+    make && \
+    readelf -d modules/swfed.so | grep -q libubsan
+
+ENV UBSAN_OPTIONS=print_stacktrace=1
+
+CMD make test NO_INTERACTION=1 TESTS=--show-diff

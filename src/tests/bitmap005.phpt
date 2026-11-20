@@ -1,5 +1,7 @@
 --TEST--
 replaceBitmapData Lossless with alpha0
+--SKIPIF--
+<?php ob_start(); phpinfo(INFO_MODULES); if (strpos(ob_get_clean(), 'PNG support => yes') === false) die('skip swfed built without libpng'); ?>
 --FILE--
 <?php
 
