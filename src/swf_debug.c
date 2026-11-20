@@ -1,8 +1,83 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
+#include "swf_output.h"
 
 // #include "swf_define.h" no include
+
+static swf_output_handler_t swf_print_handler = NULL;
+static swf_output_handler_t swf_error_handler = NULL;
+
+void
+swf_set_output_handler(swf_output_handler_t print_handler,
+                       swf_output_handler_t error_handler) {
+    swf_print_handler = print_handler;
+    swf_error_handler = error_handler;
+}
+
+static int
+swf_output_vprintf(swf_output_handler_t handler, const char *format, va_list ap) {
+    char buf[1024], *str = buf;
+    va_list ap2;
+    int len;
+    va_copy(ap2, ap);
+    len = vsnprintf(buf, sizeof(buf), format, ap);
+    if ((len >= 0) && ((size_t) len >= sizeof(buf))) {
+        str = malloc(len + 1);
+        if (str == NULL) {
+            len = -1;
+        } else {
+            vsnprintf(str, len + 1, format, ap2);
+        }
+    }
+    va_end(ap2);
+    if (len >= 0) {
+        handler(str, len);
+    }
+    if (str != buf) {
+        free(str);
+    }
+    return len;
+}
+
+int
+swf_printf(const char *format, ...) {
+    va_list ap;
+    int ret;
+    va_start(ap, format);
+    if (swf_print_handler) {
+        ret = swf_output_vprintf(swf_print_handler, format, ap);
+    } else {
+        ret = vprintf(format, ap);
+    }
+    va_end(ap);
+    return ret;
+}
+
+int
+swf_fprintf(FILE *fp, const char *format, ...) {
+    swf_output_handler_t handler = NULL;
+    va_list ap;
+    int ret;
+    if (fp == stderr) {
+        handler = swf_error_handler;
+    } else if (fp == stdout) {
+        handler = swf_print_handler;
+    }
+    va_start(ap, format);
+    if (handler) {
+        ret = swf_output_vprintf(handler, format, ap);
+    } else {
+        ret = vfprintf(fp, format, ap);
+    }
+    va_end(ap);
+    return ret;
+}
+
+// the messages below go through the handlers too
+#define printf swf_printf
+#define fprintf swf_fprintf
 
 int swf_debug = 0;
 

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "swf_define.h"
 #include "trans_table.h"
 
 trans_table_t *

@@ -65,9 +65,7 @@
 static zend_class_entry *swfed_entry_ptr = NULL;
 
 
-/* If you declare any globals in php_swfed.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
-*/
 
 /* SWFEditor keeps its swf_object_t in the object itself (not in a property),
  * so it is freed with the object and invisible to foreach / serialize. */
@@ -82,6 +80,9 @@ static zend_object_handlers swfed_object_handlers;
 static inline swfed_object *swfed_from_obj(zend_object *obj) {
     return (swfed_object *)((char *)obj - XtOffsetOf(swfed_object, std));
 }
+
+static PHP_GINIT_FUNCTION(swfed);
+static PHP_GSHUTDOWN_FUNCTION(swfed);
 
 /* {{{ swfed_module_entry
  */
@@ -99,7 +100,11 @@ zend_module_entry swfed_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
         PHP_SWFED_VERSION,
 #endif
-        STANDARD_MODULE_PROPERTIES
+        PHP_MODULE_GLOBALS(swfed),
+        PHP_GINIT(swfed),
+        PHP_GSHUTDOWN(swfed),
+        NULL,
+        STANDARD_MODULE_PROPERTIES_EX
 };
 /* }}} */
 
@@ -110,6 +115,35 @@ ZEND_TSRMLS_CACHE_DEFINE();
 ZEND_GET_MODULE(swfed)
 #endif
 
+/* swfed.error_output: where the error messages of the C library go.
+ *   stderr  : the stderr of the process (default)
+ *   warning : E_WARNING
+ *   none    : nowhere (SWFEditor::getLastError() only); off is the same
+ * Case insensitive. php.ini turns a bare none / off / false / no into "". */
+static ZEND_INI_MH(OnUpdateErrorOutput)
+{
+    int mode;
+    if ((new_value == NULL) || zend_string_equals_literal_ci(new_value, "stderr")) {
+        mode = SWFED_ERROR_OUTPUT_STDERR;
+    } else if (zend_string_equals_literal_ci(new_value, "warning")) {
+        mode = SWFED_ERROR_OUTPUT_WARNING;
+    } else if ((ZSTR_LEN(new_value) == 0) ||
+               zend_string_equals_literal_ci(new_value, "none") ||
+               zend_string_equals_literal_ci(new_value, "off") ||
+               zend_string_equals_literal_ci(new_value, "false") ||
+               zend_string_equals_literal_ci(new_value, "no") ||
+               zend_string_equals_literal_ci(new_value, "0")) {
+        mode = SWFED_ERROR_OUTPUT_NONE;
+    } else {
+        php_error_docref(NULL, E_WARNING,
+                         "Invalid swfed.error_output value \"%s\" (stderr, warning or none)",
+                         ZSTR_VAL(new_value));
+        return FAILURE;
+    }
+    SWFED_G(error_output) = mode;
+    return SUCCESS;
+}
+
 /* {{{ PHP_INI
  */
 /* swfed.max_uncompressed_size: upper limit of the SWF size after decompression
@@ -118,6 +152,7 @@ ZEND_GET_MODULE(swfed)
  * 0 (default) uses memory_limit, -1 means unlimited. */
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("swfed.max_uncompressed_size", "0", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("swfed.error_output", "stderr", PHP_INI_ALL, OnUpdateErrorOutput)
 PHP_INI_END()
 /* }}} */
 
@@ -178,17 +213,215 @@ static int swfed_check_uncompressed_size(const char *data, size_t data_len) {
     return 0;
 }
 
-/* {{{ php_swfed_init_globals
+/* {{{ PHP_GINIT_FUNCTION
  */
-/* Uncomment this function if you have INI entries
-static void php_swfed_init_globals(zend_swfed_globals *swfed_globals)
+static PHP_GINIT_FUNCTION(swfed)
 {
-        swfed_globals->global_value = 0;
-        swfed_globals->global_string = NULL;
+#if defined(COMPILE_DL_SWFED) && defined(ZTS)
+        ZEND_TSRMLS_CACHE_UPDATE();
+#endif
+        memset(swfed_globals, 0, sizeof(*swfed_globals));
+        swfed_globals->error_output = SWFED_ERROR_OUTPUT_STDERR;
 }
-*/
 /* }}} */
 
+/* {{{ PHP_GSHUTDOWN_FUNCTION
+ */
+static PHP_GSHUTDOWN_FUNCTION(swfed)
+{
+        free(swfed_globals->last_error);
+        free(swfed_globals->pending);
+        free(swfed_globals->pending_segments);
+        memset(swfed_globals, 0, sizeof(*swfed_globals));
+}
+/* }}} */
+
+static void
+swfed_clear_last_error(void) {
+    free(SWFED_G(last_error));
+    SWFED_G(last_error) = NULL;
+    SWFED_G(last_error_len) = 0;
+    SWFED_G(last_error_cap) = 0;
+}
+
+/* appends one message to last_error (a line in it) */
+static void
+swfed_append_last_error(const char *message, size_t len) {
+    size_t used = SWFED_G(last_error_len);
+    size_t need = used + ((used > 0) ? 1 : 0) + len + 1;
+    if (need > SWFED_G(last_error_cap)) {
+        size_t cap = (SWFED_G(last_error_cap) > 0) ? SWFED_G(last_error_cap) : 256;
+        char *tmp;
+        while ((cap < need) && (cap <= SIZE_MAX / 2)) {
+            cap *= 2;
+        }
+        if (cap < need) {
+            return;
+        }
+        tmp = realloc(SWFED_G(last_error), cap);
+        if (tmp == NULL) {
+            return;
+        }
+        SWFED_G(last_error) = tmp;
+        SWFED_G(last_error_cap) = cap;
+    }
+    if (used > 0) {
+        SWFED_G(last_error)[used++] = '\n';
+    }
+    memcpy(SWFED_G(last_error) + used, message, len);
+    SWFED_G(last_error)[used + len] = '\0';
+    SWFED_G(last_error_len) = used + len;
+}
+
+static void
+swfed_pending_reset(void) {
+    free(SWFED_G(pending));
+    free(SWFED_G(pending_segments));
+    SWFED_G(pending) = NULL;
+    SWFED_G(pending_len) = 0;
+    SWFED_G(pending_cap) = 0;
+    SWFED_G(pending_segments) = NULL;
+    SWFED_G(pending_segments_num) = 0;
+    SWFED_G(pending_segments_cap) = 0;
+}
+
+/* The handlers below run inside the C library, while it is walking the tags
+ * of an SWFEditor. They must not run any PHP code: the output buffer callback
+ * (PHPWRITE) or the error handler (php_error_docref) could call a method of
+ * the same object and free the tag the library is using.
+ * So they only keep the output, which swfed_flush_pending() writes after the
+ * method has returned from the library. */
+static void
+swfed_pending_add(int kind, const char *message, size_t length) {
+    swfed_pending_segment *seg;
+    size_t need;
+    if (length == 0) {
+        return;
+    }
+    if (length > SIZE_MAX - SWFED_G(pending_len)) {
+        return;
+    }
+    need = SWFED_G(pending_len) + length;
+    if (need > SWFED_G(pending_cap)) {
+        size_t cap = (SWFED_G(pending_cap) > 0) ? SWFED_G(pending_cap) : 4096;
+        char *tmp;
+        while ((cap < need) && (cap <= SIZE_MAX / 2)) {
+            cap *= 2;
+        }
+        if (cap < need) {
+            return;
+        }
+        tmp = realloc(SWFED_G(pending), cap);
+        if (tmp == NULL) {
+            return;
+        }
+        SWFED_G(pending) = tmp;
+        SWFED_G(pending_cap) = cap;
+    }
+    if ((kind != SWFED_PENDING_WARNING) && (SWFED_G(pending_segments_num) > 0) &&
+        (SWFED_G(pending_segments)[SWFED_G(pending_segments_num) - 1].kind == kind)) {
+        /* consecutive print output (or stderr messages) is written at once */
+        seg = &SWFED_G(pending_segments)[SWFED_G(pending_segments_num) - 1];
+    } else {
+        if (SWFED_G(pending_segments_num) == SWFED_G(pending_segments_cap)) {
+            size_t cap = (SWFED_G(pending_segments_cap) > 0) ?
+                2 * SWFED_G(pending_segments_cap) : 16;
+            swfed_pending_segment *tmp;
+            tmp = realloc(SWFED_G(pending_segments), cap * sizeof(*tmp));
+            if (tmp == NULL) {
+                return;
+            }
+            SWFED_G(pending_segments) = tmp;
+            SWFED_G(pending_segments_cap) = cap;
+        }
+        seg = &SWFED_G(pending_segments)[SWFED_G(pending_segments_num)++];
+        seg->kind = kind;
+        seg->length = 0;
+    }
+    memcpy(SWFED_G(pending) + SWFED_G(pending_len), message, length);
+    SWFED_G(pending_len) += length;
+    seg->length += length;
+}
+
+/* Writes the pending output out, in the order the library produced it: print
+ * output to the PHP output (it goes through ob_start() callbacks), warnings
+ * with php_error_docref() (they go to set_error_handler()), and the messages
+ * for stderr to stderr (no user code runs for them). The user code run from
+ * here may call SWFEditor methods, which pend and write their own output in
+ * the same way, so the pending output is taken over first.
+ * Print output and warnings are dropped from the moment an exception is
+ * thrown. */
+static void
+swfed_flush_pending(void) {
+    char *buf = SWFED_G(pending);
+    swfed_pending_segment *segments = SWFED_G(pending_segments);
+    size_t num = SWFED_G(pending_segments_num);
+    size_t i, offset = 0;
+    if (num == 0) {
+        return;
+    }
+    SWFED_G(pending) = NULL;
+    SWFED_G(pending_len) = 0;
+    SWFED_G(pending_cap) = 0;
+    SWFED_G(pending_segments) = NULL;
+    SWFED_G(pending_segments_num) = 0;
+    SWFED_G(pending_segments_cap) = 0;
+    zend_try {
+        for (i = 0 ; i < num ; i++) {
+            if (segments[i].kind == SWFED_PENDING_STDERR) {
+                fwrite(buf + offset, 1, segments[i].length, stderr);
+            } else if (EG(exception)) {
+                ; // dropped
+            } else if (segments[i].kind == SWFED_PENDING_WARNING) {
+                php_error_docref(NULL, E_WARNING, "%.*s",
+                                 (int) ((segments[i].length > INT_MAX) ?
+                                        INT_MAX : segments[i].length),
+                                 buf + offset);
+            } else {
+                PHPWRITE(buf + offset, segments[i].length);
+            }
+            offset += segments[i].length;
+        }
+    } zend_catch {
+        /* exit() or a fatal error in the user code */
+        free(buf);
+        free(segments);
+        zend_bailout();
+    } zend_end_try();
+    free(buf);
+    free(segments);
+}
+
+/* print output of the library (swfInfo() etc.) goes through the output buffer */
+static void
+swfed_print_handler(const char *message, size_t length) {
+    swfed_pending_add(SWFED_PENDING_PRINT, message, length);
+}
+
+/* error messages of the library: kept for getLastError() (the messages of
+ * the last method call, one per line), and written out according to
+ * swfed.error_output */
+static void
+swfed_error_handler(const char *message, size_t length) {
+    size_t len = length;
+    while ((len > 0) && ((message[len - 1] == '\n') || (message[len - 1] == '\r'))) {
+        len--;
+    }
+    if (len == 0) {
+        return;
+    }
+    swfed_append_last_error(message, len);
+    switch (SWFED_G(error_output)) {
+      case SWFED_ERROR_OUTPUT_NONE: // only getLastError()
+        break;
+      case SWFED_ERROR_OUTPUT_WARNING:
+        swfed_pending_add(SWFED_PENDING_WARNING, message, len);
+        break;
+      default: // SWFED_ERROR_OUTPUT_STDERR
+        swfed_pending_add(SWFED_PENDING_STDERR, message, length);
+        break;
+    }
+}
 
 static zend_object *swfed_create_object(zend_class_entry *ce);
 static void swfed_free_object(zend_object *obj);
@@ -230,11 +463,26 @@ static swf_object_t  *get_swf_object(zval *obj);
         } \
     } while (0)
 
+/* Every SWFEditor method (except the constructor and getLastError()):
+ * - starts with an empty getLastError(), whatever way it returns
+ *   (argument errors included)
+ * - writes the output of the library (swfed_flush_pending()) after the method
+ *   body has finished, i.e. when the library is no longer in use. */
+#define SWFED_METHOD(name) \
+    static void swfed_method_##name(INTERNAL_FUNCTION_PARAMETERS); \
+    PHP_METHOD(SWFEditor, name) { \
+        swfed_clear_last_error(); \
+        swfed_method_##name(INTERNAL_FUNCTION_PARAM_PASSTHRU); \
+        swfed_flush_pending(); \
+    } \
+    static void swfed_method_##name(INTERNAL_FUNCTION_PARAMETERS)
+
 /* {{{ PHP_MINIT_FUNCTION
  */
 PHP_MINIT_FUNCTION(swfed)
 {
     REGISTER_INI_ENTRIES();
+    swf_set_output_handler(swfed_print_handler, swfed_error_handler);
     swfed_entry_ptr = register_class_SWFEditor();
     swfed_entry_ptr->create_object = swfed_create_object;
     memcpy(&swfed_object_handlers, zend_get_std_object_handlers(),
@@ -265,6 +513,7 @@ PHP_MINIT_FUNCTION(swfed)
  */
 PHP_MSHUTDOWN_FUNCTION(swfed)
 {
+        swf_set_output_handler(NULL, NULL);
         UNREGISTER_INI_ENTRIES();
         return SUCCESS;
 }
@@ -287,6 +536,8 @@ PHP_RINIT_FUNCTION(swfed)
  */
 PHP_RSHUTDOWN_FUNCTION(swfed)
 {
+        swfed_clear_last_error();
+        swfed_pending_reset();
         return SUCCESS;
 }
 /* }}} */
@@ -342,7 +593,7 @@ PHP_METHOD(SWFEditor, __construct) {
     intern->constructed = 1;
 }
 
-PHP_METHOD(SWFEditor, input) {
+SWFED_METHOD(input) {
     char *data = NULL;
     size_t data_len = 0;
     swf_object_t *swf = NULL;
@@ -362,7 +613,7 @@ PHP_METHOD(SWFEditor, input) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, output) {
+SWFED_METHOD(output) {
     unsigned long len = 0;
     unsigned char *data = NULL;
     swf_object_t *swf = NULL;
@@ -379,7 +630,7 @@ PHP_METHOD(SWFEditor, output) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, swfInfo) {
+SWFED_METHOD(swfInfo) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
     swf_object_print(swf);
@@ -399,7 +650,7 @@ static void swfed_add_assoc_pixel(zval *arr, const char *key, int twips) {
     }
 }
 
-PHP_METHOD(SWFEditor, getHeaderInfo) {
+SWFED_METHOD(getHeaderInfo) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
     array_init(return_value);
@@ -421,7 +672,7 @@ PHP_METHOD(SWFEditor, getHeaderInfo) {
     swfed_add_assoc_pixel(return_value, "y_max", swf->header_movie.frame_size.y_max);
 }
 
-PHP_METHOD(SWFEditor, setHeaderInfo) {
+SWFED_METHOD(setHeaderInfo) {
     static const char *rect_keys[4] = { "x_min", "y_min", "x_max", "y_max" };
     zval *header_info = NULL;
     swf_object_t *swf = NULL;
@@ -509,7 +760,7 @@ static int swfed_tag_detail_supported(int code) {
     return 0;
 }
 
-PHP_METHOD(SWFEditor, getTagList) {
+SWFED_METHOD(getTagList) {
     int i = 0;
     zval data;
     swf_object_t *swf = NULL;
@@ -541,7 +792,7 @@ PHP_METHOD(SWFEditor, getTagList) {
     }
 }
 
-PHP_METHOD(SWFEditor, getTagDetail) {
+SWFED_METHOD(getTagDetail) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     swf_tag_t *tag = NULL;
@@ -706,7 +957,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
     }
 }
 
-PHP_METHOD(SWFEditor, getTagData) {
+SWFED_METHOD(getTagData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
@@ -727,7 +978,7 @@ PHP_METHOD(SWFEditor, getTagData) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceTagData) {
+SWFED_METHOD(replaceTagData) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long tag_seqno = 0;
@@ -754,7 +1005,7 @@ PHP_METHOD(SWFEditor, replaceTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getTagDataByCID) {
+SWFED_METHOD(getTagDataByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     char *data = NULL;
@@ -774,7 +1025,7 @@ PHP_METHOD(SWFEditor, getTagDataByCID) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceTagDataByCID) {
+SWFED_METHOD(replaceTagDataByCID) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -801,7 +1052,7 @@ PHP_METHOD(SWFEditor, replaceTagDataByCID) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getTagContentsByCID) {
+SWFED_METHOD(getTagContentsByCID) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     char *data_ref = NULL;
@@ -823,7 +1074,7 @@ PHP_METHOD(SWFEditor, getTagContentsByCID) {
     RETURN_STR(str);
 }
 
-PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
+SWFED_METHOD(replaceTagContentsByCID) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -850,7 +1101,7 @@ PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, removeTag) {
+SWFED_METHOD(removeTag) {
     zend_long tag_seqno = 0;
     zend_long tag_seqno_in_sprite = -1;
     zend_bool index_is_null = 1;
@@ -877,7 +1128,7 @@ PHP_METHOD(SWFEditor, removeTag) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, printTagData) {
+SWFED_METHOD(printTagData) {
     char *data = NULL;
     size_t data_len = 0;
     swf_object_t *swf = NULL;
@@ -901,7 +1152,7 @@ PHP_METHOD(SWFEditor, printTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getShapeData) {
+SWFED_METHOD(getShapeData) {
     zend_long cid = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
@@ -921,7 +1172,7 @@ PHP_METHOD(SWFEditor, getShapeData) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceShapeData) {
+SWFED_METHOD(replaceShapeData) {
     char *data = NULL;
     size_t data_len = 0;
     zend_long cid = 0;
@@ -948,7 +1199,7 @@ PHP_METHOD(SWFEditor, replaceShapeData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, setShapeAdjustMode) {
+SWFED_METHOD(setShapeAdjustMode) {
     swf_object_t *swf = NULL;
     zend_long mode = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -960,7 +1211,7 @@ PHP_METHOD(SWFEditor, setShapeAdjustMode) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getShapeIdListByBitmapRef) {
+SWFED_METHOD(getShapeIdListByBitmapRef) {
     zend_long bitmap_id;
     int *bitmap_id_list, bitmap_id_list_num;
     swf_object_t *swf = NULL;
@@ -994,7 +1245,7 @@ PHP_METHOD(SWFEditor, getShapeIdListByBitmapRef) {
     }
 }
 
-PHP_METHOD(SWFEditor, getBitmapSize) {
+SWFED_METHOD(getBitmapSize) {
     zend_long bitmap_id;
     swf_object_t *swf = NULL;
     int width, height;
@@ -1014,7 +1265,7 @@ PHP_METHOD(SWFEditor, getBitmapSize) {
     add_assoc_long(return_value, "height", (long) height);
 }
 
-PHP_METHOD(SWFEditor, getJpegData) {
+SWFED_METHOD(getJpegData) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -1033,7 +1284,7 @@ PHP_METHOD(SWFEditor, getJpegData) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, getJpegAlpha) {
+SWFED_METHOD(getJpegAlpha) {
     zend_long image_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -1052,7 +1303,7 @@ PHP_METHOD(SWFEditor, getJpegAlpha) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceJpegData) {
+SWFED_METHOD(replaceJpegData) {
     char *data = NULL, *alpha_data = NULL;
     size_t data_len = 0 , alpha_data_len = 0;
     zend_long image_id = 0;
@@ -1087,7 +1338,7 @@ PHP_METHOD(SWFEditor, replaceJpegData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getPNGData) {
+SWFED_METHOD(getPNGData) {
 #ifndef HAVE_PNG
     fprintf(stderr, "getPNGData: no png library\n");
     RETURN_FALSE;
@@ -1111,7 +1362,7 @@ PHP_METHOD(SWFEditor, getPNGData) {
 #endif /* HAVE_PNG */
 }
 
-PHP_METHOD(SWFEditor, replacePNGData) {
+SWFED_METHOD(replacePNGData) {
 #ifndef HAVE_PNG
     fprintf(stderr, "replacePNGData: no png library\n");
     RETURN_FALSE;
@@ -1154,7 +1405,7 @@ PHP_METHOD(SWFEditor, replacePNGData) {
 #endif /* HAVE_PNG */
 }
 
-PHP_METHOD(SWFEditor, replaceGIFData) {
+SWFED_METHOD(replaceGIFData) {
 #ifndef HAVE_GIF
     fprintf(stderr, "replaceGIFData: no gif library\n");
     RETURN_FALSE;
@@ -1186,7 +1437,7 @@ PHP_METHOD(SWFEditor, replaceGIFData) {
 #endif /* HAVE_GIF */
 }
 
-PHP_METHOD(SWFEditor, replaceBitmapData) {
+SWFED_METHOD(replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
     size_t data_len = 0 , alpha_data_len = 0;
     zval *arg1 = NULL, *arg4 = NULL;
@@ -1295,7 +1546,7 @@ PHP_METHOD(SWFEditor, replaceBitmapData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, convertBitmapDataToJpegTag) {
+SWFED_METHOD(convertBitmapDataToJpegTag) {
     swf_object_t *swf = NULL;
     int ret;
     SWFED_GET_OBJECT(swf);
@@ -1306,7 +1557,7 @@ PHP_METHOD(SWFEditor, convertBitmapDataToJpegTag) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, applyShapeMatrixFactor) {
+SWFED_METHOD(applyShapeMatrixFactor) {
     zend_long shape_id = 0;
     double scale_x = 1, scale_y = 1, rotate_rad = 0;
     zend_long trans_x = 0, trans_y = 0;
@@ -1329,7 +1580,7 @@ PHP_METHOD(SWFEditor, applyShapeMatrixFactor) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, applyShapeRectFactor) {
+SWFED_METHOD(applyShapeRectFactor) {
     zend_long shape_id = 0;
     double scale_x = 1, scale_y = 1;
     zend_long trans_x = 0, trans_y = 0;
@@ -1361,7 +1612,7 @@ PHP_METHOD(SWFEditor, adjustShapeScaleToBitmap) {
 }
 */
 
-PHP_METHOD(SWFEditor, getSoundData) {
+SWFED_METHOD(getSoundData) {
     zend_long sound_id = 0;
     unsigned long len = 0;
     unsigned char *data = NULL;
@@ -1380,7 +1631,7 @@ PHP_METHOD(SWFEditor, getSoundData) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceMLDData) {
+SWFED_METHOD(replaceMLDData) {
     zend_long sound_id = 0;
     char *data = NULL;
     size_t data_len = 0;
@@ -1407,7 +1658,7 @@ PHP_METHOD(SWFEditor, replaceMLDData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getEditString) {
+SWFED_METHOD(getEditString) {
     char *var_name = NULL;
     size_t var_name_len = 0;
     swf_object_t *swf = NULL;
@@ -1432,7 +1683,7 @@ PHP_METHOD(SWFEditor, getEditString) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, replaceEditString) {
+SWFED_METHOD(replaceEditString) {
     char *var_name = NULL, *ini_text = NULL;
     size_t var_name_len = 0, ini_text_len = 0;
     swf_object_t *swf = NULL;
@@ -1451,7 +1702,7 @@ PHP_METHOD(SWFEditor, replaceEditString) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, getActionData) {
+SWFED_METHOD(getActionData) {
     zend_long tag_seqno = 0;
     swf_object_t *swf = NULL;
     unsigned char *data = NULL;
@@ -1471,7 +1722,7 @@ PHP_METHOD(SWFEditor, getActionData) {
     free(data);
 }
 
-PHP_METHOD(SWFEditor, disasmActionData) {
+SWFED_METHOD(disasmActionData) {
     char *data = NULL;
     size_t data_len = 0;
     bitstream_t *bs = NULL;
@@ -1513,7 +1764,7 @@ _array_to_keyvalue(zval *arr) {
     return kv;
 }
 
-PHP_METHOD(SWFEditor, setActionVariables) {
+SWFED_METHOD(setActionVariables) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
@@ -1538,7 +1789,7 @@ PHP_METHOD(SWFEditor, setActionVariables) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, replaceActionStrings) {
+SWFED_METHOD(replaceActionStrings) {
     zval *arr;
     y_keyvalue_t *kv;
     swf_object_t *swf = NULL;
@@ -1561,7 +1812,7 @@ PHP_METHOD(SWFEditor, replaceActionStrings) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, replaceMovieClip) {
+SWFED_METHOD(replaceMovieClip) {
     char *instance_name = NULL, *swf_data = NULL;
     size_t instance_name_len = 0, swf_data_len = 0;
     swf_object_t *swf = NULL;
@@ -1606,7 +1857,7 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, rebuild) {
+SWFED_METHOD(rebuild) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
     if (swf_object_rebuild(swf)) {
@@ -1615,7 +1866,7 @@ PHP_METHOD(SWFEditor, rebuild) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, purgeUselessContents) {
+SWFED_METHOD(purgeUselessContents) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
     if (swf_object_purge_contents(swf)) {
@@ -1624,7 +1875,7 @@ PHP_METHOD(SWFEditor, purgeUselessContents) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, setCompressLevel) {
+SWFED_METHOD(setCompressLevel) {
     zend_long compress_level = 6 ; // Z_DEFAULT_COMPRESSION
     swf_object_t *swf;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1642,7 +1893,7 @@ PHP_METHOD(SWFEditor, setCompressLevel) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, isShapeTagData) {
+SWFED_METHOD(isShapeTagData) {
     char *data = NULL;
     size_t data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1656,7 +1907,7 @@ PHP_METHOD(SWFEditor, isShapeTagData) {
     RETURN_TRUE;
 }
 
-PHP_METHOD(SWFEditor, isBitmapTagData) {
+SWFED_METHOD(isBitmapTagData) {
     char *data = NULL;
     size_t data_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
@@ -1668,6 +1919,17 @@ PHP_METHOD(SWFEditor, isBitmapTagData) {
         RETURN_FALSE;
     }
     RETURN_TRUE;
+}
+
+/* the error messages of the last SWFEditor method call (one per line), or null */
+PHP_METHOD(SWFEditor, getLastError) {
+    if (zend_parse_parameters_none() == FAILURE) {
+        RETURN_THROWS();
+    }
+    if (SWFED_G(last_error) == NULL) {
+        RETURN_NULL();
+    }
+    RETURN_STRINGL(SWFED_G(last_error), SWFED_G(last_error_len));
 }
 
 
@@ -1717,6 +1979,7 @@ static zend_object *swfed_clone_object(zval *old_zv) {
     swfed_object *new_intern = swfed_from_obj(new_obj);
     swf_object_t *from = old_intern->swf, *to = new_intern->swf;
 
+    swfed_clear_last_error();
     zend_objects_clone_members(new_obj, old_obj);
     new_intern->constructed = old_intern->constructed;
     if (from && to) {
@@ -1734,6 +1997,7 @@ static zend_object *swfed_clone_object(zval *old_zv) {
         to->shape_adjust_mode = from->shape_adjust_mode;
         to->compress_level = from->compress_level;
     }
+    swfed_flush_pending();
     return new_obj;
 }
 

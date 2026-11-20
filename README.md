@@ -142,9 +142,12 @@ Strings in SWF are NUL-terminated, so a NUL byte in a new string cuts it short.
 ### Errors
 
 - Most methods return `false` on failure. SWF-level errors do not throw.
-- Most diagnostics are written by the C code directly to the process's stderr.
-  They are not PHP warnings, so `error_reporting()`, `@` and error handlers
-  do not see them.
+- The C code describes a problem with a message, for example
+  `swf_header_parse: input too short (3)`. `SWFEditor::getLastError()` returns
+  the messages of the last method call. Where else they go is set by
+  `swfed.error_output` (see below); by default they are written to the process's
+  stderr. They are then not PHP warnings, so `error_reporting()`, `@` and error
+  handlers do not see them.
 - A few failures raise a PHP `E_WARNING` and return `false`; they are listed
   with the methods below. Passing `null` as the first argument of
   `replaceBitmapData()`, `applyShapeMatrixFactor()`, `applyShapeRectFactor()`,
@@ -153,13 +156,44 @@ Strings in SWF are NUL-terminated, so a NUL byte in a new string cuts it short.
   "1st arg must be not NULL".
 - Wrong argument types or counts throw `TypeError` / `ArgumentCountError` on
   PHP 8. On PHP 7 they raise a warning and the method returns `false` or `null`.
-- `swfInfo()`, `printTagData()` and `disasmActionData()` print with C `printf()`.
-  The output goes straight to the process's stdout and bypasses PHP output
-  buffering (`ob_start()` does not capture it). Use them from the CLI.
+- `swfInfo()`, `printTagData()` and `disasmActionData()` print through the PHP
+  output (like `echo`), so `ob_start()` captures it.
+- The printed output and the messages for `stderr` / `warning` are written
+  after the method has finished with the movie, not while it is running, in the
+  order the C code produced them. An output buffer callback or an error handler
+  can therefore call methods of the same `SWFEditor`, even `input()`. An
+  exception thrown there drops the output that has not been written yet
+  (`getLastError()` still has the messages).
 - If a `replace*Data()` call fails, the target bitmap tag may already have been
   changed (for example its tag type switched) and can be left broken; a tag left
   with no data at all is silently left out of `output()`. Keep the original SWF
   and call `input()` again after a failed replace.
+
+#### `swfed.error_output`
+
+An ini setting (`PHP_INI_ALL`: php.ini, `ini_set()`, ...) for the messages of the
+C code:
+
+| value | the messages go to |
+|---|---|
+| `stderr` (default) | the process's stderr |
+| `warning` | PHP, as one `E_WARNING` per message (`SWFEditor::method(): message`), so error handlers see them |
+| `none` | nowhere; only `getLastError()` has them (`off` is the same) |
+
+The value is not case sensitive (`Off`, `Warning`); php.ini turns a bare `Off` /
+`None` into an empty string, which also means `none`. An unknown value raises
+`E_WARNING`; `ini_set()` returns `false` and keeps the old value, and a wrong
+value in php.ini falls back to `stderr`.
+
+```php
+ini_set('swfed.error_output', 'none');
+if ($swf->input($data) === false) {
+    error_log(SWFEditor::getLastError() ?? 'input() failed');
+}
+```
+
+PHP warnings that a method raises for its arguments (for example a character ID
+out of range) do not depend on this setting and are not in `getLastError()`.
 
 ### The SWFEditor object
 
@@ -243,7 +277,8 @@ that swfed rebuilds. `-1` (zlib default, the initial value) to `9`. Out of range
 
 #### `swfInfo(): bool`
 
-Prints a readable dump of the header and every tag to stdout (see Errors above).
+Prints a readable dump of the header and every tag through the PHP output
+(see Errors above), so `ob_start()` can capture it.
 Always returns `true`.
 
 #### `rebuild(): bool`
@@ -342,8 +377,8 @@ value means "not given". Returns `false` if an index is out of range or the tag 
 
 #### `printTagData(string $data): bool`
 
-Prints one complete tag (e.g. from `getTagData()`) to stdout in the `swfInfo()`
-format. Returns `false` if `$data` is not a complete tag.
+Prints one complete tag (e.g. from `getTagData()`) through the PHP output in the
+`swfInfo()` format. Returns `false` if `$data` is not a complete tag.
 
 #### `isShapeTagData(string $data): bool`
 
@@ -461,8 +496,8 @@ Replaces bitmap `$image_id` with a PNG image:
 Grayscale PNGs and PNGs with more than 8 bits per channel are not supported.
 Option keys:
 
-- `rgb15` (bool): store an RGB PNG as 15-bit color (format 4). Ignored, with a
-  message on stderr, for other PNG types.
+- `rgb15` (bool): store an RGB PNG as 15-bit color (format 4). Ignored, with an
+  error message (see Errors), for other PNG types.
 
 If given, `$options` must be an array; `null` throws `TypeError`.
 Returns `false` if there is no bitmap with that ID or the PNG cannot be converted.
@@ -551,8 +586,8 @@ is not an action tag.
 
 #### `disasmActionData(string $bytecode): bool`
 
-Prints a disassembly of `$bytecode` (e.g. from `getActionData()`) to stdout, one
-action per line. Does not use the loaded movie. Always returns `true`.
+Prints a disassembly of `$bytecode` (e.g. from `getActionData()`) through the PHP
+output, one action per line. Does not use the loaded movie. Always returns `true`.
 
 #### `setActionVariables(array $vars): bool`
 
@@ -598,6 +633,16 @@ on PHP 8.1+). Returns `false` if `$target` is not found or `$swf` cannot be
 parsed.
 
 ### Other
+
+#### `static getLastError(): ?string`
+
+Returns the messages that the C code produced during the last `SWFEditor` method
+call (one per line), or `null` if there were none. Every method clears them
+when it starts, also when it returns early because of a wrong argument, so they
+never come from an earlier call. `clone` clears them too; the constructor and
+`getLastError()` itself do not. It does not depend on `swfed.error_output`. A method can return
+`false` with no message (for example `getTagDetail()` for a tag it cannot
+describe), so the result may be `null` even after a failure.
 
 #### `_destroy_and_exit(): bool`
 

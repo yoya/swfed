@@ -1,5 +1,5 @@
 /* This is a generated file, edit the .stub.php file instead.
- * Stub hash: 86108e2c1250f91cab72e7c3a74ef96190b04245 */
+ * Stub hash: 83962a44ceb7bad2b1016379154eae4cc5252df2 */
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor___construct, 0, 0, 0)
 ZEND_END_ARG_INFO()
@@ -156,6 +156,8 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_isBitmapTagData arginfo_class_SWFEditor_printTagData
 
+#define arginfo_class_SWFEditor_getLastError arginfo_class_SWFEditor___construct
+
 
 ZEND_METHOD(SWFEditor, __construct);
 ZEND_METHOD(SWFEditor, input);
@@ -203,6 +205,7 @@ ZEND_METHOD(SWFEditor, rebuild);
 ZEND_METHOD(SWFEditor, purgeUselessContents);
 ZEND_METHOD(SWFEditor, isShapeTagData);
 ZEND_METHOD(SWFEditor, isBitmapTagData);
+ZEND_METHOD(SWFEditor, getLastError);
 
 
 static const zend_function_entry class_SWFEditor_methods[] = {
@@ -252,6 +255,7 @@ static const zend_function_entry class_SWFEditor_methods[] = {
 	ZEND_ME(SWFEditor, purgeUselessContents, arginfo_class_SWFEditor_purgeUselessContents, ZEND_ACC_PUBLIC)
 	ZEND_ME(SWFEditor, isShapeTagData, arginfo_class_SWFEditor_isShapeTagData, ZEND_ACC_PUBLIC)
 	ZEND_ME(SWFEditor, isBitmapTagData, arginfo_class_SWFEditor_isBitmapTagData, ZEND_ACC_PUBLIC)
+	ZEND_ME(SWFEditor, getLastError, arginfo_class_SWFEditor_getLastError, ZEND_ACC_PUBLIC|ZEND_ACC_STATIC)
 	ZEND_FE_END
 };
 

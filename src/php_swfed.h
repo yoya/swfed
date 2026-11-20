@@ -42,31 +42,36 @@ PHP_RINIT_FUNCTION(swfed);
 PHP_RSHUTDOWN_FUNCTION(swfed);
 PHP_MINFO_FUNCTION(swfed);
 
-/*
-  	Declare any global variables you may need between the BEGIN
-	and END macros here:
+/* swfed.error_output */
+#define SWFED_ERROR_OUTPUT_STDERR  0
+#define SWFED_ERROR_OUTPUT_WARNING 1
+#define SWFED_ERROR_OUTPUT_NONE    2
+
+/* output of the C library is not passed to PHP while the library runs
+ * (the user code it could run would change the data the library is walking),
+ * it is kept in pending and written out after the method returns. */
+#define SWFED_PENDING_PRINT   0 /* swfInfo() etc.: PHPWRITE() */
+#define SWFED_PENDING_WARNING 1 /* swfed.error_output=warning: E_WARNING */
+#define SWFED_PENDING_STDERR  2 /* swfed.error_output=stderr: kept in order with the others */
+typedef struct swfed_pending_segment_ {
+    int kind;
+    size_t length; /* the bytes are in pending, in order */
+} swfed_pending_segment;
 
 ZEND_BEGIN_MODULE_GLOBALS(swfed)
-	long  global_value;
-	char *global_string;
+    int error_output;   // swfed.error_output: SWFED_ERROR_OUTPUT_*
+    char *last_error;   // malloc'ed, SWFEditor::getLastError()
+    size_t last_error_len;
+    size_t last_error_cap;
+    char *pending;      // malloc'ed, output waiting for the library to return
+    size_t pending_len;
+    size_t pending_cap;
+    swfed_pending_segment *pending_segments; // malloc'ed
+    size_t pending_segments_num;
+    size_t pending_segments_cap;
 ZEND_END_MODULE_GLOBALS(swfed)
-*/
 
-/* In every utility function you add that needs to use variables
-   in php_swfed_globals, call TSRMLS_FETCH(); after declaring other
-   variables used by that function, or better yet, pass in TSRMLS_CC
-   after the last function argument and declare your utility function
-   with TSRMLS_DC after the last declared argument.  Always refer to
-   the globals in your function as SWFED_G(variable).  You are
-   encouraged to rename these macros something shorter, see
-   examples in any other php module directory.
-*/
-
-#ifdef ZTS
-#define SWFED_G(v) TSRMG(swfed_globals_id, zend_swfed_globals *, v)
-#else
-#define SWFED_G(v) (swfed_globals.v)
-#endif
+#define SWFED_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(swfed, v)
 
 #define REGISTER_SWFED_CLASS_CONST_LONG(const_name, value) \
     zend_declare_class_constant_long(swfed_entry_ptr, const_name, sizeof(const_name)-1, (long)value);

@@ -26,6 +26,28 @@ typedef struct my_png_buffer_ {
 } my_png_buffer;
 
 /*
+ * libpng writes its own errors and warnings to stderr by default.
+ * These handlers do what the default ones do, but through fprintf(), which
+ * is redirected to the handlers of the library (swf_set_output_handler()).
+ */
+
+static void
+swf_png_error_fn(png_structp png_ptr, png_const_charp message) {
+    fprintf(stderr, "libpng error: %s\n", message ? message : "undefined");
+#if PNG_LIBPNG_VER >= 10500
+    png_longjmp(png_ptr, 1);
+#else
+    longjmp(png_jmpbuf(png_ptr), 1);
+#endif
+}
+
+static void
+swf_png_warning_fn(png_structp png_ptr, png_const_charp message) {
+    (void) png_ptr;
+    fprintf(stderr, "libpng warning: %s\n", message ? message : "undefined");
+}
+
+/*
  * png read
  */
 
@@ -131,7 +153,7 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
         return NULL;
     }
     png_ptr = png_create_read_struct
-        (PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
+        (PNG_LIBPNG_VER_STRING, NULL, swf_png_error_fn, swf_png_warning_fn);
     if (! png_ptr) {
         fprintf(stderr, "pngconv_png2lossless: can't create read_struct\n");
         return NULL;
@@ -416,7 +438,8 @@ pngconv_lossless2png(void *image_data,
     png_buff.data = NULL;
     png_buff.data_len = 0;
     png_buff.data_offset = 0;
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,NULL,NULL);
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL,
+                                       swf_png_error_fn, swf_png_warning_fn);
     if (! png_ptr) {
         fprintf(stderr, "jpegconv_lossless2png: can't create write_struct\n");
         return NULL;

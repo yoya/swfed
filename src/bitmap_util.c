@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> // strncmp
+#include "swf_define.h"
 #include "jpeg_segment.h"
 #include "bitmap_util.h"
 

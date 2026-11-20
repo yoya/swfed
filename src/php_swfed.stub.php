@@ -77,5 +77,6 @@ class SWFEditor
     public function purgeUselessContents(): bool {}
     public function isShapeTagData(string $data): bool {}
     public function isBitmapTagData(string $data): bool {}
+    public static function getLastError(): ?string {}
 }
 

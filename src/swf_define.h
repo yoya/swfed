@@ -7,6 +7,10 @@
 #include "config.h"
 #endif
 
+#include "swf_output.h"
+#define printf swf_printf
+#define fprintf swf_fprintf
+
 #ifndef SWFED_JPEG_RST_SCAN_STDJPEG
 #define SWFED_JPEG_RST_SCAN_STDJPEG 0 // default
 #endif
