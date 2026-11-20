@@ -112,13 +112,71 @@ ZEND_GET_MODULE(swfed)
 
 /* {{{ PHP_INI
  */
-/* Remove comments and fill if you need to have entries in php.ini
+/* swfed.max_uncompressed_size: upper limit of the SWF size after decompression
+ * (the header file_length of a compressed SWF: CWS / ZWS). The C library
+ * allocates with malloc(), outside memory_limit.
+ * 0 (default) uses memory_limit, -1 means unlimited. */
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("swfed.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_swfed_globals, swfed_globals)
-    STD_PHP_INI_ENTRY("swfed.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_swfed_globals, swfed_globals)
+    PHP_INI_ENTRY("swfed.max_uncompressed_size", "0", PHP_INI_ALL, NULL)
 PHP_INI_END()
-*/
 /* }}} */
+
+static zend_long swfed_parse_size(const char *value) {
+#if PHP_VERSION_ID >= 80200
+    zend_string *str = zend_string_init(value, strlen(value), 0);
+    zend_string *errstr = NULL;
+    zend_long size = zend_ini_parse_quantity(str, &errstr);
+    zend_string_release(str);
+    if (errstr) {
+        zend_string_release(errstr);
+    }
+    return size;
+#else
+    return zend_atol(value, strlen(value));
+#endif
+}
+
+/* returns -1 for unlimited */
+static zend_long swfed_max_uncompressed_size(void) {
+    const char *value = INI_STR("swfed.max_uncompressed_size");
+    zend_long limit = (value && value[0]) ? swfed_parse_size(value) : 0;
+    if (limit == 0) {
+        if ((PG(memory_limit) == 0) ||
+            (PG(memory_limit) >= (size_t) ZEND_LONG_MAX)) {
+            return -1;
+        }
+        return (zend_long) PG(memory_limit);
+    }
+    return (limit < 0) ? -1 : limit;
+}
+
+/* checks the file_length in the header of a compressed SWF (CWS / ZWS), which
+ * is the size after decompression; warns and returns 1 if too large.
+ * An uncompressed SWF (FWS) needs no decompression, so its memory use is
+ * proportional to the input, and non SWF data is rejected by the C library. */
+static int swfed_check_uncompressed_size(const char *data, size_t data_len) {
+    zend_long limit;
+    unsigned long file_length;
+    if ((data_len < 8) ||
+        ((memcmp(data, "CWS", 3) != 0) && (memcmp(data, "ZWS", 3) != 0))) {
+        return 0;
+    }
+    limit = swfed_max_uncompressed_size();
+    if (limit < 0) {
+        return 0;
+    }
+    file_length = (unsigned long) (unsigned char) data[4] |
+                  ((unsigned long) (unsigned char) data[5] << 8) |
+                  ((unsigned long) (unsigned char) data[6] << 16) |
+                  ((unsigned long) (unsigned char) data[7] << 24);
+    if (file_length > (zend_ulong) limit) {
+        php_error_docref(NULL, E_WARNING,
+                         "SWF file_length(%lu) exceeds the limit(" ZEND_LONG_FMT
+                         ") of swfed.max_uncompressed_size", file_length, limit);
+        return 1;
+    }
+    return 0;
+}
 
 /* {{{ php_swfed_init_globals
  */
@@ -176,10 +234,7 @@ static swf_object_t  *get_swf_object(zval *obj);
  */
 PHP_MINIT_FUNCTION(swfed)
 {
-    /* If you have INI entries, uncomment these lines
-       ZEND_INIT_MODULE_GLOBALS(swfed, php_swfed_init_globals, NULL);
-       REGISTER_INI_ENTRIES();
-       */
+    REGISTER_INI_ENTRIES();
     swfed_entry_ptr = register_class_SWFEditor();
     swfed_entry_ptr->create_object = swfed_create_object;
     memcpy(&swfed_object_handlers, zend_get_std_object_handlers(),
@@ -210,9 +265,7 @@ PHP_MINIT_FUNCTION(swfed)
  */
 PHP_MSHUTDOWN_FUNCTION(swfed)
 {
-        /* uncomment this line if you have INI entries
         UNREGISTER_INI_ENTRIES();
-        */
         return SUCCESS;
 }
 /* }}} */
@@ -257,9 +310,7 @@ PHP_MINFO_FUNCTION(swfed)
         php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
         php_info_print_table_end();
 
-        /* Remove comments if you have entries in php.ini
         DISPLAY_INI_ENTRIES();
-        */
 }
 /* }}} */
 
@@ -296,6 +347,9 @@ PHP_METHOD(SWFEditor, input) {
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
+    if (swfed_check_uncompressed_size(data, data_len)) {
+        RETURN_FALSE;
+    }
     result = swf_object_input(swf, (unsigned char *) data, data_len);
     if (result) {
         RETURN_FALSE;
@@ -1496,6 +1550,9 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
         break;
     }
     SWFED_GET_OBJECT(swf);
+    if (swfed_check_uncompressed_size(swf_data, swf_data_len)) {
+        RETURN_FALSE;
+    }
     result = swf_object_replace_movieclip(swf,
                                           (unsigned char *)instance_name,
                                           instance_name_len,
