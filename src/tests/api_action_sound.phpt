@@ -66,5 +66,5 @@ bool(true)
 format=15 sound_data_len=8
 bool(false)
 * disasmActionData
-bool(true)
+%Abool(true)
 %A===DONE===%A

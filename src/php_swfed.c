@@ -548,6 +548,7 @@ PHP_MINFO_FUNCTION(swfed)
 {
         int gif_support = 0;
         int png_support = 0;
+        int lzma_support = 0;
         php_info_print_table_start();
         php_info_print_table_header(2, "SWF Editor support", "enabled");
         php_info_print_table_row(2, "SWF Editor version", PHP_SWFED_VERSION);
@@ -557,8 +558,12 @@ PHP_MINFO_FUNCTION(swfed)
 #ifdef HAVE_GIF
         gif_support = 1;
 #endif
+#ifdef HAVE_LZMA
+        lzma_support = 1;
+#endif
         php_info_print_table_row(2, "SWF Editor PNG support", png_support?"yes":"no");
         php_info_print_table_row(2, "SWF Editor GIF support", gif_support?"yes":"no");
+        php_info_print_table_row(2, "SWF Editor LZMA (ZWS) support", lzma_support?"yes":"no");
         php_info_print_table_end();
 
         DISPLAY_INI_ENTRIES();
@@ -651,8 +656,13 @@ SWFED_METHOD(getHeaderInfo) {
     array_init(return_value);
     if (memcmp(swf->header.magic, "CWS", 3) == 0) {
         add_assoc_bool(return_value, "compress", 1);
+        add_assoc_bool(return_value, "lzma", 0);
+    } else if (memcmp(swf->header.magic, "ZWS", 3) == 0) {
+        add_assoc_bool(return_value, "compress", 1);
+        add_assoc_bool(return_value, "lzma", 1);
     } else { // FWS
         add_assoc_bool(return_value, "compress", 0);
+        add_assoc_bool(return_value, "lzma", 0);
     }
     add_assoc_long(return_value, "version", swf->header.version);
 
@@ -667,7 +677,7 @@ SWFED_METHOD(setHeaderInfo) {
     zval *header_info = NULL;
     swf_object_t *swf = NULL;
     HashTable *header_table = NULL;
-    zval *tmp = NULL;
+    zval *tmp = NULL, *tmp2 = NULL;
     zend_long version = -1;
     int i, has_rect[4] = { 0, 0, 0, 0 }, rect_twips[4] = { 0, 0, 0, 0 };
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
@@ -704,12 +714,27 @@ SWFED_METHOD(setHeaderInfo) {
         rect_twips[i] = (int) (twips < 0 ? twips - 0.5 : twips + 0.5);
     }
 
-    // FWS or CWS
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"))) != NULL) {
-        if (zend_is_true(tmp)) {
+    // compress => false: FWS, lzma => true: ZWS, otherwise compress => true: CWS
+    // (an already ZWS movie stays ZWS unless lzma => false)
+    // Nothing has been changed yet when this fails with RETURN_FALSE.
+    tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"));
+    tmp2 = zend_hash_str_find(header_table, ZEND_STRL("lzma"));
+    if (tmp && (zend_is_true(tmp) == 0)) {
+        memcpy(swf->header.magic, "FWS", 3);
+    } else if (tmp2 && zend_is_true(tmp2)) {
+#ifdef HAVE_LZMA
+        memcpy(swf->header.magic, "ZWS", 3);
+#else
+        php_error_docref(NULL, E_WARNING, "LZMA (ZWS) is not supported (built without liblzma)");
+        RETURN_FALSE;
+#endif
+    } else if (tmp2) { // lzma => false
+        if (tmp || (memcmp(swf->header.magic, "ZWS", 3) == 0)) {
             memcpy(swf->header.magic, "CWS", 3);
-        } else {
-            memcpy(swf->header.magic, "FWS", 3);
+        }
+    } else if (tmp) { // compress => true
+        if (memcmp(swf->header.magic, "ZWS", 3) != 0) {
+            memcpy(swf->header.magic, "CWS", 3);
         }
     }
     if (version >= 0) {
@@ -728,6 +753,7 @@ static int swfed_tag_detail_supported(int code) {
     switch (code) {
       case 2: case 4: case 6: case 12: case 14: case 20: case 21: case 22:
       case 26: case 32: case 35: case 36: case 37: case 39: case 46: case 59:
+      case 83: case 84:
         return 1;
     }
     return 0;
@@ -883,11 +909,13 @@ SWFED_METHOD(getTagDetail) {
       case 22: // DefineShape2;
       case 32: // DefineShape3;
       case 46: // DefineMorphShape;
+      case 83: // DefineShape4;
+      case 84: // DefineMorphShape2;
         tag_shape = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
-        if (tag->code == 46) {
-            /* DefineMorphShape keeps the style arrays in morph_shape_with_style;
+        if (tag_shape->is_morph) { // DefineMorphShape / DefineMorphShape2
+            /* They keep the style arrays in morph_shape_with_style;
              * shape_with_style is left empty. */
             add_assoc_long(return_value, "fill_styles.count",
                            tag_shape->morph_shape_with_style.styles.fill_styles.count);

@@ -1,41 +1,46 @@
-// $Id:$
 // vim:ft=javascript
 
-ARG_ENABLE("swfed", "SWFEditor support", "yes,shared");
+ARG_ENABLE("swfed", "SWFEditor support", "no");
 
-if (PHP_SWFED == "yes") {
-	CHECK_LIB("libpng_a.lib;libpng.lib", "swfed", PHP_SWFED);
-	CHECK_LIB("giflib_a.lib;giflib.lib", "swfed", PHP_SWFED);
+if (PHP_SWFED != "no") {
+	if (CHECK_LIB("zlib_a.lib;zlib.lib", "swfed", PHP_SWFED) &&
+		CHECK_HEADER_ADD_INCLUDE("zlib.h", "CFLAGS_SWFED", PHP_SWFED + ";" + PHP_PHP_BUILD + "\\include")) {
 
-	EXTENSION("swfed", "php_swfed.c", null, "-Iext/swfed/libswfed", "php_swfed.dll");
+		// libpng and giflib are optional: without them PNG / GIF support is disabled.
+		// HAVE_PNG / HAVE_GIF go to CFLAGS_SWFED, since the library sources
+		// (swf_*.c) don't include config.w32.h.
+		if (CHECK_LIB("libpng_a.lib;libpng.lib", "swfed", PHP_SWFED) &&
+			CHECK_HEADER_ADD_INCLUDE("png.h", "CFLAGS_SWFED", PHP_SWFED + ";" + PHP_PHP_BUILD + "\\include\\libpng16")) {
+			ADD_FLAG("CFLAGS_SWFED", "/D HAVE_PNG");
+		} else {
+			WARNING("swfed: libpng not found, PNG support disabled");
+		}
+		if (CHECK_LIB("giflib_a.lib;giflib.lib;gif.lib", "swfed", PHP_SWFED) &&
+			CHECK_HEADER_ADD_INCLUDE("gif_lib.h", "CFLAGS_SWFED", PHP_SWFED + ";" + PHP_PHP_BUILD + "\\include")) {
+			ADD_FLAG("CFLAGS_SWFED", "/D HAVE_GIF");
+		} else {
+			WARNING("swfed: giflib not found, GIF support disabled");
+		}
 
-	ADD_SOURCES("ext/swfed", "php_swfed.c \
-		swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
-		swf_jpeg.c jpeg_segment.c bitmap_util.c swf_png.c swf_gif.c \
-		swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
-		swf_rect.c swf_matrix.c swf_action.c \
-		swf_shape_with_style.c swf_styles.c swf_fill_style_array.c \
-		swf_fill_style.c swf_fill_style_solid.c swf_fill_style_gradient.c \
-		swf_fill_style_bitmap.c swf_morph_shape_with_style.c \
-		swf_line_style_array.c swf_line_style.c swf_styles_count.c \
-		swf_shape_record.c swf_shape_record_end.c swf_shape_record_setup.c \
-		swf_shape_record_edge.c swf_gradient.c  swf_gradient_record.c \
-		swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
-		swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
-		swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
-		swf_tag_button.c swf_button_record.c swf_button_condaction.c", "swfed");
-	AC_DEFINE("HAVE_PHP_SWFED", 1, "SWFEditor support");
-
-	ADD_FLAG("CFLAGS_SWFED", " \
-/D HAVE_GIFLIB \
-/D HAVE_LIBPNG \
-/D HAVE_GIF \
-/D HAVE_PNG \
-/D MSWIN32 \
-		");
-	PHP_INSTALL_HEADERS("ext/swfed/", "php_swfed.h");
-	if (!PHP_SWFED_SHARED) {
-		ADD_DEF_FILE("ext\\zlib\\php_zlib.def");
-		ADD_DEF_FILE("ext\\swfed\\giflib.def");
+		EXTENSION("swfed", "php_swfed.c", PHP_SWFED_SHARED, "/DZEND_ENABLE_STATIC_TSRMLS_CACHE=1");
+		ADD_SOURCES(configure_module_dirname, "\
+			swf_object.c swf_header.c swf_tag.c bitstream.c swf_debug.c \
+			swf_jpeg.c jpeg_segment.c bitmap_util.c swf_png.c swf_gif.c \
+			swf_rgb.c swf_rgba.c swf_argb.c swf_xrgb.c \
+			swf_rect.c swf_matrix.c swf_action.c \
+			swf_shape_with_style.c swf_styles.c swf_fill_style_array.c \
+			swf_fill_style.c swf_fill_style_solid.c swf_fill_style_gradient.c \
+			swf_fill_style_bitmap.c swf_morph_shape_with_style.c \
+			swf_line_style_array.c swf_line_style.c swf_styles_count.c \
+			swf_shape_record.c swf_shape_record_end.c swf_shape_record_setup.c \
+			swf_shape_record_edge.c swf_gradient.c swf_gradient_record.c \
+			swf_tag_jpeg.c swf_tag_edit.c swf_tag_action.c swf_tag_lossless.c \
+			swf_tag_sound.c swf_tag_sprite.c swf_tag_shape.c y_keyvalue.c \
+			swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
+			swf_tag_button.c swf_button_record.c swf_button_condaction.c", "swfed");
+		AC_DEFINE("HAVE_SWFED", 1, "SWFEditor support");
+		PHP_INSTALL_HEADERS("ext/swfed/", "php_swfed.h");
+	} else {
+		WARNING("swfed not enabled; zlib not found");
 	}
 }

@@ -1,0 +1,33 @@
+name: windows
+
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: ['8.3']
+        ts: [nts, ts]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Move the extension source to the top (the builder reads ./config.w32)
+      shell: pwsh
+      run: |
+        Get-ChildItem -Path src -Force | Move-Item -Destination . -Force
+        Remove-Item -Path src -Recurse -Force
+    - name: Build the extension and run the tests
+      uses: php/php-windows-builder/extension@v1
+      with:
+        # the builder names its files after the ref, which must not contain '/'
+        extension-ref: ${{ github.sha }}
+        php-version: ${{ matrix.php-version }}
+        arch: x64
+        ts: ${{ matrix.ts }}
+        args: --enable-swfed
+        libs: zlib,libpng
+    - name: Show the build log
+      if: failure()
+      shell: pwsh
+      run: Get-ChildItem -Path build -Recurse -Filter 'build-*.txt' | ForEach-Object { Get-Content $_.FullName }

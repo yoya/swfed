@@ -2,6 +2,10 @@
 SWFEditor frees its SWF data when the object is destroyed
 --SKIPIF--
 <?php
+// getrusage() has no ru_maxrss on Windows
+if (PHP_OS_FAMILY === 'Windows') {
+    die('skip no ru_maxrss on Windows');
+}
 // RSS growth means nothing without the Zend allocator (run-tests.php -m / valgrind)
 if (getenv('USE_ZEND_ALLOC') === '0') {
     die('skip RSS based check, not under valgrind');

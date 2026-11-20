@@ -9,7 +9,8 @@
 
  - PHP 7.2 or later, on a Unix-like OS
  - zlib
- - libpng and giflib
+ - libpng, giflib and liblzma (optional: without them PNG / GIF / LZMA
+   compressed SWF (ZWS) are not supported)
 
 * example
 

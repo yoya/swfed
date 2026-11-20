@@ -22,5 +22,9 @@ extern int swf_rect_print(swf_rect_t *rect, int indent_depth);
 extern int swf_rect_apply_factor(swf_rect_t *rect,
                                  double scale_x, double scale_y,
                                  signed int trans_x, signed int trans_y);
+extern int swf_rect_apply_factor_around(swf_rect_t *rect,
+                                        signed int base_x, signed int base_y,
+                                        double scale_x, double scale_y,
+                                        signed int trans_x, signed int trans_y);
 
 #endif /* __SWF_RECT_H__ */

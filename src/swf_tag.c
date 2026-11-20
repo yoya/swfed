@@ -64,8 +64,8 @@ swf_tag_info_t swf_tag_info_table[] = {
     { 73, "DefineFontAlignZones", NULL },
     { 74, "CSMTextSettings", NULL },
     { 75, "DefineFont3", NULL } ,
-    { 83, "DefineShape4",  swf_tag_shape_cid_handler },
-    { 84, "DefineMorphShape2", swf_tag_shape_cid_handler },
+    { 83, "DefineShape4",  swf_tag_shape_detail_handler },
+    { 84, "DefineMorphShape2", swf_tag_shape_detail_handler },
     { 88, "DefineFontName", NULL } ,
     { 777,"Reflex", NULL } ,
 };
@@ -1056,9 +1056,9 @@ swf_tag_apply_shape_matrix_factor(swf_tag_t *tag, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_apply_shape_matrix_factor: tag == NULL\n");
         return 1;
     }
-    if ((tag->code != 2) && (tag->code != 22) && (tag->code !=32 )
-        && (tag->code != 46)) {
-        // ! DefineShape1,2,3, DefineMorphShape
+    if (! isShapeTag(tag->code)) {
+        // DefineMorphShape / DefineMorphShape2 are refused later, by the
+        // shape detail itself
         return 1;
     }
     if (swf_tag_get_cid(tag) != shape_id) {
@@ -1091,9 +1091,9 @@ swf_tag_apply_shape_rect_factor(swf_tag_t *tag, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_apply_shape_rect_factor: tag == NULL\n");
         return 1;
     }
-    if ((tag->code != 2) && (tag->code != 22) && (tag->code !=32 )
-        && (tag->code != 46)) {
-        // ! DefineShape1,2,3, DefineMorphShape
+    if (! isShapeTag(tag->code)) {
+        // DefineMorphShape / DefineMorphShape2 are refused later, by the
+        // shape detail itself
         return 1;
     }
     if (swf_tag_get_cid(tag) != shape_id) {
@@ -1122,9 +1122,9 @@ swf_tag_apply_shape_type_tilled(swf_tag_t *tag, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_apply_shape_type_tylled: tag == NULL\n");
         return 1;
     }
-    if ((tag->code != 2) && (tag->code != 22) && (tag->code !=32 )
-        && (tag->code != 46)) {
-        // ! DefineShape1,2,3, DefineMorphShape
+    if (! isShapeTag(tag->code)) {
+        // DefineMorphShape / DefineMorphShape2 are refused later, by the
+        // shape detail itself
         return 1;
     }
     if (swf_tag_get_cid(tag) != shape_id) {
