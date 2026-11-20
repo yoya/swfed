@@ -63,3 +63,21 @@ int swf_rect_apply_factor(swf_rect_t *rect,
     rect->y_max += trans_y * SWF_TWIPS;
     return 0;
 }
+
+/*
+ * Like swf_rect_apply_factor(), but every side scales around the point
+ * (base_x, base_y) instead of the rect's own (x_min, y_min): the transform the
+ * edges of a shape get, for a rect that is not the shape's bounds (EdgeBounds
+ * of DefineShape4). With the shape's bounds as the base, the shape's own rect
+ * gets the same values as swf_rect_apply_factor().
+ */
+int swf_rect_apply_factor_around(swf_rect_t *rect,
+                                 signed int base_x, signed int base_y,
+                                 double scale_x, double scale_y,
+                                 signed int trans_x, signed int trans_y) {
+    rect->x_min = (signed int) (base_x + (rect->x_min - base_x) * scale_x) + trans_x * SWF_TWIPS;
+    rect->x_max = (signed int) (base_x + (rect->x_max - base_x) * scale_x) + trans_x * SWF_TWIPS;
+    rect->y_min = (signed int) (base_y + (rect->y_min - base_y) * scale_y) + trans_y * SWF_TWIPS;
+    rect->y_max = (signed int) (base_y + (rect->y_max - base_y) * scale_y) + trans_y * SWF_TWIPS;
+    return 0;
+}

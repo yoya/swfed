@@ -173,10 +173,32 @@ _swf_tag_shape_search_new_style_in_shape_records(swf_shape_record_t *shape_recor
     return shape_records;
 }
 
+/* The fill styles of styles: its FILLSTYLEARRAY and, in DefineShape4 /
+ * DefineMorphShape2 (has_strokes), the fill of each LINESTYLE2 that has one
+ * (HasFillFlag). The index runs through both; it is NULL at a LINESTYLE2
+ * without a fill. */
+static int
+_swf_tag_shape_styles_fill_count(swf_styles_t *styles, int has_strokes) {
+    return styles->fill_styles.count + (has_strokes ? styles->line_styles.count : 0);
+}
+
+static swf_fill_style_t *
+_swf_tag_shape_styles_fill(swf_styles_t *styles, int has_strokes, int n) {
+    if (n < styles->fill_styles.count) {
+        return &(styles->fill_styles.fill_style[n]);
+    }
+    n -= styles->fill_styles.count;
+    if (has_strokes && (n < styles->line_styles.count) &&
+        styles->line_styles.line_style[n].has_fill) {
+        return &(styles->line_styles.line_style[n].fill_style);
+    }
+    return NULL;
+}
+
 int *
 swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     swf_tag_shape_detail_t *swf_tag_shape;
-    int i, ret;
+    int i, n, ret;
     int *cid_list, cid_list_alloc;
     swf_styles_t *styles = NULL;
     swf_shape_record_t *shape_records = NULL;
@@ -207,7 +229,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     cid_list_alloc = 10;
     cid_list = malloc(sizeof(int) * cid_list_alloc);
 
-    if (tag->code == 46) { // DefineMorphShape
+    if (swf_tag_shape->is_morph) { // DefineMorphShape / DefineMorphShape2
         styles = &(swf_tag_shape->morph_shape_with_style.styles);
         shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records);
     } else {
@@ -215,13 +237,12 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
         shape_records = &(swf_tag_shape->shape_with_style.shape_records);
     }
     while (1) {
-        for (i = 0 ; i < styles->fill_styles.count ; i++) {
+        n = _swf_tag_shape_styles_fill_count(styles, swf_tag_shape->has_strokes);
+        for (i = 0 ; i < n ; i++) {
             swf_fill_style_t *fill_style;
-            fill_style = &(styles->fill_styles.fill_style[i]);
+            fill_style = _swf_tag_shape_styles_fill(styles, swf_tag_shape->has_strokes, i);
             if (fill_style == NULL) {
-                fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: fill_style == NULL i=%d\n", i);
-                free(cid_list);
-                return NULL; // Illegal!!!
+                continue; // a LINESTYLE2 without a fill
             }
             switch (fill_style->type) {
                 void *tmp;
@@ -267,7 +288,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
 
 int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid) {
     swf_tag_shape_detail_t *swf_tag_shape;
-    int i, ret;
+    int i, n, ret;
     swf_styles_t *styles = NULL;
     swf_shape_record_t *shape_records = NULL;
     int morph_shape_check = 0;
@@ -293,7 +314,7 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
         swf_tag_shape = (swf_tag_shape_detail_t *) tag->detail;
     }
     
-    if (tag->code == 46) { // DefineMorphShape
+    if (swf_tag_shape->is_morph) { // DefineMorphShape / DefineMorphShape2
         morph_shape_check = 1;
         styles = &(swf_tag_shape->morph_shape_with_style.styles);
         shape_records = &(swf_tag_shape->morph_shape_with_style.shape_records);
@@ -303,12 +324,12 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
         shape_records = &(swf_tag_shape->shape_with_style.shape_records);
     }
     while (1) {
-        for (i = 0 ; i < styles->fill_styles.count ; i++) {
+        n = _swf_tag_shape_styles_fill_count(styles, swf_tag_shape->has_strokes);
+        for (i = 0 ; i < n ; i++) {
             swf_fill_style_t *fill_style;
-            fill_style = &(styles->fill_styles.fill_style[i]);
+            fill_style = _swf_tag_shape_styles_fill(styles, swf_tag_shape->has_strokes, i);
             if (fill_style == NULL) {
-                fprintf(stderr, "swf_tag_shape_bitmap_replace_refcid: fill_style == NULL i=%d\n", i);
-                return 1; // Illegal!!!
+                continue; // a LINESTYLE2 without a fill
             }
             switch (fill_style->type) {
               case 0x40: // tilled  bitmap fill with smoothed edges
@@ -364,10 +385,15 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
 }
 
 static int
-_swf_tag_shape_styles_replace_bitmap_refcid(swf_styles_t *styles, trans_table_t *table) {
-    int i, modified = 0;
-    for (i = 0 ; i < styles->fill_styles.count ; i++) {
-        swf_fill_style_t *fill_style = &(styles->fill_styles.fill_style[i]);
+_swf_tag_shape_styles_replace_bitmap_refcid(swf_styles_t *styles, int has_strokes,
+                                            trans_table_t *table) {
+    int i, n, modified = 0;
+    n = _swf_tag_shape_styles_fill_count(styles, has_strokes);
+    for (i = 0 ; i < n ; i++) {
+        swf_fill_style_t *fill_style = _swf_tag_shape_styles_fill(styles, has_strokes, i);
+        if (fill_style == NULL) {
+            continue; // a LINESTYLE2 without a fill
+        }
         switch (fill_style->type) {
           case 0x40: // tilled  bitmap fill with smoothed edges
           case 0x41: // clipped bitmap fill with smoothed edges
@@ -410,7 +436,7 @@ swf_tag_shape_bitmap_replace_refcid_by_table(swf_tag_t *tag, trans_table_t *tabl
         styles = &(swf_tag_shape->shape_with_style.styles);
         record = &(swf_tag_shape->shape_with_style.shape_records);
     }
-    modified |= _swf_tag_shape_styles_replace_bitmap_refcid(styles, table);
+    modified |= _swf_tag_shape_styles_replace_bitmap_refcid(styles, swf_tag_shape->has_strokes, table);
     for ( ; record ; record = record->next) {
         int first_bit = (record->first_6bits >> 5) & 1;
         int next_5bits = record->first_6bits & 0x1f;
@@ -421,7 +447,8 @@ swf_tag_shape_bitmap_replace_refcid_by_table(swf_tag_t *tag, trans_table_t *tabl
             break;
         }
         if (record->shape.shape_setup.shape_has_new_styles) {
-            modified |= _swf_tag_shape_styles_replace_bitmap_refcid(&(record->shape.shape_setup.styles), table);
+            modified |= _swf_tag_shape_styles_replace_bitmap_refcid(&(record->shape.shape_setup.styles),
+                                                                    swf_tag_shape->has_strokes, table);
         }
     }
     if (modified && tag->data) { // content modified so drop the raw data
@@ -567,9 +594,9 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                                   double rotate_rad,
                                   signed int trans_x,
                                   signed int trans_y) {
-    int i;
+    int i, n;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
-    swf_fill_style_array_t *fill_styles;
+    swf_styles_t *styles;
     swf_fill_style_t *fill_style;
     swf_shape_record_t *shape_record = NULL;
 
@@ -588,12 +615,16 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: DefineMorphShape not supported yet\n");
         return 1;
     }
-    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
+    styles = &(swf_tag_shape->shape_with_style.styles);
     shape_record = &(swf_tag_shape->shape_with_style.shape_records);
 
-    while (fill_styles) {
-        for (i = 0 ; i < fill_styles->count ; i++) {
-            fill_style = &(fill_styles->fill_style[i]);
+    while (styles) {
+        n = _swf_tag_shape_styles_fill_count(styles, swf_tag_shape->has_strokes);
+        for (i = 0 ; i < n ; i++) {
+            fill_style = _swf_tag_shape_styles_fill(styles, swf_tag_shape->has_strokes, i);
+            if (fill_style == NULL) {
+                continue; // a LINESTYLE2 without a fill
+            }
             switch (fill_style->type) {
             case 0x10: // linear gradient fill
             case 0x12: // radial gradient fill
@@ -627,7 +658,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                 return 1;
             }
         }
-        fill_styles = NULL;
+        styles = NULL;
         while (shape_record) {
             int first_bit = (shape_record->first_6bits >> 5) & 1;
             int next_5bits = shape_record->first_6bits & 0x1f;
@@ -637,7 +668,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                     break; // end
                 } else { // setup record
                     if (shape_record->shape.shape_setup.shape_has_new_styles) {
-                        fill_styles = &(shape_record->shape.shape_setup.styles.fill_styles);
+                        styles = &(shape_record->shape.shape_setup.styles);
                         shape_record = shape_record->next;
                         break; // next loop
                     }
@@ -680,6 +711,15 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
                                            scale_x, scale_y, trans_x, trans_y)) {
         return 1; // nothing changed
     }
+    if (swf_tag_shape->has_strokes) {
+        /* EdgeBounds (DefineShape4) is the bounds of the edges without the
+         * strokes: it follows the edges, around the same base point. This is
+         * done before the rect changes, which is its base. */
+        swf_rect_apply_factor_around(&(swf_tag_shape->stroke_rect),
+                                     swf_tag_shape->rect.x_min,
+                                     swf_tag_shape->rect.y_min,
+                                     scale_x, scale_y, trans_x, trans_y);
+    }
     swf_rect_apply_factor(&(swf_tag_shape->rect),
                           scale_x, scale_y, trans_x, trans_y);
     return 0;
@@ -687,9 +727,9 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
 
 int
 swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
-    int i;
+    int i, n;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
-    swf_fill_style_array_t *fill_styles;
+    swf_styles_t *styles;
     swf_shape_record_t *shape_record = NULL;
 
     if (detail == NULL) {
@@ -702,15 +742,19 @@ swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
         return 1;
     }
 
-    fill_styles = &(swf_tag_shape->shape_with_style.styles.fill_styles);
+    styles = &(swf_tag_shape->shape_with_style.styles);
 
     if (! swf_tag_shape->is_morph) {
         shape_record = &(swf_tag_shape->shape_with_style.shape_records);
     }
 
-    while (fill_styles) {
-        for (i = 0 ; i < fill_styles->count; i++) {
-            swf_fill_style_t *fill_style = &(fill_styles->fill_style[i]);
+    while (styles) {
+        n = _swf_tag_shape_styles_fill_count(styles, swf_tag_shape->has_strokes);
+        for (i = 0 ; i < n; i++) {
+            swf_fill_style_t *fill_style = _swf_tag_shape_styles_fill(styles, swf_tag_shape->has_strokes, i);
+            if (fill_style == NULL) {
+                continue; // a LINESTYLE2 without a fill
+            }
             switch (fill_style->type) {
             case 0x41: // clipped bitmap fill with smoothed edges
                 if ((bitmap_id < 0) || (bitmap_id == fill_style->bitmap.bitmap_ref)) {
@@ -724,7 +768,7 @@ swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
                 break;
             }
         }
-        fill_styles = NULL;
+        styles = NULL;
         while (shape_record) {
             int first_bit = (shape_record->first_6bits >> 5) & 1;
             int next_5bits = shape_record->first_6bits & 0x1f;
@@ -734,7 +778,7 @@ swf_tag_shape_apply_type_tilled(void *detail, int shape_id, int bitmap_id) {
                     break; // end
                 } else { // setup record
                     if (shape_record->shape.shape_setup.shape_has_new_styles) {
-                        fill_styles = &(shape_record->shape.shape_setup.styles.fill_styles);
+                        styles = &(shape_record->shape.shape_setup.styles);
                         shape_record = shape_record->next;
                         break; // next loop
                     }
