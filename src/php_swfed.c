@@ -64,16 +64,6 @@
 
 static zend_class_entry *swfed_entry_ptr = NULL;
 
-static int
-param_is_null(int n) {
-    zval *p;
-    zend_parse_parameters(n, "z", &p);
-    if(Z_TYPE_P(p) == IS_NULL) {
-        return 1; // true
-    }
-    return 0; // false
-}
-
 
 /* If you declare any globals in php_swfed.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(swfed)
@@ -377,7 +367,6 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     int i, has_rect[4] = { 0, 0, 0, 0 }, rect_twips[4] = { 0, 0, 0, 0 };
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                               &header_info) == FAILURE) {
-        php_error_docref(NULL, E_ERROR, "Invalid parameters");
         RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
@@ -1127,26 +1116,9 @@ PHP_METHOD(SWFEditor, replaceBitmapData) {
     swf_object_t *swf = NULL;
     int result = 0;
     int bitmap_format;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE; /* XXX */
-    }
-    switch (ZEND_NUM_ARGS()) {
-      default:
-        WRONG_PARAM_COUNT;
-        RETURN_FALSE; /* XXX */
-      case 2:
-      case 3:
-      case 4:
-      case 5:
-        if (zend_parse_parameters_ex(ZEND_PARSE_PARAMS_QUIET,
-                                     ZEND_NUM_ARGS(), "zs|sz", &arg1, &data, &data_len, &alpha_data, &alpha_data_len, &arg4) == SUCCESS) {
-            ; // OK
-        } else {
-            php_error(E_WARNING, "%s() expects parameter 2 to be string given", get_active_function_name());
-            RETURN_FALSE;
-        }
-        break;
+    if (zend_parse_parameters(ZEND_NUM_ARGS(), "zs|s!z", &arg1, &data, &data_len,
+                              &alpha_data, &alpha_data_len, &arg4) == FAILURE) {
+        RETURN_FALSE;
     }
     SWFED_GET_OBJECT(swf);
 
@@ -1248,10 +1220,6 @@ PHP_METHOD(SWFEditor, applyShapeMatrixFactor) {
     zend_long trans_x = 0, trans_y = 0;
     swf_object_t *swf = NULL;
     int result;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE; /* XXX */
-    }
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "ldddll", &shape_id, &scale_x, &scale_y,
                               &rotate_rad, &trans_x, &trans_y) == FAILURE) {
@@ -1275,10 +1243,6 @@ PHP_METHOD(SWFEditor, applyShapeRectFactor) {
     zend_long trans_x = 0, trans_y = 0;
     swf_object_t *swf = NULL;
     int result;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE; /* XXX */
-    }
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "lddll", &shape_id, &scale_x, &scale_y,
                               &trans_x, &trans_y) == FAILURE) {
@@ -1310,10 +1274,6 @@ PHP_METHOD(SWFEditor, getSoundData) {
     unsigned long len = 0;
     unsigned char *data = NULL;
     swf_object_t *swf = NULL;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE; /* XXX */
-    }
     if (zend_parse_parameters(ZEND_NUM_ARGS(),
                               "l", &sound_id) == FAILURE) {
         RETURN_FALSE;
@@ -1334,10 +1294,6 @@ PHP_METHOD(SWFEditor, replaceMLDData) {
     size_t data_len = 0;
     swf_object_t *swf = NULL;
     int result = 0;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE;
-    }
     switch (ZEND_NUM_ARGS()) {
       default:
         WRONG_PARAM_COUNT;
@@ -1366,10 +1322,6 @@ PHP_METHOD(SWFEditor, getEditString) {
     char *data = NULL;
     int str_len = 0;
     int error = 0;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE;
-    }
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                               &var_name, &var_name_len) == FAILURE) {
         RETURN_FALSE;
@@ -1393,10 +1345,6 @@ PHP_METHOD(SWFEditor, replaceEditString) {
     size_t var_name_len = 0, ini_text_len = 0;
     swf_object_t *swf = NULL;
     int result = 0;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE;
-    }
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                               &var_name, &var_name_len,
                               &ini_text, &ini_text_len) == FAILURE) {
@@ -1527,10 +1475,6 @@ PHP_METHOD(SWFEditor, replaceMovieClip) {
     swf_object_t *swf = NULL;
     zend_bool unused_cid_purge = 1; // デフォルト on
     int result = 0;
-    if (param_is_null(1)) {
-        php_error(E_WARNING, "%s() 1st arg must be not NULL", get_active_function_name());
-        RETURN_FALSE;
-    }
     switch (ZEND_NUM_ARGS()) {
       default:
         WRONG_PARAM_COUNT;
