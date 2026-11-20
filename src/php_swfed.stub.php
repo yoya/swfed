@@ -40,7 +40,7 @@ class SWFEditor
     public function setHeaderInfo(array $header): bool{}
     public function getTagList(): false|array{}
     public function getTagDetail(int $index): false|array {}
-    public function getTagData(int $index): false|array {}
+    public function getTagData(int $index): false|string {}
     public function replaceTagData(int $index, string $data): bool {}
     public function getTagDataByCID(int $cid): false|string {}
     public function replaceTagDataByCID(int $cid, string $data): bool {}
@@ -63,7 +63,7 @@ class SWFEditor
     public function convertBitmapDataToJpegTag(): bool {}
     public function applyShapeMatrixFactor(int $shape_id, float $scale_x, float $scale_y, float $rotate_rad, int $trans_x, int $trans_y): bool {}
     public function applyShapeRectFactor(int $shape_id, float $scale_x, float $scale_y, int $trans_x, int $trans_y): bool {}
-    public function getSoundData(int $index): false|array {}
+    public function getSoundData(int $index): false|string {}
     public function replaceMLDData(int $index, string $data): bool {}
     public function getEditString(string $var_name): false|string {}
     public function replaceEditString(string $var_name, string $ini_text): bool {}

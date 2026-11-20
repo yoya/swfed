@@ -429,6 +429,16 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     RETURN_TRUE;
 }
 
+/* the tags getTagDetail() can describe; keep in sync with its switch */
+static int swfed_tag_detail_supported(int code) {
+    switch (code) {
+      case 2: case 4: case 6: case 12: case 14: case 20: case 21: case 22:
+      case 26: case 32: case 35: case 36: case 37: case 39: case 46: case 59:
+        return 1;
+    }
+    return 0;
+}
+
 PHP_METHOD(SWFEditor, getTagList) {
     int i = 0;
     zval data;
@@ -452,7 +462,8 @@ PHP_METHOD(SWFEditor, getTagList) {
                                 (char *)tag_info->name);
         }
         add_assoc_long(&data, "length", tag->length);
-        if (tag_info && tag_info->detail_handler) {
+        if (tag_info && tag_info->detail_handler &&
+            swfed_tag_detail_supported(tag->code)) {
             add_assoc_bool(&data, "detail", 1);
         }
         add_index_zval(return_value, i, &data);
@@ -483,7 +494,8 @@ PHP_METHOD(SWFEditor, getTagDetail) {
         RETURN_FALSE;
     }
     tag_info = get_swf_tag_info(tag->code);
-    if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
+    if ((tag_info == NULL) || (tag_info->detail_handler == NULL) ||
+        (! swfed_tag_detail_supported(tag->code))) {
         RETURN_FALSE;
     }
     if (swf_tag_create_input_detail(tag, swf) == NULL) {
@@ -615,12 +627,10 @@ PHP_METHOD(SWFEditor, getTagDetail) {
             add_assoc_string_ex(return_value, "name",
                                 sizeof("name") - 1, (char *)tag_place->name);
         }
-
+        break;
       default:
-          break;
         RETURN_FALSE;
     }
-    /* return_value */
 }
 
 PHP_METHOD(SWFEditor, getTagData) {
@@ -1370,7 +1380,7 @@ PHP_METHOD(SWFEditor, getEditString) {
         if (error) {
             RETURN_FALSE;
         } else {
-            RETURN_NULL();
+            RETURN_EMPTY_STRING(); // the field exists but has no initial text
         }
     }
     str_len = strlen(data);
