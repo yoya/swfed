@@ -1617,6 +1617,7 @@ static int
 _swf_object_is_first_refcid_tag(int tag_no) {
     switch (tag_no) {
       case 3:  // FreeCharacter: CharacterId
+      case 5:  // RemoveObject: CharacterId, Depth (RemoveObject2 has Depth only)
       case 13: // DefineFontInfo: FontID
       case 15: // StartSound: SoundId
       case 23: // DefineButtonCxform: ButtonId
