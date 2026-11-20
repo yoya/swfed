@@ -20,6 +20,7 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
 #include "php.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
@@ -153,6 +154,26 @@ static swf_object_t  *get_swf_object(zval *obj);
 #ifndef RETURN_THROWS
 #define RETURN_THROWS() return
 #endif
+/* character ids are 16bit in SWF; tag positions are passed on as int */
+#define SWFED_CHECK_CID(v) do { \
+        if (((v) < 0) || ((v) > 65535)) { \
+            php_error_docref(NULL, E_WARNING, #v "(" ZEND_LONG_FMT \
+                             ") must be between 0 and 65535", (zend_long) (v)); \
+            RETURN_FALSE; \
+        } \
+    } while (0)
+#define SWFED_CHECK_INDEX(v, min) do { \
+        if (((v) < (min)) || ((v) > INT_MAX)) { \
+            php_error_docref(NULL, E_WARNING, #v "(" ZEND_LONG_FMT \
+                             ") must be between %d and %d", (zend_long) (v), \
+                             (min), INT_MAX); \
+            RETURN_FALSE; \
+        } \
+    } while (0)
+/* RECT is written with 5bit NBits, i.e. up to 31bit signed twips */
+#define SWFED_RECT_TWIPS_MIN (-1073741824.0)
+#define SWFED_RECT_TWIPS_MAX (1073741823.0)
+
 /* get_swf_object() has thrown an Error when it returns NULL */
 #define SWFED_GET_OBJECT(swf) do { \
         (swf) = get_swf_object(getThis()); \
@@ -320,6 +341,15 @@ PHP_METHOD(SWFEditor, _destroy_and_exit) { // kept for API compat; must not exit
     RETURN_TRUE;
 }
 
+/* pixels as int when exact, otherwise float, so get/setHeaderInfo round-trips */
+static void swfed_add_assoc_pixel(zval *arr, const char *key, int twips) {
+    if (twips % SWF_TWIPS == 0) {
+        add_assoc_long(arr, key, twips / SWF_TWIPS);
+    } else {
+        add_assoc_double(arr, key, (double) twips / SWF_TWIPS);
+    }
+}
+
 PHP_METHOD(SWFEditor, getHeaderInfo) {
     swf_object_t *swf = NULL;
     SWFED_GET_OBJECT(swf);
@@ -331,19 +361,20 @@ PHP_METHOD(SWFEditor, getHeaderInfo) {
     }
     add_assoc_long(return_value, "version", swf->header.version);
 
-    add_assoc_long(return_value, "x_min", swf->header_movie.frame_size.x_min / SWF_TWIPS);
-    add_assoc_long(return_value, "y_min", swf->header_movie.frame_size.y_min / SWF_TWIPS);
-    add_assoc_long(return_value, "x_max", swf->header_movie.frame_size.x_max / SWF_TWIPS);
-    add_assoc_long(return_value, "y_max", swf->header_movie.frame_size.y_max / SWF_TWIPS);
-
-
+    swfed_add_assoc_pixel(return_value, "x_min", swf->header_movie.frame_size.x_min);
+    swfed_add_assoc_pixel(return_value, "y_min", swf->header_movie.frame_size.y_min);
+    swfed_add_assoc_pixel(return_value, "x_max", swf->header_movie.frame_size.x_max);
+    swfed_add_assoc_pixel(return_value, "y_max", swf->header_movie.frame_size.y_max);
 }
 
 PHP_METHOD(SWFEditor, setHeaderInfo) {
+    static const char *rect_keys[4] = { "x_min", "y_min", "x_max", "y_max" };
     zval *header_info = NULL;
     swf_object_t *swf = NULL;
     HashTable *header_table = NULL;
     zval *tmp = NULL;
+    zend_long version = -1;
+    int i, has_rect[4] = { 0, 0, 0, 0 }, rect_twips[4] = { 0, 0, 0, 0 };
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                               &header_info) == FAILURE) {
         php_error_docref(NULL, E_ERROR, "Invalid parameters");
@@ -351,6 +382,33 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
     }
     SWFED_GET_OBJECT(swf);
     header_table = Z_ARRVAL_P(header_info);
+
+    /* validate everything before changing the header */
+    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("version"))) != NULL) {
+        version = zval_get_long(tmp);
+        if ((version < 0) || (version > 255)) {
+            php_error_docref(NULL, E_WARNING, "version(" ZEND_LONG_FMT
+                             ") must be between 0 and 255", version);
+            RETURN_FALSE;
+        }
+    }
+    for (i = 0 ; i < 4 ; i++) {
+        double twips;
+        tmp = zend_hash_str_find(header_table, rect_keys[i], strlen(rect_keys[i]));
+        if (tmp == NULL) {
+            continue;
+        }
+        twips = zval_get_double(tmp) * SWF_TWIPS;
+        if (! ((twips >= SWFED_RECT_TWIPS_MIN) && (twips <= SWFED_RECT_TWIPS_MAX))) {
+            php_error_docref(NULL, E_WARNING, "%s(%.17g) must be between %.2f and %.2f",
+                             rect_keys[i], zval_get_double(tmp),
+                             SWFED_RECT_TWIPS_MIN / SWF_TWIPS,
+                             SWFED_RECT_TWIPS_MAX / SWF_TWIPS);
+            RETURN_FALSE;
+        }
+        has_rect[i] = 1;
+        rect_twips[i] = (int) (twips < 0 ? twips - 0.5 : twips + 0.5);
+    }
 
     // FWS or CWS
     if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("compress"))) != NULL) {
@@ -360,25 +418,14 @@ PHP_METHOD(SWFEditor, setHeaderInfo) {
             memcpy(swf->header.magic, "FWS", 3);
         }
     }
-
-    // Version
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("version"))) != NULL) {
-        swf->header.version = zval_get_long(tmp);
+    if (version >= 0) {
+        swf->header.version = (unsigned char) version;
     }
-
     // FrameRect
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_min"))) != NULL) {
-        swf->header_movie.frame_size.x_min = zval_get_long(tmp) * SWF_TWIPS;
-    }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_min"))) != NULL) {
-        swf->header_movie.frame_size.y_min = zval_get_long(tmp) * SWF_TWIPS;
-    }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("x_max"))) != NULL) {
-        swf->header_movie.frame_size.x_max = zval_get_long(tmp) * SWF_TWIPS;
-    }
-    if ((tmp = zend_hash_str_find(header_table, ZEND_STRL("y_max"))) != NULL) {
-        swf->header_movie.frame_size.y_max = zval_get_long(tmp) * SWF_TWIPS;
-    }
+    if (has_rect[0]) { swf->header_movie.frame_size.x_min = rect_twips[0]; }
+    if (has_rect[1]) { swf->header_movie.frame_size.y_min = rect_twips[1]; }
+    if (has_rect[2]) { swf->header_movie.frame_size.x_max = rect_twips[2]; }
+    if (has_rect[3]) { swf->header_movie.frame_size.y_max = rect_twips[3]; }
     RETURN_TRUE;
 }
 
@@ -423,6 +470,7 @@ PHP_METHOD(SWFEditor, getTagDetail) {
                               "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_INDEX(tag_seqno, 0);
     SWFED_GET_OBJECT(swf);
     i = 0;
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
@@ -584,6 +632,7 @@ PHP_METHOD(SWFEditor, getTagData) {
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_INDEX(tag_seqno, 0);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_tagdata(swf, tag_seqno, &data_len);
 
@@ -611,6 +660,7 @@ PHP_METHOD(SWFEditor, replaceTagData) {
         }
         break;
     }
+    SWFED_CHECK_INDEX(tag_seqno, 0);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_tagdata(swf, tag_seqno,
                                         (unsigned char *)data,
@@ -629,6 +679,7 @@ PHP_METHOD(SWFEditor, getTagDataByCID) {
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     data = (char *) swf_object_get_tagdata_bycid(swf, cid, &data_len);
 
@@ -656,6 +707,7 @@ PHP_METHOD(SWFEditor, replaceTagDataByCID) {
         }
         break;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_tagdata_bycid(swf, cid,
                                               (unsigned char *)data,
@@ -674,6 +726,7 @@ PHP_METHOD(SWFEditor, getTagContentsByCID) {
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     data_ref = (char *) swf_object_get_tagcontents_bycid(swf, cid, &data_len);
 
@@ -703,6 +756,7 @@ PHP_METHOD(SWFEditor, replaceTagContentsByCID) {
         }
         break;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_tagcontents_bycid(swf, cid,
                                                   (unsigned char *)data,
@@ -730,6 +784,8 @@ PHP_METHOD(SWFEditor, removeTag) {
     if (index_is_null) {
         tag_seqno_in_sprite = -1;
     }
+    SWFED_CHECK_INDEX(tag_seqno, 0);
+    SWFED_CHECK_INDEX(tag_seqno_in_sprite, -1);
     SWFED_GET_OBJECT(swf);
     ret = swf_object_remove_tag(swf, tag_seqno, tag_seqno_in_sprite);
     if (ret) {
@@ -770,6 +826,7 @@ PHP_METHOD(SWFEditor, getShapeData) {
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &cid) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_shapedata(swf, cid, &data_len);
 
@@ -797,6 +854,7 @@ PHP_METHOD(SWFEditor, replaceShapeData) {
         }
         break;
     }
+    SWFED_CHECK_CID(cid);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_shapedata(swf, cid,
                                           (unsigned char *)data,
@@ -829,6 +887,7 @@ PHP_METHOD(SWFEditor, getShapeIdListByBitmapRef) {
                               "l", &bitmap_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(bitmap_id);
     SWFED_GET_OBJECT(swf);
     array_init(return_value);
     i = 0;
@@ -861,6 +920,7 @@ PHP_METHOD(SWFEditor, getBitmapSize) {
                               "l", &bitmap_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(bitmap_id);
     SWFED_GET_OBJECT(swf);
     ret = swf_object_get_bitmap_size(swf, bitmap_id, &width, &height);
     if (ret) {
@@ -880,6 +940,7 @@ PHP_METHOD(SWFEditor, getJpegData) {
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_jpegdata(swf, &len, image_id);
     if (data == NULL) {
@@ -898,6 +959,7 @@ PHP_METHOD(SWFEditor, getJpegAlpha) {
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_alphadata(swf, &len, image_id);
     if (data == NULL) {
@@ -928,6 +990,7 @@ PHP_METHOD(SWFEditor, replaceJpegData) {
         }
         break;
     }
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_jpegdata(swf, image_id,
                                          (unsigned char *)data,
@@ -954,6 +1017,7 @@ PHP_METHOD(SWFEditor, getPNGData) {
                               "l", &image_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_pngdata(swf, &len, image_id);
     if (data == NULL) {
@@ -993,6 +1057,7 @@ PHP_METHOD(SWFEditor, replacePNGData) {
         get_zend_hash_value_boolean(opts_table, "rgb15",  rgb15);
     }
 
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
 
     result = swf_object_replace_pngdata(swf, image_id,
@@ -1026,6 +1091,7 @@ PHP_METHOD(SWFEditor, replaceGIFData) {
         }
         break;
     }
+    SWFED_CHECK_CID(image_id);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_gifdata(swf, image_id,
                                         (unsigned char *)data,
@@ -1078,6 +1144,7 @@ PHP_METHOD(SWFEditor, replaceBitmapData) {
         if (Z_TYPE_P(arg1) != IS_LONG) {
             convert_to_long(arg1);
         }
+        SWFED_CHECK_CID(Z_LVAL_P(arg1));
         image_id = (int) Z_LVAL_P(arg1);
     } else { // or image_info (array)
         image_info_table = Z_ARRVAL_P(arg1);
@@ -1180,6 +1247,7 @@ PHP_METHOD(SWFEditor, applyShapeMatrixFactor) {
                               &rotate_rad, &trans_x, &trans_y) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(shape_id);
     SWFED_GET_OBJECT(swf);
     result = swf_object_apply_shapematrix_factor(swf, shape_id, -1,
                                                  scale_x, scale_y, rotate_rad,
@@ -1206,6 +1274,7 @@ PHP_METHOD(SWFEditor, applyShapeRectFactor) {
                               &trans_x, &trans_y) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(shape_id);
     SWFED_GET_OBJECT(swf);
     result = swf_object_apply_shaperect_factor(swf, shape_id, -1,
                                                  scale_x, scale_y,
@@ -1239,6 +1308,7 @@ PHP_METHOD(SWFEditor, getSoundData) {
                               "l", &sound_id) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_CID(sound_id);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_sounddata(swf, &len, sound_id);
     if (data == NULL) {
@@ -1268,6 +1338,7 @@ PHP_METHOD(SWFEditor, replaceMLDData) {
         }
         break;
     }
+    SWFED_CHECK_CID(sound_id);
     SWFED_GET_OBJECT(swf);
     result = swf_object_replace_melodata(swf, sound_id,
                                          (unsigned char *)data,
@@ -1339,6 +1410,7 @@ PHP_METHOD(SWFEditor, getActionData) {
     if (zend_parse_parameters(ZEND_NUM_ARGS(), "l", &tag_seqno) == FAILURE) {
         RETURN_FALSE;
     }
+    SWFED_CHECK_INDEX(tag_seqno, 0);
     SWFED_GET_OBJECT(swf);
     data = swf_object_get_actiondata(swf, &data_len, tag_seqno);
     if (data == NULL) {
