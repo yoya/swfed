@@ -1,5 +1,6 @@
 dnl --with-*-dir: not given = search (auto), DIR = use that prefix,
-dnl --without-png-dir / --without-gif-dir = build without PNG / GIF support.
+dnl --without-png-dir / --without-gif-dir / --without-lzma-dir = build without
+dnl PNG / GIF / LZMA (ZWS) support.
 dnl
 dnl The search (auto) uses a library as it is when the compiler and the linker
 dnl find it without -I / -L (system directories, the macOS SDK, ...). Adding the
@@ -19,6 +20,11 @@ fi
 if test -z "$PHP_GIF_DIR"; then
 PHP_ARG_WITH(gif-dir, for the location of GIFLIB,
 [  --with-gif-dir[=DIR]   swfed: Set the path to GIFLIB install prefix (--without-gif-dir: no GIF support).], auto, no)
+fi
+
+if test -z "$PHP_LZMA_DIR"; then
+PHP_ARG_WITH(lzma-dir, for the location of liblzma,
+[  --with-lzma-dir[=DIR]   swfed: Set the path to liblzma (xz) install prefix (--without-lzma-dir: no LZMA (ZWS) support).], auto, no)
 fi
 
 dnl swfed_find_prefix <dir|auto|yes> <header> <include subdir> <pkg-config module> <candidate prefixes...>
@@ -137,5 +143,36 @@ SWFED_SEARCH_DIRS="/usr/local /usr /opt/homebrew /opt/local"
     else
       AC_MSG_RESULT([not found])
       AC_MSG_WARN([building without GIF support. Use --with-gif-dir=<DIR> to specify prefix where GIFLIB include and library are located])
+    fi
+  fi
+
+#
+# LIBLZMA (optional, for LZMA compressed SWF "ZWS")
+#
+  swfed_lzma_default=no
+  if test "$PHP_LZMA_DIR" = "auto" || test "$PHP_LZMA_DIR" = "yes"; then
+    AC_CHECK_HEADER([lzma.h],
+      [AC_CHECK_LIB([lzma], [lzma_alone_decoder], [swfed_lzma_default=yes])])
+  fi
+  AC_MSG_CHECKING([for the location of liblzma])
+  if test "$PHP_LZMA_DIR" = "no"; then
+    AC_MSG_RESULT([disabled])
+  elif test "$swfed_lzma_default" = "yes"; then
+    AC_MSG_RESULT([system default (no -I / -L needed)])
+    AC_DEFINE(HAVE_LZMA,1,[ ])
+    PHP_ADD_LIBRARY(lzma, 1, SWFED_SHARED_LIBADD)
+  else
+    swfed_find_prefix "$PHP_LZMA_DIR" lzma.h "" liblzma \
+        $SWFED_SEARCH_DIRS /opt/homebrew/opt/xz /usr/local/opt/xz
+    if test -n "$SWFED_FOUND_DIR"; then
+      AC_MSG_RESULT([$SWFED_FOUND_DIR])
+      AC_DEFINE(HAVE_LZMA,1,[ ])
+      PHP_ADD_LIBRARY_WITH_PATH(lzma, $SWFED_FOUND_DIR/${PHP_LIBDIR:-lib}, SWFED_SHARED_LIBADD)
+      PHP_ADD_INCLUDE($SWFED_FOUND_INCDIR)
+    elif test "$PHP_LZMA_DIR" != "auto" && test "$PHP_LZMA_DIR" != "yes"; then
+      AC_MSG_ERROR([Can't find liblzma headers under "$PHP_LZMA_DIR"])
+    else
+      AC_MSG_RESULT([not found])
+      AC_MSG_WARN([building without LZMA (ZWS) support. Use --with-lzma-dir=<DIR> to specify prefix where liblzma include and library are located])
     fi
   fi

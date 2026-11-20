@@ -3,7 +3,7 @@ FROM php:8.4-cli
 SHELL ["/bin/bash", "-c"]
 
 RUN apt-get -y update && \
-        apt-get install -y build-essential libpng-dev libgif-dev
+        apt-get install -y build-essential libpng-dev libgif-dev liblzma-dev
 COPY . /tmp/ext
 
 WORKDIR /tmp/ext/src

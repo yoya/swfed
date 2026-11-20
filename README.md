@@ -21,9 +21,12 @@ copied through unchanged.
 
 - PHP 7.2 or later, with `phpize` (usually in the `php-dev` / `php-devel` package).
   CI builds and tests PHP 7.2, 8.0 and 8.3.
-- zlib, libpng and giflib, with headers. `configure` stops if any of them is not found.
-  - Debian / Ubuntu: `apt-get install zlib1g-dev libpng-dev libgif-dev`
-  - Homebrew: `brew install zlib libpng giflib`
+- zlib, with headers. `configure` stops if it is not found.
+- libpng, giflib and liblzma (xz), with headers. They are optional: without one of
+  them, `configure` only warns and builds without that feature (PNG, GIF, or
+  reading and writing LZMA-compressed `ZWS` files).
+  - Debian / Ubuntu: `apt-get install zlib1g-dev libpng-dev libgif-dev liblzma-dev`
+  - Homebrew: `brew install zlib libpng giflib xz`
 - A Unix-like OS (Linux, macOS, *BSD). Windows builds are not covered by CI.
 
 ## Build and install
@@ -44,24 +47,31 @@ Then enable the extension in `php.ini` (or a file in your `conf.d` directory):
 extension=swfed
 ```
 
-Check it with `php --ri swfed`; it prints the version and whether PNG and GIF
-support were compiled in.
+Check it with `php --ri swfed`; it prints the version and whether PNG, GIF and
+LZMA (ZWS) support were compiled in.
 
-`configure` looks for the libraries under `/usr/local`, `/usr` and `/opt/local`
-(and `/usr/local/opt/zlib` for zlib). If a library is installed elsewhere, pass
-its install prefix (the directory that contains `include/` and `lib/`):
+`configure` first uses a library as it is when the compiler finds it without any
+option (system directories, the macOS SDK). Otherwise it looks for it with
+`pkg-config`, then under `/usr/local`, `/usr`, `/opt/homebrew` and `/opt/local`.
+If a library is installed elsewhere, pass its install prefix (the directory that
+contains `include/` and `lib/`):
 
 | option | library |
 |---|---|
 | `--with-zlib-dir=DIR` | zlib (`DIR/include/zlib.h`) |
 | `--with-png-dir=DIR` | libpng (`DIR/include/png.h` or `DIR/include/libpng/png.h`) |
 | `--with-gif-dir=DIR` | giflib (`DIR/include/gif_lib.h` or `DIR/include/giflib/gif_lib.h`) |
+| `--with-lzma-dir=DIR` | liblzma (`DIR/include/lzma.h`) |
 
-For example, with Homebrew on Apple Silicon:
+`--without-png-dir`, `--without-gif-dir` and `--without-lzma-dir` build without
+that library.
+
+For example, with Homebrew on Apple Silicon, when `./configure` alone does not
+find them:
 
 ```sh
-./configure --with-zlib-dir=$(brew --prefix zlib) \
-            --with-png-dir=$(brew --prefix) --with-gif-dir=$(brew --prefix)
+./configure --with-zlib-dir=$(brew --prefix zlib) --with-png-dir=$(brew --prefix) \
+            --with-gif-dir=$(brew --prefix) --with-lzma-dir=$(brew --prefix xz)
 ```
 
 See also [doc/install.txt](doc/install.txt).
@@ -170,18 +180,23 @@ brackets.
 
 #### `input(string $data): bool`
 
-Parses an SWF file and replaces whatever was loaded before. Uncompressed (`FWS`)
-and zlib-compressed (`CWS`) files are supported; LZMA-compressed (`ZWS`) files are
-not. Returns `false` if the header cannot be read, the signature is not `FWS` /
-`CWS`, or decompression fails; the previously loaded movie is then kept.
+Parses an SWF file and replaces whatever was loaded before. Uncompressed (`FWS`),
+zlib-compressed (`CWS`) and LZMA-compressed (`ZWS`) files are supported. `ZWS`
+needs a build with liblzma; without it a `ZWS` file makes `input()` return `false`
+(see `php --ri swfed`). Returns `false` if the header cannot be read, the signature
+is not `FWS` / `CWS` / `ZWS`, or decompression fails (for a `ZWS`: damaged or
+truncated LZMA data, or a size that does not match the header's file length); the
+previously loaded movie is then kept.
 Truncated tag data is not an error: parsing stops at the first incomplete tag and
 `true` is returned.
 
 #### `output(): string|false`
 
-Serializes the movie. Writes a `CWS` file if the header's `compress` flag is set,
-using the level from `setCompressLevel()`. The file length field is recomputed.
-Returns `false` if nothing has been loaded or compression fails.
+Serializes the movie. The file format follows the header: `FWS`, `CWS` if the
+`compress` flag is set, or `ZWS` if `lzma` is also set (a `ZWS` that was read
+stays `ZWS`). Compression uses the level from `setCompressLevel()`. The file
+length field is recomputed. Returns `false` if nothing has been loaded or
+compression fails, and for `ZWS` on a build without liblzma.
 
 #### `getHeaderInfo(): array`
 
@@ -189,7 +204,8 @@ Returns:
 
 | key | type | meaning |
 |---|---|---|
-| `compress` | bool | `true` for `CWS`, `false` for `FWS` |
+| `compress` | bool | `true` for `CWS` and `ZWS`, `false` for `FWS` |
+| `lzma` | bool | `true` for `ZWS` (LZMA), `false` for `FWS` and `CWS` |
 | `version` | int | SWF version |
 | `x_min`, `y_min`, `x_max`, `y_max` | int | frame rectangle in pixels |
 
@@ -199,13 +215,28 @@ Frame rate and frame count are not returned. Before `input()` all values are
 #### `setHeaderInfo(array $header): bool`
 
 Sets any of the `getHeaderInfo()` keys present in `$header`; other keys are
-ignored. Always returns `true`. A non-array argument is a fatal error.
+ignored. The file format is chosen from `compress` and `lzma`:
+
+| given | result |
+|---|---|
+| `compress => false` | `FWS` (even if `lzma => true` is also given) |
+| `lzma => true` | `ZWS` |
+| `compress => true` (no `lzma`) | `CWS`; a movie that is already `ZWS` stays `ZWS` |
+| `lzma => false` | `ZWS` becomes `CWS`; `CWS` stays `CWS`; `FWS` stays `FWS`, unless `compress => true` is also given (then `CWS`) |
+
+So the array from `getHeaderInfo()` can be changed in one key and passed back.
+Returns `true`. Returns `false` with an `E_WARNING`, and changes nothing, if
+`version` is not between 0 and 255, a frame rectangle value is out of range, or
+`lzma => true` is given on a build without liblzma. A non-array argument is an
+error (see "Errors").
 swfed does not adjust the version when you set `compress`; compressed files need
-version 6 or later (`sample/swfcompress.php` raises it).
+version 6 or later (`CWS`) or 13 or later (`ZWS`). `sample/swfcompress.php` raises
+it to 6.
 
 #### `setCompressLevel(int $level): bool`
 
-zlib level used by `output()` for `CWS` files and for the zlib data inside
+zlib level used by `output()` for `CWS` files (for `ZWS` files, the LZMA preset:
+`0` to `9`, and `-1` means the LZMA default) and for the zlib data inside
 `DefineBitsJPEG3`/`DefineBitsJPEG4` (alpha) and `DefineBitsLossless`/`DefineBitsLossless2` tags
 that swfed rebuilds. `-1` (zlib default, the initial value) to `9`. Out of range:
 `E_WARNING` and `false`.
