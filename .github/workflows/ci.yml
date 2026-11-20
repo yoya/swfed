@@ -1,0 +1,18 @@
+name: ci
+
+on: [workflow_dispatch, push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # .docker/Dockerfile.<target>
+        target: [php72, php80, php83, php84, php85, ubsan, valgrind]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Build the docker image
+      run: docker build -t swfed -f ./.docker/Dockerfile.${{ matrix.target }} .
+    - name: Run the tests
+      run: docker run --rm swfed

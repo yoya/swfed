@@ -15,17 +15,19 @@
 #include "swf_png.h"
 #include "swf_gif.h"
 
-swf_tag_detail_handler_t lossless_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_lossless_detail_handler_table = {
+    .create      = swf_tag_lossless_create_detail,
+    .input       = swf_tag_lossless_input_detail,
+    .get_cid     = swf_tag_lossless_get_cid_detail,
+    .replace_cid = swf_tag_lossless_replace_cid_detail,
+    .output      = swf_tag_lossless_output_detail,
+    .print       = swf_tag_lossless_print_detail,
+    .destroy     = swf_tag_lossless_destroy_detail,
+};
 
-swf_tag_detail_handler_t *swf_tag_lossless_detail_handler(void) {
-    lossless_detail_handler.create   = swf_tag_lossless_create_detail;
-    lossless_detail_handler.input    = swf_tag_lossless_input_detail;
-    lossless_detail_handler.get_cid  = swf_tag_lossless_get_cid_detail;
-    lossless_detail_handler.replace_cid = swf_tag_lossless_replace_cid_detail;
-    lossless_detail_handler.output   = swf_tag_lossless_output_detail;
-    lossless_detail_handler.print    = swf_tag_lossless_print_detail;
-    lossless_detail_handler.destroy  = swf_tag_lossless_destroy_detail;
-    return &lossless_detail_handler;
+const swf_tag_detail_handler_t *
+swf_tag_lossless_detail_handler(void) {
+    return &swf_tag_lossless_detail_handler_table;
 }
 
 void *
@@ -173,11 +175,38 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bitstream_getstring(bs2, swf_tag_lossless->indices, indices_len);
         bitstream_close(bs2);
         free(tmp_buff);
+        {
+            /* row padding bytes are not pixels, so only check the pixels */
+            unsigned long stride = ((unsigned long) swf_tag_lossless->width + 3) & ~3UL;
+            unsigned long x, y;
+            for (y = 0 ; y < swf_tag_lossless->height ; y++) {
+                for (x = 0 ; x < swf_tag_lossless->width ; x++) {
+                    int index = swf_tag_lossless->indices[x + y * stride];
+                    if (index >= swf_tag_lossless->colormap_count) {
+                        fprintf(stderr, "swf_tag_lossless_input_detail: color index(%d) >= colormap_count(%d) at (%lu, %lu)\n",
+                                index, swf_tag_lossless->colormap_count, x, y);
+                        bitstream_close(bs);
+                        return 1;
+                    }
+                }
+            }
+        }
     } else { // format != 3
         unsigned long bitmap_count;
+        /* format=4: 16bit per pixel, each row padded to 32bit */
+        unsigned long rgb15_stride = (((unsigned long) swf_tag_lossless->width * 2) + 3) & ~3UL;
         bitmap_count = (unsigned long) swf_tag_lossless->width *
             (unsigned long) swf_tag_lossless->height;
-        origsize = 4 * bitmap_count; // xrgb or argb (4 bytes)
+        if (swf_tag_lossless->format == 4) {
+            if (tag->code != 20) {
+                fprintf(stderr, "swf_tag_lossless_input_detail: format=4 is only for DefineBitsLossless\n");
+                bitstream_close(bs);
+                return 1;
+            }
+            origsize = rgb15_stride * (unsigned long) swf_tag_lossless->height;
+        } else {
+            origsize = 4 * bitmap_count; // xrgb or argb (4 bytes)
+        }
         offset = bitstream_getbytepos(bs);
         old_buff_ref = bitstream_buffer(bs, offset);
         old_size = bitstream_length(bs) - offset;
@@ -211,6 +240,17 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             bitstream_close(bs);
             return 1;
         }
+        if ((swf_tag_lossless->format == 4) &&
+            (origsize != rgb15_stride * (unsigned long) swf_tag_lossless->height)) {
+            /* uncompress() sets origsize to the inflated size. The rows are read
+             * straight from tmp_buff below, so short data would be read as
+             * uninitialized heap. */
+            fprintf(stderr, "swf_tag_lossless_input_detail: format=4 data size(%lu) != %lu\n",
+                    origsize, rgb15_stride * (unsigned long) swf_tag_lossless->height);
+            free(tmp_buff);
+            bitstream_close(bs);
+            return 1;
+        }
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->code == 20) { // Lossless
@@ -221,9 +261,27 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
                 bitstream_close(bs);
                 return 1;
             }
-            for (i=0 ; i < bitmap_count ; i++) {
-                swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
-                swf_xrgb_parse(bs2, xrgb);
+            if (swf_tag_lossless->format == 4) {
+                unsigned long x, y;
+                i = 0;
+                for (y = 0 ; y < swf_tag_lossless->height ; y++) {
+                    unsigned char *row = tmp_buff + y * rgb15_stride;
+                    for (x = 0 ; x < swf_tag_lossless->width ; x++) {
+                        /* 0RRRRRGG GGGBBBBB, expanded from 5bit to 8bit */
+                        int pix = (row[2 * x] << 8) | row[2 * x + 1];
+                        int r = (pix >> 10) & 0x1f, g = (pix >> 5) & 0x1f, b = pix & 0x1f;
+                        swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
+                        xrgb->red   = (r << 3) | (r >> 2);
+                        xrgb->green = (g << 3) | (g >> 2);
+                        xrgb->blue  = (b << 3) | (b >> 2);
+                        i++;
+                    }
+                }
+            } else {
+                for (i=0 ; i < bitmap_count ; i++) {
+                    swf_xrgb_t *xrgb = swf_tag_lossless->bitmap + i;
+                    swf_xrgb_parse(bs2, xrgb);
+                }
             }
         } else { // tag == 36 (Lossless2)
             swf_tag_lossless->bitmap2 = malloc((bitmap_count ? bitmap_count : 1) * sizeof(swf_argb_t));
@@ -513,7 +571,8 @@ unsigned char *swf_tag_lossless_get_png_data(void *detail,
     if (swf_tag_lossless->image_id != image_id) {
         return NULL;
     }
-    if ((swf_tag_lossless->format != 3) && (swf_tag_lossless->format != 5)) {
+    if ((swf_tag_lossless->format != 3) && (swf_tag_lossless->format != 4) &&
+        (swf_tag_lossless->format != 5)) {
         fprintf(stderr, "swf_tag_lossless_get_lossless_data: format=%d not implemented yet\n",
                 swf_tag_lossless->format);
         return NULL;
@@ -537,12 +596,14 @@ unsigned char *swf_tag_lossless_get_png_data(void *detail,
         fprintf(stderr, "swf_tag_lossless_get_lossless_data: image_data == NULL at line(%d)\n", __LINE__);
         return NULL;
     }
+    // format=4 is held as xrgb in the detail, the same as format=5
     data = pngconv_lossless2png(image_data,
                                 swf_tag_lossless->width,
                                 swf_tag_lossless->height,
                                 index_data,
                                 swf_tag_lossless->colormap_count,
-                                tag->code, swf_tag_lossless->format,
+                                tag->code,
+                                (swf_tag_lossless->format == 4) ? 5 : swf_tag_lossless->format,
                                 length);
     return data;
 }

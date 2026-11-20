@@ -46,10 +46,20 @@ swf_styles_build(bitstream_t *bs, swf_styles_t *shape_with_style,
         fprintf(stderr, "swf_styles_build: swf_line_style_array_build failed");
         return ret;
     }
-    swf_tag_shape->_current_fill_style_num += shape_with_style->fill_styles.count;
-    swf_tag_shape->_current_line_style_num += shape_with_style->line_styles.count;
-    shape_with_style->styles_count.fill_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_fill_style_num);
-    shape_with_style->styles_count.line_bits_count = bitstream_need_bits_unsigned(swf_tag_shape->_current_line_style_num);
+    {
+        /* NewStyles replaces the style arrays, so the style indices that
+         * follow only need bits for this array (not a running total) */
+        int fill_bits = bitstream_need_bits_unsigned(shape_with_style->fill_styles.count);
+        int line_bits = bitstream_need_bits_unsigned(shape_with_style->line_styles.count);
+        if ((fill_bits > 15) || (line_bits > 15)) { // UB[4] fields
+            fprintf(stderr, "swf_styles_build: too many styles (fill=%d line=%d)\n",
+                    shape_with_style->fill_styles.count,
+                    shape_with_style->line_styles.count);
+            return 1;
+        }
+        shape_with_style->styles_count.fill_bits_count = fill_bits;
+        shape_with_style->styles_count.line_bits_count = line_bits;
+    }
     ret = swf_styles_count_build(bs, &(shape_with_style->styles_count));
     if (ret) {
         fprintf(stderr, "swf_styles_build: swf_styles_count_build failed");
