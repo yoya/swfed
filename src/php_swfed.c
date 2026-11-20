@@ -1234,17 +1234,25 @@ PHP_METHOD(SWFEditor, replaceBitmapData) {
                                                  0);
             break;
         case BITMAP_UTIL_FORMAT_PNG:
+#ifdef HAVE_PNG
             result = swf_object_replace_pngdata(swf, image_id,
                                                 (unsigned char *)data,
                                                 (unsigned long) data_len,
                                                 rgb15);
-
+#else
+            fprintf(stderr, "replaceBitmapData: no png library\n");
+            RETURN_FALSE;
+#endif
             break;
         case BITMAP_UTIL_FORMAT_GIF:
+#ifdef HAVE_GIF
             result = swf_object_replace_gifdata(swf, image_id,
                                                 (unsigned char *)data,
                                                 (unsigned long) data_len);
-
+#else
+            fprintf(stderr, "replaceBitmapData: no gif library\n");
+            RETURN_FALSE;
+#endif
             break;
         default:
             php_error_docref(NULL, E_WARNING, "Unknown Bitmap Format");

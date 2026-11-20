@@ -1,5 +1,9 @@
 --TEST--
 replaceGIFData() / replacePNGData() / Lossless input reject palette index overflow
+--SKIPIF--
+<?php ob_start(); phpinfo(INFO_MODULES); $info = ob_get_clean();
+if (strpos($info, 'PNG support => yes') === false) die('skip swfed built without libpng');
+if (strpos($info, 'GIF support => yes') === false) die('skip swfed built without giflib'); ?>
 --FILE--
 <?php
 

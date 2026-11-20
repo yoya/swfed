@@ -799,7 +799,13 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         fprintf(stderr, "swf_tag_get_png_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
+#ifdef HAVE_PNG
     return swf_tag_lossless_get_png_data(tag->detail, length, image_id, tag);
+#else
+    (void) image_id;
+    fprintf(stderr, "swf_tag_get_png_data: built without libpng\n");
+    return NULL;
+#endif
 }
 
 int
@@ -900,7 +906,12 @@ swf_tag_convert_bitmap_data_tojpegtag(swf_tag_t *tag) {
         return 1;
     }
     image_id= swf_tag_lossless->image_id;
+#ifdef HAVE_PNG
     bitmap_data = swf_tag_lossless_get_png_data(swf_tag_lossless, &bitmap_data_len, image_id, tag);
+#else
+    fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: built without libpng\n");
+    bitmap_data = NULL;
+#endif
     if (bitmap_data == NULL) {
         fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: failed to swf_tag_get_png_data image_id=%d\n", image_id);
         return 1;
