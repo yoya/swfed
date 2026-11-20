@@ -37,7 +37,7 @@ CODE;
 
 $cmd = escapeshellarg(PHP_BINARY) . ' -n'
      . ' -d ' . escapeshellarg('extension_dir=' . ini_get('extension_dir'))
-     . ' -d extension=swfed -d display_errors=0'
+     . ' -d extension=swfed'
      . ' -r ' . escapeshellarg($child);
 $p = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('file', '/dev/null', 'w')), $pipes);
 echo stream_get_contents($pipes[1]);

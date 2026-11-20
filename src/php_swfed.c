@@ -122,8 +122,9 @@ ZEND_GET_MODULE(swfed)
 /* {{{ PHP_INI
  */
 /* swfed.max_uncompressed_size: upper limit of the SWF size after decompression
- * (the header file_length). The C library allocates with malloc(), outside
- * memory_limit. 0 (default) uses memory_limit, -1 means unlimited. */
+ * (the header file_length of a compressed SWF: CWS / ZWS). The C library
+ * allocates with malloc(), outside memory_limit.
+ * 0 (default) uses memory_limit, -1 means unlimited. */
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("swfed.max_uncompressed_size", "0", PHP_INI_ALL, NULL)
 PHP_INI_END()
@@ -158,11 +159,19 @@ static zend_long swfed_max_uncompressed_size(void) {
     return (limit < 0) ? -1 : limit;
 }
 
-/* checks the file_length in the SWF header; warns and returns 1 if too large */
+/* checks the file_length in the header of a compressed SWF (CWS / ZWS), which
+ * is the size after decompression; warns and returns 1 if too large.
+ * An uncompressed SWF (FWS) needs no decompression, so its memory use is
+ * proportional to the input, and non SWF data is rejected by the C library. */
 static int swfed_check_uncompressed_size(const char *data, size_t data_len) {
-    zend_long limit = swfed_max_uncompressed_size();
+    zend_long limit;
     unsigned long file_length;
-    if ((limit < 0) || (data_len < 8)) {
+    if ((data_len < 8) ||
+        ((memcmp(data, "CWS", 3) != 0) && (memcmp(data, "ZWS", 3) != 0))) {
+        return 0;
+    }
+    limit = swfed_max_uncompressed_size();
+    if (limit < 0) {
         return 0;
     }
     file_length = (unsigned long) (unsigned char) data[4] |
