@@ -11,6 +11,7 @@
 #include "swf_cxform.h"
 #include "swf_cxformwithalpha.h"
 #include "swf_tag.h"
+#include "y_keyvalue.h"
 
 typedef struct swf_tag_place_detail_ {
     int character_id; //  optional if PlaceObject2
@@ -47,6 +48,8 @@ extern void swf_tag_place_print_detail(swf_tag_t *tag,
 extern void swf_tag_place_destroy_detail(swf_tag_t *tag);
 
 extern int swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len, struct swf_object_ *swf);
+extern int swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                                int *modified, int swf_version);
 
 #endif /* __SWF_TAG_PLACE__H__ */
 
