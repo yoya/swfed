@@ -18,18 +18,20 @@ Password:
 - PHP 7.2 or newer
 - zlib (required)
 - libpng, giflib (optional; without them PNG / GIF support is disabled)
+- liblzma (xz) (optional; without it LZMA compressed SWF (ZWS) can't be read or written)
 
 configure first uses a library as it is when the compiler finds it without
 any option (system directories, the macOS SDK). Otherwise it looks for the
 library with pkg-config, then under /usr/local, /usr, /opt/homebrew and
 /opt/local, and uses the first one found.
-Use --with-zlib-dir=DIR / --with-png-dir=DIR / --with-gif-dir=DIR to give
-the install prefix explicitly, and --without-png-dir / --without-gif-dir to
-build without PNG / GIF support.
+Use --with-zlib-dir=DIR / --with-png-dir=DIR / --with-gif-dir=DIR /
+--with-lzma-dir=DIR to give the install prefix explicitly, and
+--without-png-dir / --without-gif-dir / --without-lzma-dir to build without
+PNG / GIF / LZMA support.
 
 * macOS (Homebrew)
 
-% brew install zlib libpng giflib pkg-config
+% brew install zlib libpng giflib xz pkg-config
 % phpize
 % ./configure
 
@@ -39,4 +41,5 @@ on Intel Macs in /usr/local:
 
 % ./configure --with-zlib-dir=/opt/homebrew/opt/zlib \
               --with-png-dir=/opt/homebrew/opt/libpng \
-              --with-gif-dir=/opt/homebrew/opt/giflib
+              --with-gif-dir=/opt/homebrew/opt/giflib \
+              --with-lzma-dir=/opt/homebrew/opt/xz

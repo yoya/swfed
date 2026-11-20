@@ -16,9 +16,18 @@ $o->input(file_get_contents('tests/negimiku.swf'));
 $list = $o->getTagList();
 var_dump(isset($list[1]['detail']), $o->getTagDetail(1)); // JPEGTables
 
+// LZMA compressed SWF (ZWS) can't be read without liblzma (input() prints a message)
+ob_start();
+phpinfo(INFO_MODULES);
+$lzma = (strpos(ob_get_clean(), 'LZMA (ZWS) support => yes') !== false);
+
 $bad = 0;
 foreach (glob('tests/*.swf') as $file) {
-    $o->input(file_get_contents($file));
+    $data = file_get_contents($file);
+    if ((! $lzma) && (substr($data, 0, 3) === 'ZWS')) {
+        continue;
+    }
+    $o->input($data);
     foreach ($o->getTagList() as $i => $tag) {
         $d = $o->getTagDetail($i);
         if (isset($tag['detail']) !== is_array($d)) {
