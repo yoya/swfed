@@ -477,6 +477,7 @@ static int swfed_tag_detail_supported(int code) {
     switch (code) {
       case 2: case 4: case 6: case 12: case 14: case 20: case 21: case 22:
       case 26: case 32: case 35: case 36: case 37: case 39: case 46: case 59:
+      case 83: case 84:
       case 90:
         return 1;
     }
@@ -634,11 +635,13 @@ PHP_METHOD(SWFEditor, getTagDetail) {
       case 22: // DefineShape2;
       case 32: // DefineShape3;
       case 46: // DefineMorphShape;
+      case 83: // DefineShape4;
+      case 84: // DefineMorphShape2;
         tag_shape = tag->detail;
         array_init(return_value);
         add_assoc_long(return_value, "shape_id", tag_shape->shape_id);
-        if (tag->code == 46) {
-            /* DefineMorphShape keeps the style arrays in morph_shape_with_style;
+        if (tag_shape->is_morph) { // DefineMorphShape / DefineMorphShape2
+            /* They keep the style arrays in morph_shape_with_style;
              * shape_with_style is left empty. */
             add_assoc_long(return_value, "fill_styles.count",
                            tag_shape->morph_shape_with_style.styles.fill_styles.count);

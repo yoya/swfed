@@ -17,6 +17,7 @@ typedef struct jpeg_segment_node_ {
 
 typedef struct jpeg_segment_ {
     jpeg_segment_node_t *head, *tail;
+    int broken; // jpeg_segment_parse() stopped at a broken segment
 } jpeg_segment_t;
 
 extern jpeg_segment_t *jpeg_segment_create(void);
@@ -34,6 +35,9 @@ extern int jpeg_segment_contain(jpeg_segment_t *jpeg_seg, int marker);
 extern unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,
                                               int marker,
                                               unsigned long *length);
+extern unsigned char *jpeg_segment_steal_node_before(jpeg_segment_t *jpeg_seg,
+                                                     int marker, int stop_marker,
+                                                     unsigned long *length);
 extern int jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker);
 extern int jpeg_segment_peek_marker(jpeg_segment_t *jpeg_seg);
 
