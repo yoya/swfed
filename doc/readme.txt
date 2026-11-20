@@ -26,17 +26,25 @@
 
 * messages and errors
 
- - swfInfo() (and the other print output) goes through the PHP output,
-   so ob_start() can catch it.
+ - swfInfo(), printTagData() and disasmActionData() print through the
+   PHP output, so ob_start() can catch it.
  - SWFEditor::getLastError() returns the error messages of the last
-   SWFEditor method call (one per line), or null.
- - php.ini swfed.error_output decides where the error messages go:
+   SWFEditor method call (one per line), or null if there were none.
+   Every method clears it when it starts, even if it returns early
+   because of a wrong argument. A method can return false without a
+   message, so it can be null after a failure.
+ - php.ini swfed.error_output decides where the error messages go
+   (not case sensitive):
      stderr  : the process's stderr (default)
-     warning : E_WARNING
-     off     : nowhere (only getLastError())
+     warning : E_WARNING, one per message
+     none    : nowhere (only getLastError()); off is the same
+   An unknown value is a warning (ini_set() returns false).
+ - the output and the messages are written after the method has finished
+   with the movie, so an ob_start() callback or an error handler can call
+   methods of the same SWFEditor object.
 
  if ($swf->input($swfdata) === false) {
-     error_log(SWFEditor::getLastError());
+     error_log(SWFEditor::getLastError() ?? 'input() failed');
  }
 
 

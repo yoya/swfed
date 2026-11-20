@@ -42,10 +42,33 @@ PHP_RINIT_FUNCTION(swfed);
 PHP_RSHUTDOWN_FUNCTION(swfed);
 PHP_MINFO_FUNCTION(swfed);
 
+/* swfed.error_output */
+#define SWFED_ERROR_OUTPUT_STDERR  0
+#define SWFED_ERROR_OUTPUT_WARNING 1
+#define SWFED_ERROR_OUTPUT_NONE    2
+
+/* output of the C library is not passed to PHP while the library runs
+ * (the user code it could run would change the data the library is walking),
+ * it is kept in pending and written out after the method returns. */
+#define SWFED_PENDING_PRINT   0 /* swfInfo() etc.: PHPWRITE() */
+#define SWFED_PENDING_WARNING 1 /* swfed.error_output=warning: E_WARNING */
+#define SWFED_PENDING_STDERR  2 /* swfed.error_output=stderr: kept in order with the others */
+typedef struct swfed_pending_segment_ {
+    int kind;
+    size_t length; /* the bytes are in pending, in order */
+} swfed_pending_segment;
 
 ZEND_BEGIN_MODULE_GLOBALS(swfed)
-    char *error_output; // swfed.error_output: "stderr", "warning" or "none"
+    int error_output;   // swfed.error_output: SWFED_ERROR_OUTPUT_*
     char *last_error;   // malloc'ed, SWFEditor::getLastError()
+    size_t last_error_len;
+    size_t last_error_cap;
+    char *pending;      // malloc'ed, output waiting for the library to return
+    size_t pending_len;
+    size_t pending_cap;
+    swfed_pending_segment *pending_segments; // malloc'ed
+    size_t pending_segments_num;
+    size_t pending_segments_cap;
 ZEND_END_MODULE_GLOBALS(swfed)
 
 #define SWFED_G(v) ZEND_MODULE_GLOBALS_ACCESSOR(swfed, v)
