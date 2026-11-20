@@ -300,13 +300,23 @@ swf_object_rebuild(swf_object_t *swf) {
     return 0;
 }
 
-/* Register the characters that tags without a detail handler refer to:
- * PlaceObject3, ExportAssets / SymbolClass (linkage) and DoInitAction.
- * These tags are never edited, so their raw data is always there. */
+/* Register the characters that PlaceObject3, ExportAssets / SymbolClass
+ * (linkage) and DoInitAction refer to.
+ * PlaceObject3 / ExportAssets / SymbolClass have no detail handler, so their
+ * raw data is always there. DoInitAction has one: after rebuild() or
+ * replaceActionStrings() the raw data is gone and its SpriteID is in the
+ * detail. */
 static void
 _swf_object_reserve_linkage_refcids(swf_tag_t *tag, trans_table_t *table) {
     unsigned char *d = tag->data, *p;
     unsigned long len = tag->length, pos, i, n;
+    if ((d == NULL) && (tag->code == 59) && tag->detail) {
+        swf_tag_action_detail_t *action = (swf_tag_action_detail_t *) tag->detail;
+        if (action->action_sprite > 0) {
+            trans_table_set(table, action->action_sprite, TRANS_TABLE_RESERVE_ID);
+        }
+        return;
+    }
     if (d == NULL) {
         return;
     }
@@ -412,6 +422,8 @@ swf_object_purge_contents(swf_object_t *swf) {
                     fprintf(stderr, "swf_object_purge_contents: tag_sprite == NULL\n");
                 } else {
                     for (t = tag_sprite->tag ; t ; t = t->next) {
+                        // PlaceObject3 etc. inside the sprite
+                        _swf_object_reserve_linkage_refcids(t, refcid_trans_table);
                         if (isButtonTag(tag->code)) {
                             int *character_id_list, character_id_list_num;
                             character_id_list = swf_tag_button_character_get_refcid_list(tag, &character_id_list_num);
