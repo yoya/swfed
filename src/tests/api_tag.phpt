@@ -69,5 +69,5 @@ bool(true)
 bool(true)
 %Abool(false)
 * printTagData
-bool(true)
+%Abool(true)
 %A===DONE===%A

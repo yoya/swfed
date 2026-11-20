@@ -1,5 +1,13 @@
 --TEST--
 replaceGIFData test;
+--SKIPIF--
+<?php
+ob_start();
+phpinfo(INFO_MODULES);
+if (strpos(ob_get_clean(), 'GIF support => yes') === false) {
+    die('skip swfed built without giflib');
+}
+?>
 --FILE--
 <?php
 

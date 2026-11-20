@@ -1,5 +1,12 @@
 --TEST--
 replaceMovieClip() rejects nested DefineSprite in the inserted SWF
+--SKIPIF--
+<?php
+// getrusage() has no ru_maxrss on Windows
+if (PHP_OS_FAMILY === 'Windows') {
+    die('skip no ru_maxrss on Windows');
+}
+?>
 --FILE--
 <?php
 
