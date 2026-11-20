@@ -18,7 +18,7 @@ Password:
 - PHP 7.2 or newer
 - zlib (required)
 - libpng, giflib (optional; without them PNG / GIF support is disabled)
-- liblzma (xz) (optional; without it LZMA compressed SWF (ZWS) can't be read)
+- liblzma (xz) (optional; without it LZMA compressed SWF (ZWS) can't be read or written)
 
 configure first uses a library as it is when the compiler finds it without
 any option (system directories, the macOS SDK). Otherwise it looks for the
