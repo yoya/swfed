@@ -8,20 +8,22 @@
 #include <string.h>
 #include "bitstream.h"
 #include "swf_tag_place.h"
+#include "swf_action.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t place_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_place_detail_handler_table = {
+    .create      = swf_tag_place_create_detail,
+    .input       = swf_tag_place_input_detail,
+    .get_cid     = NULL,
+    .replace_cid = NULL,
+    .output      = swf_tag_place_output_detail,
+    .print       = swf_tag_place_print_detail,
+    .destroy     = swf_tag_place_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_place_detail_handler(void) {
-    place_detail_handler.create   = swf_tag_place_create_detail;
-    place_detail_handler.input    = swf_tag_place_input_detail;
-    place_detail_handler.get_cid  = NULL;
-    place_detail_handler.replace_cid = NULL;
-    place_detail_handler.output   = swf_tag_place_output_detail;
-    place_detail_handler.print    = swf_tag_place_print_detail;
-    place_detail_handler.destroy  = swf_tag_place_destroy_detail;
-    return &place_detail_handler;
+    return &swf_tag_place_detail_handler_table;
 }
 
 void *
@@ -118,7 +120,23 @@ swf_tag_place_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         if (swf_tag_place->flag_has_clip_depth) {
             swf_tag_place->clip_depth = bitstream_getbytesLE(bs, 2);   
         }
-        // TODO: clip action data for SWF 5
+        if (swf_tag_place->flag_has_clip_action) {
+            unsigned long pos;
+            bitstream_align(bs);
+            pos = bitstream_getbytepos(bs);
+            if (pos >= length) {
+                fprintf(stderr, "ERROR: swf_tag_place_input_detail: no clip actions. character_id=%d\n", swf_tag_place->character_id);
+                bitstream_close(bs);
+                return 1;
+            }
+            swf_tag_place->clip_actions_len = length - pos;
+            swf_tag_place->clip_actions = malloc(swf_tag_place->clip_actions_len);
+            if (swf_tag_place->clip_actions == NULL) {
+                bitstream_close(bs);
+                return 1;
+            }
+            memcpy(swf_tag_place->clip_actions, data + pos, swf_tag_place->clip_actions_len);
+        }
         
     } else {
         bitstream_close(bs);
@@ -198,7 +216,10 @@ swf_tag_place_output_detail(swf_tag_t *tag, unsigned long *length,
         if (swf_tag_place->flag_has_clip_depth) {
             bitstream_putbytesLE(bs, swf_tag_place->clip_depth, 2);
         }
-        // TODO: clip action data for SWF 5
+        if (swf_tag_place->flag_has_clip_action && swf_tag_place->clip_actions) {
+            bitstream_align(bs);
+            bitstream_putstring(bs, swf_tag_place->clip_actions, swf_tag_place->clip_actions_len);
+        }
     } else {
         bitstream_close(bs);
         return NULL; // unknown tag;
@@ -264,15 +285,97 @@ swf_tag_place_destroy_detail(swf_tag_t *tag) {
         if (swf_tag_place->name) {
             free(swf_tag_place->name);
         }
+        free(swf_tag_place->clip_actions);
         free(swf_tag_place);
         tag->detail = NULL;
     }
     return ;
 }
 
+/*
+ * PlaceObject3 has no detail handler (its raw data is always kept):
+ * read the fields up to Name.
+ * *cid_offset: byte offset of CharacterId, 0 if it has no CharacterId.
+ * *name (if name != NULL): malloc'ed instance name, NULL if it has no Name.
+ */
+int
+swf_tag_place3_parse_head(swf_tag_t *tag, unsigned long *cid_offset, char **name) {
+    bitstream_t *bs;
+    int flags, flags2;
+    swf_matrix_t matrix;
+    swf_cxformwithalpha_t cxform;
+    *cid_offset = 0;
+    if (name) {
+        *name = NULL;
+    }
+    if ((tag->code != 70) || (tag->data == NULL) || (tag->length < 4)) {
+        return 1;
+    }
+    bs = bitstream_open();
+    bitstream_input(bs, tag->data, tag->length);
+    flags = bitstream_getbyte(bs);
+    flags2 = bitstream_getbyte(bs);
+    bitstream_getbytesLE(bs, 2); // Depth
+    // ClassName: HasClassName, or HasImage and HasCharacter
+    if ((flags2 & 0x08) || ((flags2 & 0x10) && (flags & 0x02))) {
+        char *class_name = (char *) bitstream_outputstring(bs);
+        if (class_name == NULL) {
+            bitstream_close(bs);
+            return 1;
+        }
+        free(class_name);
+    }
+    if (flags & 0x02) { // HasCharacter
+        *cid_offset = bitstream_getbytepos(bs);
+        if (*cid_offset + 2 > tag->length) {
+            *cid_offset = 0;
+            bitstream_close(bs);
+            return 1;
+        }
+        bitstream_getbytesLE(bs, 2);
+    }
+    if ((name == NULL) || ((flags & 0x20) == 0)) { // ! HasName
+        bitstream_close(bs);
+        return 0;
+    }
+    if ((flags & 0x04) && swf_matrix_parse(bs, &matrix)) { // HasMatrix
+        bitstream_close(bs);
+        return 1;
+    }
+    if ((flags & 0x08) && swf_cxformwithalpha_parse(bs, &cxform)) { // HasColorTransform
+        bitstream_close(bs);
+        return 1;
+    }
+    if (flags & 0x10) { // HasRatio
+        bitstream_getbytesLE(bs, 2);
+    }
+    *name = (char *) bitstream_outputstring(bs);
+    bitstream_close(bs);
+    return (*name == NULL) ? 1 : 0;
+}
+
 int
 swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_name, int instance_name_len, struct swf_object_ *swf) {
     swf_tag_place_detail_t *swf_tag_place;
+    if (tag->code == 70) { // PlaceObject3
+        unsigned long cid_offset;
+        char *name;
+        int cid, match;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, &name)) {
+            return -1;
+        }
+        if (name == NULL) {
+            return -2; // no name
+        }
+        match = (strlen(name) == (size_t) instance_name_len) &&
+            (strncmp(name, (char *) instance_name, instance_name_len) == 0);
+        free(name);
+        if (! match) {
+            return -3; // name no match
+        }
+        cid = cid_offset ? GetUShortLE((tag->data + cid_offset)) : 0;
+        return cid; // found
+    }
     if (! isPlaceTag(tag->code)) {
         fprintf(stderr, "swf_tag_place_get_cid_by_instance_name: ! isPlaceTag(%d)\n", tag->code);
         return -1; // wrong tag
@@ -290,4 +393,109 @@ swf_tag_place_get_cid_by_instance_name(swf_tag_t *tag, unsigned char *instance_n
         return -3; // name no match
     }
     return swf_tag_place->character_id; // found
+}
+
+static unsigned long
+_get_le(unsigned char *d, int size) {
+    unsigned long v = 0;
+    int i;
+    for (i = 0 ; i < size ; i++) {
+        v |= (unsigned long) d[i] << (8 * i);
+    }
+    return v;
+}
+
+/*
+ * Replace strings in the actions of CLIPACTIONS (onClipEvent), which are
+ * kept as raw bytes. EventFlags are UI16 up to SWF 5 and UI32 from SWF 6.
+ */
+int
+swf_tag_place_replace_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                     int *modified, int swf_version) {
+    swf_tag_place_detail_t *swf_tag_place = (swf_tag_place_detail_t *) tag->detail;
+    int flag_size = (swf_version >= 6) ? 4 : 2;
+    unsigned char *d;
+    unsigned long len, pos;
+    bitstream_t *out;
+    int changed = 0;
+    *modified = 0;
+    if ((swf_tag_place == NULL) || (swf_tag_place->clip_actions == NULL)) {
+        return 0;
+    }
+    d = swf_tag_place->clip_actions;
+    len = swf_tag_place->clip_actions_len;
+    if (len < (unsigned long) (2 + flag_size)) {
+        return 1;
+    }
+    out = bitstream_open();
+    bitstream_putstring(out, d, 2 + flag_size); // Reserved, AllEventFlags
+    pos = 2 + flag_size;
+    while (1) {
+        unsigned long size, keycode_len;
+        unsigned char *actions;
+        swf_action_list_t *list;
+        bitstream_t *bs;
+        int m = 0;
+        if (pos + flag_size > len) {
+            goto fail;
+        }
+        if (_get_le(d + pos, flag_size) == 0) { // ClipActionEndFlag
+            bitstream_putstring(out, d + pos, flag_size);
+            break;
+        }
+        if (pos + flag_size + 4 > len) {
+            goto fail;
+        }
+        size = _get_le(d + pos + flag_size, 4); // ActionRecordSize
+        if (size > len - (pos + flag_size + 4)) {
+            goto fail;
+        }
+        // KeyCode follows when ClipEventKeyPress (SWF 6+) is set
+        keycode_len = ((flag_size == 4) && (d[pos + 2] & 0x02)) ? 1 : 0;
+        if (size < keycode_len) {
+            goto fail;
+        }
+        actions = d + pos + flag_size + 4 + keycode_len;
+        list = swf_action_list_create();
+        bs = bitstream_open();
+        bitstream_input(bs, actions, size - keycode_len);
+        if ((list == NULL) || swf_action_list_parse(bs, list) ||
+            swf_action_list_replace_strings(list, &m, kv)) {
+            bitstream_close(bs);
+            swf_action_list_destroy(list);
+            goto fail;
+        }
+        bitstream_close(bs);
+        bitstream_putstring(out, d + pos, flag_size); // EventFlags
+        if (m) {
+            unsigned long actions_len;
+            unsigned char *new_actions;
+            bs = bitstream_open();
+            swf_action_list_build(bs, list);
+            new_actions = bitstream_steal(bs, &actions_len);
+            bitstream_close(bs);
+            bitstream_putbytesLE(out, keycode_len + actions_len, 4);
+            bitstream_putstring(out, d + pos + flag_size + 4, keycode_len);
+            bitstream_putstring(out, new_actions, actions_len);
+            free(new_actions);
+            changed = 1;
+        } else {
+            bitstream_putstring(out, d + pos + flag_size, 4 + size);
+        }
+        swf_action_list_destroy(list);
+        pos += flag_size + 4 + size;
+    }
+    if (changed) {
+        unsigned long new_len;
+        free(swf_tag_place->clip_actions);
+        swf_tag_place->clip_actions = bitstream_steal(out, &new_len);
+        swf_tag_place->clip_actions_len = new_len;
+        *modified = 1;
+    }
+    bitstream_close(out);
+    return 0;
+ fail:
+    fprintf(stderr, "swf_tag_place_replace_action_strings: broken clip actions\n");
+    bitstream_close(out);
+    return 1;
 }

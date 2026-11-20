@@ -81,41 +81,46 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
     int result;
     bitstream_t *bs;
     swf_tag_t *tag, *prev_tag;
-    // delete old tag if twice call
-    _swf_object_tag_close(swf->tag_head);
-    swf->tag_head = NULL;
-    swf->tag_tail = NULL;
+    /* Parse into temporaries first so a failure part-way through leaves the
+     * existing header / tag list untouched. The old content is only replaced
+     * once parsing succeeds. */
+    swf_header_t new_header;
+    swf_header_movie_t new_header_movie;
+    swf_tag_t *new_tag_head = NULL;
+    swf_tag_t *new_tag_tail = NULL;
+    memset(&new_header, 0, sizeof(new_header));
+    memset(&new_header_movie, 0, sizeof(new_header_movie));
 
     bs = bitstream_open();
     if (bitstream_input(bs, data, data_len)) {
         bitstream_close(bs);
         return 1;
     }
-    result = swf_header_parse(bs, &swf->header);
+    result = swf_header_parse(bs, &new_header);
     if (result) {
         bitstream_close(bs);
         return result;
     }
-    if (memcmp(swf->header.magic, "FWS", 3) == 0) {
+    if (memcmp(new_header.magic, "FWS", 3) == 0) {
         ; // OK
-    } else if (memcmp(swf->header.magic, "CWS", 3) == 0) {
+    } else if (memcmp(new_header.magic, "CWS", 3) == 0) {
         int result;
         unsigned char *old_buff_ref, *new_buff;
         unsigned long origsize, compsize;
-        if ((swf->header.file_length < SWF_HEADER_SIZE) ||
+        if ((new_header.file_length < SWF_HEADER_SIZE) ||
             (bs->data_len < SWF_HEADER_SIZE)) {
             fprintf(stderr, "swf_object_input: invalid length file_length=%lu data_len=%lu\n",
-                    swf->header.file_length, bs->data_len);
+                    new_header.file_length, bs->data_len);
             bitstream_close(bs);
             return 1; // FAILURE
         }
         old_buff_ref = bitstream_buffer(bs, SWF_HEADER_SIZE);
         compsize = bs->data_len - SWF_HEADER_SIZE;
-        origsize = swf->header.file_length - SWF_HEADER_SIZE;
+        origsize = new_header.file_length - SWF_HEADER_SIZE;
         /* deflate can't exceed ~1032:1; don't malloc impossible sizes */
         if (origsize / 1032 > compsize) {
             fprintf(stderr, "swf_object_input: file_length=%lu too large for compressed size=%lu\n",
-                    swf->header.file_length, compsize);
+                    new_header.file_length, compsize);
             bitstream_close(bs);
             return 1; // FAILURE
         }
@@ -142,43 +147,59 @@ swf_object_input(swf_object_t *swf, unsigned char *data,
         free(new_buff);
         bitstream_setpos(bs, SWF_HEADER_SIZE, 0);
     } else {
-        fprintf(stderr, "swf_object_input: unknown magic %s\n", swf->header.magic);
+        fprintf(stderr, "swf_object_input: unknown magic %s\n", new_header.magic);
         bitstream_close(bs);
         return 1; // FAILURE
     }
-    result = swf_header_movie_parse(bs, &swf->header_movie);
+    result = swf_header_movie_parse(bs, &new_header_movie);
     if (result) {
         bitstream_close(bs);
         return result;
     }
-    swf->tag_head = NULL;
     prev_tag = NULL;
     while(1) {
         long pos;
         bitstream_align(bs);
         pos = bitstream_getbytepos(bs);
-        if ((pos == -1) || ((long) swf->header.file_length <= pos)) {
-            break;
+        if ((pos == -1) || ((long) new_header.file_length <= pos)) {
+            break; // a missing End tag at the very end is tolerated
+        }
+        if ((unsigned long) pos >= bitstream_length(bs)) {
+            fprintf(stderr, "swf_object_input: data ends at %ld before file_length(%lu)\n",
+                    pos, new_header.file_length);
+            _swf_object_tag_close(new_tag_head);
+            bitstream_close(bs);
+            return 1; // truncated
         }
         tag = swf_tag_create(bs);
         if (tag == NULL) {
-            break; // finish (no end tag in _root)
+            fprintf(stderr, "swf_object_input: broken tag at %ld\n", pos);
+            _swf_object_tag_close(new_tag_head);
+            bitstream_close(bs);
+            return 1;
         }
         if (prev_tag == NULL) {
-            swf->tag_head = tag;
+            new_tag_head = tag;
             tag->prev = tag->next = NULL;
         } else {
             prev_tag->next = tag;
             tag->prev = prev_tag;
             tag->next = NULL;
         }
-        swf->tag_tail = tag;
+        new_tag_tail = tag;
         if (tag->code == 0) { // END Tag
             break; // SUCCESS
         }
         prev_tag = tag;
     }
     bitstream_close(bs);
+
+    /* Commit: drop the old content and swap the new content in. */
+    _swf_object_tag_close(swf->tag_head);
+    swf->tag_head = new_tag_head;
+    swf->tag_tail = new_tag_tail;
+    swf->header = new_header;
+    swf->header_movie = new_header_movie;
     return 0;
 }
 
@@ -209,7 +230,11 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         return NULL;
     }
     for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        swf_tag_build(bs, tag, swf); 
+        if (swf_tag_build(bs, tag, swf)) { // don't emit a SWF with a tag missing
+            fprintf(stderr, "swf_object_output: swf_tag_build failed (code=%d)\n", tag->code);
+            bitstream_close(bs);
+            return NULL;
+        }
     }
     swf->header.file_length = bitstream_getbytepos(bs);
     bitstream_setpos(bs, SWF_MAGIC_SIZE, 0);
@@ -289,24 +314,87 @@ swf_object_rebuild(swf_object_t *swf) {
     return 0;
 }
 
-void
+/* Register the characters that PlaceObject3, ExportAssets / SymbolClass
+ * (linkage) and DoInitAction refer to.
+ * PlaceObject3 / ExportAssets / SymbolClass have no detail handler, so their
+ * raw data is always there. DoInitAction has one: after rebuild() or
+ * replaceActionStrings() the raw data is gone and its SpriteID is in the
+ * detail. */
+static void
+_swf_object_reserve_linkage_refcids(swf_tag_t *tag, trans_table_t *table) {
+    unsigned char *d = tag->data, *p;
+    unsigned long len = tag->length, pos, i, n;
+    if ((d == NULL) && (tag->code == 59) && tag->detail) {
+        swf_tag_action_detail_t *action = (swf_tag_action_detail_t *) tag->detail;
+        if (action->action_sprite > 0) {
+            trans_table_set(table, action->action_sprite, TRANS_TABLE_RESERVE_ID);
+        }
+        return;
+    }
+    if (d == NULL) {
+        return;
+    }
+    switch (tag->code) {
+      case 59: // DoInitAction: SpriteID
+        if (len >= 2) {
+            trans_table_set(table, GetUShortLE(d), TRANS_TABLE_RESERVE_ID);
+        }
+        break;
+      case 56: // ExportAssets: Count, { Tag, Name }
+      case 76: // SymbolClass: NumSymbols, { Tag, Name }
+        if (len < 2) {
+            break;
+        }
+        n = GetUShortLE(d);
+        pos = 2;
+        for (i = 0 ; (i < n) && (pos + 2 <= len) ; i++) {
+            int id;
+            p = d + pos;
+            id = GetUShortLE(p);
+            if (id > 0) { // 0 is the main timeline in SymbolClass
+                trans_table_set(table, id, TRANS_TABLE_RESERVE_ID);
+            }
+            for (pos += 2 ; (pos < len) && d[pos] ; pos++);
+            pos++; // NUL
+        }
+        break;
+      case 70: // PlaceObject3
+        if (len < 4) {
+            break;
+        }
+        pos = 4; // flags(2), Depth
+        // ClassName if HasClassName, or HasImage and HasCharacter
+        if ((d[1] & 0x08) || ((d[1] & 0x10) && (d[0] & 0x02))) {
+            for ( ; (pos < len) && d[pos] ; pos++);
+            pos++;
+        }
+        if ((d[0] & 0x02) && (pos + 2 <= len)) { // HasCharacter
+            p = d + pos;
+            trans_table_set(table, GetUShortLE(p), TRANS_TABLE_RESERVE_ID);
+        }
+        break;
+    }
+}
+
+int
 swf_object_purge_contents(swf_object_t *swf) {
     swf_tag_t *tag, *prev_tag;
     trans_table_t *refcid_trans_table;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_purge_contents: swf == NULL\n");
-        return ;
+        return 1;
     }
     refcid_trans_table = trans_table_open();
     if (refcid_trans_table == NULL) {
         fprintf(stderr, "swf_object_purge_contents: trans_table_open failed\n");
-        return ;
+        return 1;
     }
     // scan from tail
     for (tag = swf->tag_tail; tag ; tag = prev_tag) {
         int cid;
         int refcid;
         prev_tag = tag->prev;
+        _swf_object_reserve_linkage_refcids(tag, refcid_trans_table);
         refcid = swf_tag_get_refcid(tag);
         if (refcid > 0) {
             // register ref id in control tag
@@ -348,6 +436,8 @@ swf_object_purge_contents(swf_object_t *swf) {
                     fprintf(stderr, "swf_object_purge_contents: tag_sprite == NULL\n");
                 } else {
                     for (t = tag_sprite->tag ; t ; t = t->next) {
+                        // PlaceObject3 etc. inside the sprite
+                        _swf_object_reserve_linkage_refcids(t, refcid_trans_table);
                         if (isButtonTag(tag->code)) {
                             int *character_id_list, character_id_list_num;
                             character_id_list = swf_tag_button_character_get_refcid_list(tag, &character_id_list_num);
@@ -374,6 +464,7 @@ swf_object_purge_contents(swf_object_t *swf) {
         }
     }
     trans_table_close(refcid_trans_table);
+    return 0;
 }
 
 /* --- */
@@ -454,13 +545,24 @@ swf_object_get_tagcontents_bycid(swf_object_t *swf, int cid,
     swf_tag_t *tag;
     tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
-        // rebuild detail to (raw)data if modified
+        /* For edited tags (detail only, no raw data) serialize the detail
+         * without the tag header. swf_tag_build() writes the tag header too
+         * and also caches the result into tag->data; using it here mixes the
+         * header into the returned buffer and poisons tag->data / tag->length
+         * for the subsequent output(). Use the detail handler's output
+         * directly, which returns just the tag body. */
         if ((tag->data == NULL) && tag->detail) {
-            bitstream_t *bs;
-            bs = bitstream_open();
-            swf_tag_build(bs, tag, swf);
-            tag->data = bitstream_steal(bs, &(tag->length));
-            bitstream_close(bs);
+            swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
+            const swf_tag_detail_handler_t *handler =
+                (tag_info && tag_info->detail_handler)? tag_info->detail_handler(): NULL;
+            if (handler && handler->output) {
+                unsigned long data_len = 0;
+                unsigned char *data = handler->output(tag, &data_len, swf);
+                if (data) {
+                    tag->data = data;
+                    tag->length = data_len;
+                }
+            }
         }
         if (tag->data && (tag->length >= 2)) {
             *length = tag->length - 2;
@@ -643,32 +745,38 @@ swf_object_replace_shapedata(swf_object_t *swf, int cid,
         bitstream_close(bs);
         if ((new_tag == NULL) || (! isShapeTag(new_tag->code))) {
             fprintf(stderr, "swf_object_replace_shapedata: fallback to read old shape data\n");
-            // fallback reading Shape v0.37 and before
+            // fallback reading Shape v0.37 and before (shape body without CID)
             if (new_tag) {
                 swf_tag_destroy(new_tag);
             }
-            new_tag = swf_tag_move(old_tag);
-            swf_tag_destroy_detail(new_tag);
-            new_tag->length = length + 2;
-            if (new_tag->data) {
-                free(new_tag->data);
+            // build a fresh tag; old_tag must stay intact in case this fails
+            new_tag = calloc(sizeof(*new_tag), 1);
+            if (new_tag == NULL) {
+                return 1;
             }
+            new_tag->code = old_tag->code;
+            new_tag->length_longformat = old_tag->length_longformat;
+            new_tag->length = length + 2;
             new_tag->data = malloc(length + 2);
+            if (new_tag->data == NULL) {
+                free(new_tag);
+                return 1;
+            }
             PutUShortLE(new_tag->data, cid);
             memcpy(new_tag->data + 2, data, length);
         }
-        if (new_tag) {
-            if (swf_tag_create_input_detail(new_tag, swf)) {
-                // save cid in SWF
-                swf_tag_replace_cid(new_tag, cid);
-                _swf_object_replace_tag(swf, old_tag, new_tag);
-                swf_tag_destroy(old_tag);
-                // information modified so remove raw data.
-                free(new_tag->data);
-                new_tag->data = NULL;
-                return 0;
-            }
+        if (swf_tag_create_input_detail(new_tag, swf) == NULL) {
+            swf_tag_destroy(new_tag);
+            return 1;
         }
+        // save cid in SWF
+        swf_tag_replace_cid(new_tag, cid);
+        _swf_object_replace_tag(swf, old_tag, new_tag);
+        swf_tag_destroy(old_tag);
+        // information modified so remove raw data.
+        free(new_tag->data);
+        new_tag->data = NULL;
+        return 0;
     }
     return 1;
 }
@@ -785,6 +893,11 @@ swf_object_adjust_shapebitmap(swf_object_t *swf, int bitmap_id,
     swf_tag_t *tag = NULL;
     double width_scale = 0, height_scale = 0;
     int *bitmap_id_list, bitmap_id_list_num;
+    if ((old_width <= 0) || (old_height <= 0) || (new_width <= 0) || (new_height <= 0)) {
+        fprintf(stderr, "swf_object_adjust_shapebitmap: unknown bitmap size (%dx%d -> %dx%d), shapes are not adjusted\n",
+                old_width, old_height, new_width, new_height);
+        return 1;
+    }
     if (swf->shape_adjust_mode & SWFED_SHAPE_BITMAP_MATRIX_RESCALE) {
         width_scale  = (double) old_width  / new_width;
         height_scale = (double) old_height / new_height;
@@ -926,7 +1039,7 @@ swf_object_replace_jpegdata(swf_object_t *swf, int image_id,
                             int without_converting) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_jpegdata: swf == NULL\n");
         return 1;
@@ -990,7 +1103,7 @@ swf_object_replace_pngdata(swf_object_t *swf, int image_id,
                             unsigned long png_data_len, int rgb15) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_pngdata: swf == NULL\n");
         return 1;
@@ -1032,7 +1145,7 @@ swf_object_replace_gifdata(swf_object_t *swf, int image_id,
                             unsigned long gif_data_len) {
     int result = 1;
     swf_tag_t *tag;
-    int old_width, old_height, new_width, new_height;
+    int old_width = 0, old_height = 0, new_width = 0, new_height = 0;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_gifdata: swf == NULL\n");
         return 1;
@@ -1159,23 +1272,24 @@ swf_object_replace_editstring(swf_object_t *swf,
                               int variable_name_len,
                               char *initial_text,
                               int initial_text_len) {
-    int result = 1;
+    int replaced = 0;
     swf_tag_t *tag;
     if (swf == NULL) {
         fprintf(stderr, "swf_object_replace_editstring: swf == NULL\n");
         return 1;
     }
+    /* Replace every DefineEditText whose variable name matches. Returning on
+     * the first hit leaves duplicate fields with the original text. */
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        result = swf_tag_replace_edit_string(tag, variable_name,
-                                             variable_name_len,
-                                             initial_text,
-                                             initial_text_len,
-                                             swf);
-        if (! result) {
-            break;
+        if (swf_tag_replace_edit_string(tag, variable_name,
+                                        variable_name_len,
+                                        initial_text,
+                                        initial_text_len,
+                                        swf) == 0) {
+            replaced++;
         }
     }
-    return result;
+    return replaced? 0: 1;
 }
 
 unsigned char *
@@ -1291,6 +1405,55 @@ swf_object_insert_action_setvariables(swf_object_t *swf,
     return 0; // SUCCESS
 }
 
+/* action strings in DefineButton / DefineButton2 and in PlaceObject2 clip actions */
+static int
+_swf_object_replace_other_action_strings(swf_tag_t *tag, y_keyvalue_t *kv,
+                                         swf_object_t *swf, int *modified) {
+    int m = 0;
+    *modified = 0;
+    if (isButtonTag(tag->code)) {
+        swf_tag_button_detail_t *button = swf_tag_create_input_detail(tag, swf);
+        if (button == NULL) {
+            return 1;
+        }
+        if (tag->code == 7) { // DefineButton
+            if (button->actions) {
+                if (swf_action_list_replace_strings(button->actions, &m, kv)) {
+                    return 1;
+                }
+                *modified |= m;
+            }
+        } else if (button->condactions) { // DefineButton2
+            swf_button_condaction_t *ca;
+            for (ca = button->condactions->head ; ca ; ca = ca->next) {
+                if (ca->actions) {
+                    if (swf_action_list_replace_strings(ca->actions, &m, kv)) {
+                        return 1;
+                    }
+                    *modified |= m;
+                }
+            }
+        }
+    } else if (tag->code == 26) { // PlaceObject2
+        /* only those with HasClipActions need parsing */
+        if (tag->data && ((tag->length < 1) || ! (tag->data[0] & 0x80))) {
+            return 0;
+        }
+        if (swf_tag_create_input_detail(tag, swf) == NULL) {
+            return 1;
+        }
+        if (swf_tag_place_replace_action_strings(tag, kv, modified,
+                                                 swf->header.version)) {
+            return 1;
+        }
+    }
+    if (*modified && tag->data) { // rebuild from the detail
+        free(tag->data);
+        tag->data = NULL;
+    }
+    return 0;
+}
+
 int
 swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
     swf_tag_t *tag;
@@ -1305,7 +1468,13 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
         return 1; // NG
     }
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
-        if (isActionTag(tag->code)) {
+        if (isButtonTag(tag->code) || (tag->code == 26)) {
+            ret = _swf_object_replace_other_action_strings(tag, kv, swf, &m);
+            if (ret) {
+                fprintf(stderr, "swf_object_replace_action_strings: button / clip actions failed\n");
+                break;
+            }
+        } else if (isActionTag(tag->code)) {
             ret = swf_tag_replace_action_strings(tag, kv, &m, swf);
             if (ret) {
                 fprintf(stderr, "swf_object_replace_action_strings: swf_tag_replace_action_string failed\n");
@@ -1324,7 +1493,15 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                 int modified = 0;
                 swf_tag_t *t;
                 for (t = tag_sprite->tag ; t ; t = t->next) {
-                    if (isActionTag(t->code)) {
+                    if (t->code == 26) { // PlaceObject2 with onClipEvent
+                        ret = _swf_object_replace_other_action_strings(t, kv, swf, &m);
+                        if (ret) {
+                            break;
+                        }
+                        if (m) {
+                            modified = 1;
+                        }
+                    } else if (isActionTag(t->code)) {
                         ret = swf_tag_replace_action_strings(t, kv, &m, swf);
                         if (ret) {
                             fprintf(stderr, "swf_object_replace_action_strings: replace_action_string failed\n");
@@ -1350,6 +1527,203 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
 }
 
 /*
+ * where replaceMovieClip() puts each tag of the inserted SWF
+ */
+#define SWF_MOVIECLIP_TAG_UNSUPPORTED -1
+#define SWF_MOVIECLIP_TAG_DROP         0 // movie-level, meaningless in a sprite
+#define SWF_MOVIECLIP_TAG_DEFINE       1 // before the sprite
+#define SWF_MOVIECLIP_TAG_CONTROL      2 // into the sprite
+
+static int
+_swf_object_movieclip_tag_kind(int tag_no) {
+    switch (tag_no) {
+      case 8:  // JPEGTables (merged into DefineBitsJPEG beforehand)
+      case 9:  // SetBackgroundColor
+      case 24: // Protect
+      case 41: // ProductInfo
+      case 58: // EnableDebugger
+      case 63: // DebugID
+      case 64: // EnableDebugger2
+      case 65: // ScriptLimits
+      case 69: // FileAttributes
+      case 77: // Metadata
+      case 86: // DefineSceneAndFrameLabelData
+      case 93: // EnableTelemetry
+      case 777: // Reflex
+        return SWF_MOVIECLIP_TAG_DROP;
+      case 2:  // DefineShape
+      case 6:  // DefineBitsJPEG
+      case 7:  // DefineButton
+      case 10: // DefineFont
+      case 11: // DefineText
+      case 13: // DefineFontInfo
+      case 14: // DefineSound
+      case 17: // DefineButtonSound
+      case 20: // DefineBitsLossless
+      case 21: // DefineBitsJPEG2
+      case 22: // DefineShape2
+      case 23: // DefineButtonCxform
+      case 32: // DefineShape3
+      case 33: // DefineText2
+      case 34: // DefineButton2
+      case 35: // DefineBitsJPEG3
+      case 36: // DefineBitsLossless2
+      case 37: // DefineEditText
+      case 39: // DefineSprite
+      case 46: // DefineMorphShape
+      case 48: // DefineFont2
+      case 56: // ExportAssets
+      case 60: // DefineVideoStream
+      case 62: // DefineFontInfo2
+      case 73: // DefineFontAlignZones
+      case 74: // CSMTextSettings
+      case 75: // DefineFont3
+      case 78: // DefineScalingGrid
+      case 83: // DefineShape4
+      case 84: // DefineMorphShape2
+      case 87: // DefineBinaryData
+      case 88: // DefineFontName
+      case 90: // DefineBitsJPEG4
+      case 91: // DefineFont4
+        return SWF_MOVIECLIP_TAG_DEFINE;
+      case 0:  // End
+      case 1:  // ShowFrame
+      case 3:  // FreeCharacter
+      case 4:  // PlaceObject
+      case 5:  // RemoveObject
+      case 12: // DoAction
+      case 15: // StartSound
+      case 18: // SoundStreamHead
+      case 19: // SoundStreamBlock
+      case 26: // PlaceObject2
+      case 28: // RemoveObject2
+      case 43: // FrameLabel
+      case 45: // SoundStreamHead2
+      case 59: // DoInitAction
+      case 61: // VideoFrame
+      case 66: // SetTabIndex
+      case 70: // PlaceObject3
+      case 89: // StartSound2
+        return SWF_MOVIECLIP_TAG_CONTROL;
+    }
+    // ImportAssets, DoABC, SymbolClass, unknown tags, ...
+    return SWF_MOVIECLIP_TAG_UNSUPPORTED;
+}
+
+/*
+ * tags (without detail handler) whose first UI16 is the ID of
+ * a character defined by another tag
+ */
+static int
+_swf_object_is_first_refcid_tag(int tag_no) {
+    switch (tag_no) {
+      case 3:  // FreeCharacter: CharacterId
+      case 15: // StartSound: SoundId
+      case 23: // DefineButtonCxform: ButtonId
+      case 61: // VideoFrame: StreamID
+      case 62: // DefineFontInfo2: FontID
+      case 73: // DefineFontAlignZones: FontID
+      case 74: // CSMTextSettings: TextID
+      case 78: // DefineScalingGrid: CharacterId
+        return 1;
+    }
+    return 0;
+}
+
+static void
+_swf_object_replace_first_refcid(swf_tag_t *tag, trans_table_t *cid_trans_table) {
+    unsigned char *data = tag->data;
+    int refcid, to_refcid;
+    if ((data == NULL) || (tag->length < 2)) {
+        return;
+    }
+    refcid = GetUShortLE(data);
+    to_refcid = trans_table_get(cid_trans_table, refcid);
+    if ((to_refcid > 0) && (to_refcid != refcid)) {
+        PutUShortLE(data, to_refcid);
+    }
+}
+
+// ExportAssets: Count, { Tag(CID), Name }
+static void
+_swf_object_replace_export_refcid(swf_tag_t *tag, trans_table_t *cid_trans_table) {
+    unsigned char *data = tag->data, *p;
+    unsigned long length = tag->length, pos, i, count;
+    if ((data == NULL) || (length < 2)) {
+        return;
+    }
+    count = GetUShortLE(data);
+    pos = 2;
+    for (i = 0 ; (i < count) && (pos + 2 <= length) ; i++) {
+        int refcid, to_refcid;
+        p = data + pos;
+        refcid = GetUShortLE(p);
+        to_refcid = trans_table_get(cid_trans_table, refcid);
+        if ((to_refcid > 0) && (to_refcid != refcid)) {
+            PutUShortLE(p, to_refcid);
+        }
+        for (pos += 2 ; (pos < length) && data[pos] ; pos++);
+        pos++; // NUL
+    }
+}
+
+static swf_tag_t *
+_swf_object_search_jpegtables(swf_object_t *swf) {
+    swf_tag_t *tag;
+    for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        if (tag->code == 8) { // JPEGTables
+            return tag;
+        }
+    }
+    return NULL;
+}
+
+/*
+ * DefineBitsJPEG uses the JPEGTables of the SWF it is in.
+ * unless the tables are the same as the ones of the SWF it moves into,
+ * merge them (=> DefineBitsJPEG2).
+ */
+static int
+_swf_object_merge_jpegtables(swf_object_t *swf, swf_object_t *to_swf) {
+    swf_tag_t *tag, *tag_jpegtables, *to_tag_jpegtables;
+    tag_jpegtables = _swf_object_search_jpegtables(swf);
+    if (tag_jpegtables == NULL) {
+        return 0;
+    }
+    to_tag_jpegtables = _swf_object_search_jpegtables(to_swf);
+    if (to_tag_jpegtables && tag_jpegtables->data && to_tag_jpegtables->data &&
+        (tag_jpegtables->length == to_tag_jpegtables->length) &&
+        (memcmp(tag_jpegtables->data, to_tag_jpegtables->data,
+                tag_jpegtables->length) == 0)) {
+        return 0;
+    }
+    for (tag = swf->tag_head ; tag ; tag = tag->next) {
+        unsigned char *jpeg_data;
+        unsigned long jpeg_data_len;
+        int image_id, ret;
+        if (tag->code != 6) { // DefineBitsJPEG
+            continue;
+        }
+        image_id = swf_tag_get_cid(tag);
+        jpeg_data = swf_tag_get_jpeg_data(tag, &jpeg_data_len, image_id,
+                                          tag_jpegtables);
+        if (jpeg_data == NULL) {
+            fprintf(stderr, "_swf_object_merge_jpegtables: swf_tag_get_jpeg_data failed (image_id=%d)\n", image_id);
+            return 1;
+        }
+        // => DefineBitsJPEG2
+        ret = swf_tag_replace_jpeg_data(tag, image_id, jpeg_data, jpeg_data_len,
+                                        NULL, 0, 0);
+        free(jpeg_data);
+        if (ret) {
+            fprintf(stderr, "_swf_object_merge_jpegtables: swf_tag_replace_jpeg_data failed (image_id=%d)\n", image_id);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/*
  * replacce reference side CID value
  */
 static void
@@ -1360,10 +1734,13 @@ trans_table_replace_refcid_recursive(swf_tag_t *tag, trans_table_t *cid_trans_ta
             swf_tag_sprite_detail_t *tag_sprite;
             tag_sprite = swf_tag_create_input_detail(tag, NULL);
             if (tag_sprite == NULL) {
-                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed");
+                fprintf(stderr, "trans_table_replace_refcid_recursive: tag_sprite swf_tag_create_input_detail failed\n");
+                continue;
             }
             trans_table_replace_refcid_recursive(tag_sprite->tag, cid_trans_table);
-        } else if (isPlaceTag(tag_no)) {
+        } else if (_swf_object_is_first_refcid_tag(tag_no)) {
+            _swf_object_replace_first_refcid(tag, cid_trans_table);
+        } else if (isPlaceTag(tag_no) || (tag_no == 70)) { // PlaceObject, 2, 3
             int refcid = swf_tag_get_refcid(tag);
             if (refcid > 0) {
                 int to_refcid = trans_table_get(cid_trans_table, refcid);
@@ -1398,7 +1775,7 @@ swf_object_saerch_sprite_by_target_path2(swf_tag_t *tag_head,
     // search PlaceObject by instance_name and get ref CID
     for (tag = tag_head ; tag ; tag=tag->next) {
         cid = 0;
-        if (tag->code == 26) { // PlaceObject2
+        if ((tag->code == 26) || (tag->code == 70)) { // PlaceObject2, 3
             cid = swf_tag_place_get_cid_by_instance_name(tag, instance_name, instance_name_len, swf);
         }
         if (cid > 0) {
@@ -1462,7 +1839,7 @@ swf_object_replace_movieclip(swf_object_t *swf,
     swf_tag_sprite_detail_t *swf_tag_sprite = NULL;
     swf_object_t *swf4sprite = NULL;
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     trans_table_t *cid_trans_table = NULL;
     
     if (swf == NULL) {
@@ -1488,9 +1865,49 @@ swf_object_replace_movieclip(swf_object_t *swf,
     ret = swf_object_input(swf4sprite, swf_data, swf_data_len);
     if (ret) {
         fprintf(stderr, "swf_object_replace_movieclip: swf_object_input (swf_data_len=%d) failed\n", swf_data_len);
+        swf_object_close(swf4sprite);
         return ret;
     }
-    
+
+    /* A DefineSprite can't contain definition tags such as DefineSprite.
+     * Reject nested sprites before touching swf: walking them would copy
+     * every inner level again, costing memory quadratic to the depth. */
+    for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
+        swf_tag_sprite_detail_t *s;
+        swf_tag_t *t;
+        if (! isSpriteTag(tag->code)) {
+            continue;
+        }
+        s = swf_tag_create_input_detail(tag, swf4sprite);
+        if (s == NULL) {
+            fprintf(stderr, "swf_object_replace_movieclip: broken DefineSprite in swf_data\n");
+            swf_object_close(swf4sprite);
+            return 1;
+        }
+        for (t = s->tag ; t ; t = t->next) {
+            if (isSpriteTag(t->code)) {
+                fprintf(stderr, "swf_object_replace_movieclip: nested DefineSprite in swf_data\n");
+                swf_object_close(swf4sprite);
+                return 1;
+            }
+        }
+    }
+
+    // check all the tags before touching the movie
+    for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
+        if (_swf_object_movieclip_tag_kind(tag->code) == SWF_MOVIECLIP_TAG_UNSUPPORTED) {
+            tag_info = get_swf_tag_info(tag->code);
+            fprintf(stderr, "swf_object_replace_movieclip: can't put tag %d (%s) into a movie clip\n",
+                    tag->code, tag_info ? tag_info->name : "unknown");
+            swf_object_close(swf4sprite);
+            return 1;
+        }
+    }
+    if (_swf_object_merge_jpegtables(swf4sprite, swf)) {
+        swf_object_close(swf4sprite);
+        return 1;
+    }
+
     // old CID
     cid_trans_table = trans_table_open();
     for (tag=swf->tag_head ; tag ; tag=tag->next) {
@@ -1518,47 +1935,15 @@ swf_object_replace_movieclip(swf_object_t *swf,
     // extract tag each that type in SWF
     for (tag = swf4sprite->tag_head ; tag ; tag = tag->next) {
         int tag_no = tag->code;
-        switch (tag_no) {
-            // tag skip
-          default: // misc
-          case 3: // FreeCharacter
-          case 9: // SetBackgroundColor
-            // 16 missing
-          case 56: // Export
-          case 69: // FileAttributes
-          case 74: // CSMTextSettings
-          case 8: // JPEGTables // XXX
-              ;
+        switch (_swf_object_movieclip_tag_kind(tag_no)) {
+          default: // SWF_MOVIECLIP_TAG_DROP
             break;
-            // Character Tag
-          case 2: // DefineShape
-          case 6: // DefineBitsJPEG
-          case 7: // DefineButton
-          case 10: // DefineFont
-          case 11: // DefineText
-          case 13: // DefineFontInfo
-          case 14: // DefineSound
-          case 17: // DefineButtonSound
-          case 18: // SoundStreamHead"
-          case 19: // SoundStreamBlock
-          case 20: // DefineBitsLossless
-          case 21: // DefineBitsJPEG2
-          case 22: // DefineShape2
-          case 32: // DefineShape3
-          case 33: // DefineText2
-          case 34: // DefineButton2
-          case 35: // DefineBitsJPEG3
-          case 90: // DefineBitsJPEG4
-          case 36: // DefineBitsLossless2
-          case 37: // DefineEditText
-          case 39: // DefineSprite
-          case 46: // DefineMorphShape
-          case 48: // DefineFont2
-          case 73: // DefineFontAlignZones
-          case 75: // DefineFont3
-          case 83: // DefineShape4
-          case 84: // DefineMorphShape2
-          case 88: // DefineFontName
+          case SWF_MOVIECLIP_TAG_DEFINE:
+            if (tag_no == 56) { // ExportAssets
+                _swf_object_replace_export_refcid(tag, cid_trans_table);
+            } else if (_swf_object_is_first_refcid_tag(tag_no)) {
+                _swf_object_replace_first_refcid(tag, cid_trans_table);
+            }
             // change CID
             cid = swf_tag_get_cid(tag);
             if (cid > 0) {
@@ -1580,25 +1965,10 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 }
             }
             if (isShapeTag(tag_no)) {
-                int *bitmap_id_list, bitmap_id_list_num;
-                bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
-                if (bitmap_id_list) {
-                    int i;
-                    for (i = 0 ; i < bitmap_id_list_num; i++) {
-                        int bitmap_id = bitmap_id_list[i];
-                        int to_bitmap_id = trans_table_get(cid_trans_table, bitmap_id);
-                        if ((to_bitmap_id > 0) && (bitmap_id != to_bitmap_id)) {
-                            swf_tag_shape_bitmap_replace_refcid_list(tag, bitmap_id, to_bitmap_id);
-                        }
-                    }
-                    free(bitmap_id_list);
-                }
+                swf_tag_shape_bitmap_replace_refcid_by_table(tag, cid_trans_table);
             } else if (isSpriteTag(tag_no)){
                 swf_tag_sprite_detail_t *s;
-                s = swf_tag_create_input_detail(tag, swf);
-                if (s == NULL) {
-                    fprintf(stderr, "swf_object_replace_movieclip: s swf_tag_create_input_detail failed\n");
-                }
+                s = tag->detail; // created by the nested sprite check above
                 trans_table_replace_refcid_recursive(s->tag, cid_trans_table);
                 free(tag->data);
                 tag->data = NULL;
@@ -1613,29 +1983,30 @@ swf_object_replace_movieclip(swf_object_t *swf,
                 }
             }
             // extract tag before SpriteTag
-            prev_sprite_tag->next = swf_tag_move(tag);
-            prev_sprite_tag->next->prev = prev_sprite_tag;
-            prev_sprite_tag = prev_sprite_tag->next;
-            prev_sprite_tag->next = sprite_tag;
-            sprite_tag->prev = prev_sprite_tag;
+            {
+                swf_tag_t *inserted = swf_tag_move(tag);
+                if (prev_sprite_tag) {
+                    prev_sprite_tag->next = inserted;
+                    inserted->prev = prev_sprite_tag;
+                } else {
+                    /* sprite_tag was at the head of swf->tag_head; splice
+                     * the inserted tag in front and let it become the new
+                     * head. */
+                    inserted->prev = NULL;
+                    swf->tag_head = inserted;
+                }
+                prev_sprite_tag = inserted;
+                prev_sprite_tag->next = sprite_tag;
+                sprite_tag->prev = prev_sprite_tag;
+            }
             break;
-            // Control Tag
-          case 0: // End
-          case 1: // ShowFrame
-          case 4: // PlaceObject
-          case 5: // RemoveObject
-          case 12: // DoAction
-          case 15: // StartSound
-          case 26: // PlaceObject2
-          case 28: // RemoveObject2
-          case 43: // FrameLabel
-          case 59: // DoInitAction
+          case SWF_MOVIECLIP_TAG_CONTROL:
             // insert into Sprite
             // follow Character ID change
-            switch (tag_no) {
+            if (_swf_object_is_first_refcid_tag(tag_no)) {
+                _swf_object_replace_first_refcid(tag, cid_trans_table);
+            } else if (isPlaceTag(tag_no) || (tag_no == 70)) { // PlaceObject, 2, 3
                 int refcid, to_refcid;
-              case 4:  // PlaceObject
-              case 26: // PlaceObject2
                 refcid = swf_tag_get_refcid(tag);
                 if (refcid > 0) {
                     to_refcid = trans_table_get(cid_trans_table, refcid);
@@ -1643,7 +2014,6 @@ swf_object_replace_movieclip(swf_object_t *swf,
                         swf_tag_replace_refcid(tag, to_refcid);
                     }
                 }
-                break;
             }
             // inplant tag to Sprite
             if (sprite_tag_tail == NULL) {
@@ -1745,6 +2115,7 @@ swf_object_is_shape_tagdata(unsigned char *data, int data_len) {
         if (isShapeTag(tag->code)) {
             ret = 1; // TRUE
         }
+        swf_tag_destroy(tag);
     }
     bitstream_close(bs);
     return ret;
@@ -1763,22 +2134,28 @@ swf_object_is_bitmap_tagdata(unsigned char *data, int data_len) {
         if (isBitmapTag(tag->code)) {
             ret = 1; // TRUE
         }
+        swf_tag_destroy(tag);
     }
     bitstream_close(bs);
     return ret;
 }
 
 static int
-_swf_object_replace_tag(swf_object_t *swf, 
+_swf_object_replace_tag(swf_object_t *swf,
                         swf_tag_t *old_tag, swf_tag_t *new_tag) {
-    old_tag->prev->next = new_tag;
-    old_tag->next->prev = new_tag;
+    /* old_tag may be the head (prev == NULL) or the tail (next == NULL).
+     * Updating prev->next / next->prev unconditionally dereferences NULL
+     * for those edge cases. */
     new_tag->prev = old_tag->prev;
     new_tag->next = old_tag->next;
-    if (new_tag->prev == NULL) {
+    if (old_tag->prev) {
+        old_tag->prev->next = new_tag;
+    } else {
         swf->tag_head = new_tag;
     }
-    if (new_tag->next == NULL) {
+    if (old_tag->next) {
+        old_tag->next->prev = new_tag;
+    } else {
         swf->tag_tail = new_tag;
     }
     old_tag->prev = NULL;

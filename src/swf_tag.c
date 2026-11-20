@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "bitstream.h"
 #include "swf_define.h"
 #include "swf_tag.h"
@@ -181,7 +182,7 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
     unsigned char *data = NULL;
     unsigned long data_len = 0;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     if (bs == NULL) {
         fprintf(stderr, "swf_tag_build: bs == NULL\n");
         return 1;
@@ -223,10 +224,31 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
     return 0;
 }
 
+/* tag->length is only updated when the tag is written out, so an edited tag
+ * (detail only, no raw data) is serialized here to get its real length */
+unsigned long
+swf_tag_get_length(swf_tag_t *tag, struct swf_object_ *swf) {
+    if ((tag->data == NULL) && tag->detail) {
+        swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
+        if (tag_info && tag_info->detail_handler) {
+            const swf_tag_detail_handler_t *handler = tag_info->detail_handler();
+            if (handler->output) {
+                unsigned long length = 0;
+                unsigned char *data = handler->output(tag, &length, swf);
+                if (data) {
+                    free(data);
+                    tag->length = length;
+                }
+            }
+        }
+    }
+    return tag->length;
+}
+
 int
 swf_tag_rebuild(swf_tag_t *tag, struct swf_object_ *swf) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t * detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     void *detail;
     tag_info = get_swf_tag_info(tag->code);
     if ((tag_info == NULL) || (tag_info->detail_handler == NULL)) {
@@ -267,7 +289,7 @@ swf_tag_print(swf_tag_t *tag, struct swf_object_ *swf, int indent_depth) {
     }
     printf("\n");
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler;
+        const swf_tag_detail_handler_t *detail_handler;
         if (swf_tag_create_input_detail(tag, swf) == NULL) {
             fprintf(stderr, "swf_tag_print: swf_tag_create_input_detail failed\n");
             return ;
@@ -291,7 +313,7 @@ void *swf_tag_create_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
     tag_info = get_swf_tag_info(tag->code);
     if (tag_info && tag_info->detail_handler) {
         int result;
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->create == NULL) {
             fprintf(stderr, "swf_tag_create_input_detail: detail_handler->create == NULL (tag=%d)\n",
                     tag->code);
@@ -325,7 +347,7 @@ void swf_tag_destroy_detail(swf_tag_t *tag) {
     if (tag->detail) {
         swf_tag_info_t *tag_info = get_swf_tag_info(tag->code);
         if (tag_info && tag_info->detail_handler) {
-            swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+            const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
             if (detail_handler->destroy) {
                 detail_handler->destroy(tag);
             } else {
@@ -366,14 +388,19 @@ swf_tag_get_cid(swf_tag_t *tag) {
           case 39: // DefineSprite
           case 46: // DefineMorphShape
           case 48: // DefineFont2
+          case 60: // DefineVideoStream
+          case 75: // DefineFont3
+          case 87: // DefineBinaryData
           case 88: // DefineFontName
+          case 90: // DefineBitsJPEG4
+          case 91: // DefineFont4
               return GetUShortLE(tag->data);
               break;
         }
     }
     tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->get_cid) {
             return detail_handler->get_cid(tag);
         }
@@ -396,7 +423,7 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
     tag_no = tag->code;
     tag_info = get_swf_tag_info(tag_no);
     if (tag_info && tag_info->detail_handler) {
-        swf_tag_detail_handler_t * detail_handler = tag_info->detail_handler();
+        const swf_tag_detail_handler_t *detail_handler = tag_info->detail_handler();
         if (detail_handler->replace_cid) {
             return detail_handler->replace_cid(tag, cid);
         }
@@ -413,7 +440,12 @@ swf_tag_replace_cid(swf_tag_t *tag, int cid) {
           case 39: // DefineSprite
           case 46: // DefineMorphShape
           case 48: // DefineFont2
+          case 60: // DefineVideoStream
+          case 75: // DefineFont3
+          case 87: // DefineBinaryData
           case 88: // DefineFontName
+          case 90: // DefineBitsJPEG4
+          case 91: // DefineFont4
             if (tag->data) {
                 PutUShortLE(tag->data, cid);
                 return 0;
@@ -440,6 +472,12 @@ swf_tag_get_refcid(swf_tag_t *tag) {
             return -1;
         }
         return swf_tag_place->character_id;
+    } else if (tag->code == 70) { // PlaceObject3
+        unsigned long cid_offset;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, NULL)) {
+            return -1;
+        }
+        return cid_offset ? GetUShortLE((tag->data + cid_offset)) : 0;
     } else if (tag->code == 37) { // DefineEditText
         swf_tag_edit_detail_t *swf_tag_edit;
         swf_tag_edit = swf_tag_create_input_detail(tag, NULL);
@@ -466,6 +504,13 @@ swf_tag_replace_refcid(swf_tag_t *tag, int cid) {
             return 1; // failure
         }
         swf_tag_place->character_id = cid;
+    } else if (tag->code == 70) { // PlaceObject3: rewrite the raw data in place
+        unsigned long cid_offset;
+        if (swf_tag_place3_parse_head(tag, &cid_offset, NULL) || (cid_offset == 0)) {
+            return 1; // failure
+        }
+        PutUShortLE((tag->data + cid_offset), cid);
+        return 0; // success
     } else if (tag->code == 37) { // DefineEditText
         swf_tag_edit_detail_t *swf_tag_edit;
         swf_tag_edit = swf_tag_create_input_detail(tag, NULL);
@@ -507,6 +552,10 @@ swf_tag_get_bitmap_size(swf_tag_t *tag,
         swf_tag_jpeg = (swf_tag_jpeg_detail_t *) tag->detail;
         ret = jpeg_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
                         width, height);
+        if (ret) { // DefineBitsJPEG2/3 may hold a PNG or GIF since SWF 8
+            ret = bitmap_size(swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len,
+                              width, height);
+        }
     } else if (isBitsLosslessTag(tag->code)) {
         if (tag->detail) {
             swf_tag_lossless_detail_t *swf_tag_lossless = (swf_tag_lossless_detail_t *) tag->detail;
@@ -550,7 +599,13 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
     switch (swf_tag_lossless->format) {
         int color_index;
     case 3:
+        if ((swf_tag_lossless->width == 0) || (swf_tag_lossless->height == 0)) {
+            return 1;
+        }
         color_index = swf_tag_lossless->indices[0];
+        if (color_index >= swf_tag_lossless->colormap_count) {
+            return 1;
+        }
         if (tag->code == 20) { // Lossless => RGB
             *red   = swf_tag_lossless->colormap[color_index].red;
             *green = swf_tag_lossless->colormap[color_index].green;
@@ -569,6 +624,7 @@ swf_tag_get_bitmap_color1stpixel(swf_tag_t *tag,
             }
         }
         break;
+    case 4: // held as xrgb like format=5
     case 5:
         if (tag->code == 20) { // Lossless => RGB
             *red   = swf_tag_lossless->bitmap[0].red;
@@ -649,6 +705,35 @@ swf_tag_get_alpha_data(swf_tag_t *tag, unsigned long *length, int image_id) {
     return swf_tag_jpeg_get_alpha_data(tag->detail, length, image_id);
 }
 
+/*
+ * Bitmap replacement converts into a work tag first and only touches the
+ * original tag when it succeeded, so a failure leaves the tag as it was.
+ */
+static void
+swf_tag_init_work(swf_tag_t *work, int code) {
+    swf_tag_info_t *tag_info = get_swf_tag_info(code);
+    memset(work, 0, sizeof(*work));
+    work->code = code;
+    work->detail = tag_info->detail_handler()->create();
+}
+
+static int
+swf_tag_commit_work(swf_tag_t *tag, swf_tag_t *work, int result) {
+    if (result) {
+        get_swf_tag_info(work->code)->detail_handler()->destroy(work);
+        return result;
+    }
+    if (tag->detail) {
+        swf_tag_destroy_detail(tag);
+    }
+    free(tag->data);
+    tag->data = NULL;
+    tag->length = 0;
+    tag->code = work->code;
+    tag->detail = work->detail;
+    return 0;
+}
+
 int
 swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                           unsigned char *jpeg_data,
@@ -657,8 +742,9 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
                           unsigned long alpha_data_len,
                           int without_converting) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t * detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
+    swf_tag_t work;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_jpeg_data: tag == NULL\n");
         return 1;
@@ -675,43 +761,24 @@ swf_tag_replace_jpeg_data(swf_tag_t *tag, int image_id,
     if (detail_handler->get_cid(tag) !=  image_id) {
         return 1;
     }
-
-    if (tag->detail && (! isBitsJPEGTag(tag->code))) {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
-    }
     if (tag->code == 90) {
-        ; // DefineBitsJPEG4 stays (keeps DeblockParam)
-    } else if (alpha_data && (alpha_data_len > 0)) {
-        tag->code = 35; // DefineBitsJPEG3
+        swf_tag_init_work(&work, 90); // DefineBitsJPEG4 stays
     } else {
-        tag->code = 21; // DefineBitsJPEG2
+        swf_tag_init_work(&work, (alpha_data && (alpha_data_len > 0)) ? 35 : 21); // JPEG3 : JPEG2
     }
-    
-    tag_info = get_swf_tag_info(tag->code); // JPEG Tag
-    detail_handler = tag_info->detail_handler();
-    if (tag->detail == NULL) {
-        tag->detail = detail_handler->create();
+    if (work.detail == NULL) {
+        return 1;
     }
-
     if (without_converting) {
-        result= swf_tag_jpeg_replace_bitmap_data(tag->detail, image_id,
+        result= swf_tag_jpeg_replace_bitmap_data(work.detail, image_id,
                                                  jpeg_data, jpeg_data_len,
-                                                 tag);
+                                                 &work);
     } else {
-        result= swf_tag_jpeg_replace_jpeg_data(tag->detail, image_id,
+        result= swf_tag_jpeg_replace_jpeg_data(work.detail, image_id,
                                                jpeg_data, jpeg_data_len,
-                                               alpha_data, alpha_data_len, tag);
+                                               alpha_data, alpha_data_len, &work);
     }
-    if (result == 0) {
-        free(tag->data);
-        tag->data = NULL;
-        tag->length = 0;
-    } else {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
-    } 
-    return result;
+    return swf_tag_commit_work(tag, &work, result);
 }
 
 
@@ -737,7 +804,13 @@ swf_tag_get_png_data(swf_tag_t *tag, unsigned long *length, int image_id) {
         fprintf(stderr, "swf_tag_get_png_data: swf_tag_create_input_detail failed\n");
         return NULL;
     }
+#ifdef HAVE_PNG
     return swf_tag_lossless_get_png_data(tag->detail, length, image_id, tag);
+#else
+    (void) image_id;
+    fprintf(stderr, "swf_tag_get_png_data: built without libpng\n");
+    return NULL;
+#endif
 }
 
 int
@@ -745,8 +818,9 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
                          unsigned char *png_data,
                          unsigned long png_data_len, int rgb15) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
+    swf_tag_t work;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_png_data: tag == NULL\n");
         return 1;
@@ -763,35 +837,14 @@ swf_tag_replace_png_data(swf_tag_t *tag, int image_id,
     if (detail_handler->get_cid(tag) != image_id) {
         return 1;
     }
-    
-    if (tag->detail && (! isBitsLosslessTag(tag->code))) {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
+    swf_tag_init_work(&work, (tag->code == 20) ? 20 : 36); // Lossless : Lossless2
+    if (work.detail == NULL) {
+        return 1;
     }
-    if (tag->code == 20) {
-        tag->code = 20; // DefineBitsLossless
-    } else {
-        tag->code = 36; // DefineBitsLossless2
-    }
-    
-    tag_info = get_swf_tag_info(tag->code); // Lossless Tag
-    detail_handler = tag_info->detail_handler();
-    if (tag->detail == NULL) {
-        tag->detail = detail_handler->create();
-    }
-    
-    result= swf_tag_lossless_replace_png_data(tag->detail, image_id,
+    result= swf_tag_lossless_replace_png_data(work.detail, image_id,
                                               png_data, png_data_len,
-                                              rgb15, tag);
-    if (result == 0) {
-        free(tag->data);
-        tag->data = NULL;
-        tag->length = 0;
-    } else {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
-    }
-    return result;
+                                              rgb15, &work);
+    return swf_tag_commit_work(tag, &work, result);
 }
 
 #endif /* HAVE_PNG */
@@ -803,8 +856,9 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
                          unsigned char *gif_data,
                          unsigned long gif_data_len) {
     swf_tag_info_t *tag_info = NULL;
-    swf_tag_detail_handler_t *detail_handler = NULL;
+    const swf_tag_detail_handler_t *detail_handler = NULL;
     int result;
+    swf_tag_t work;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_replace_gif_data: tag == NULL\n");
         return 1;
@@ -821,34 +875,13 @@ swf_tag_replace_gif_data(swf_tag_t *tag, int image_id,
     if (detail_handler->get_cid(tag) != image_id) {
         return 1;
     }
-    
-    if (tag->detail && (! isBitsLosslessTag(tag->code))) {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
+    swf_tag_init_work(&work, (tag->code == 20) ? 20 : 36); // Lossless : Lossless2
+    if (work.detail == NULL) {
+        return 1;
     }
-    if (tag->code == 20) {
-        tag->code = 20; // DefineBitsLossless
-    } else {
-        tag->code = 36; // DefineBitsLossless2
-    }
-    
-    tag_info = get_swf_tag_info(tag->code); // Lossless Tag
-    detail_handler = tag_info->detail_handler();
-    if (tag->detail == NULL) {
-        tag->detail = detail_handler->create();
-    }
-    
-    result= swf_tag_lossless_replace_gif_data(tag->detail, image_id,
-                                              gif_data, gif_data_len, tag);
-    if (result == 0) {
-        free(tag->data);
-        tag->data = NULL;
-        tag->length = 0;
-    } else {
-        detail_handler->destroy(tag);
-        tag->detail = NULL;
-    }
-    return result;
+    result= swf_tag_lossless_replace_gif_data(work.detail, image_id,
+                                              gif_data, gif_data_len, &work);
+    return swf_tag_commit_work(tag, &work, result);
 }
 
 #endif /* HAVE_GIF */
@@ -878,7 +911,12 @@ swf_tag_convert_bitmap_data_tojpegtag(swf_tag_t *tag) {
         return 1;
     }
     image_id= swf_tag_lossless->image_id;
+#ifdef HAVE_PNG
     bitmap_data = swf_tag_lossless_get_png_data(swf_tag_lossless, &bitmap_data_len, image_id, tag);
+#else
+    fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: built without libpng\n");
+    bitmap_data = NULL;
+#endif
     if (bitmap_data == NULL) {
         fprintf(stderr, "swf_object_convert_bitmap_data_tojpegtag: failed to swf_tag_get_png_data image_id=%d\n", image_id);
         return 1;
@@ -1116,7 +1154,7 @@ swf_tag_create_action_setvariables(y_keyvalue_t *kv) {
     swf_tag_t *tag = NULL;
     swf_tag_action_detail_t *swf_tag_action;
     swf_tag_info_t *tag_info;
-    swf_tag_detail_handler_t *detail_handler;
+    const swf_tag_detail_handler_t *detail_handler;
     if (kv == NULL) {
         fprintf(stderr, "swf_tag_create_action_setvariables: kv == NULL\n");
         return NULL;
@@ -1160,7 +1198,9 @@ swf_tag_put_action_setvariables(swf_tag_t *tag, y_keyvalue_t *kv,
     }
     ret = swf_tag_action_top_append_varibles(tag, kv);
     if (ret) {
-        swf_tag_destroy(tag);
+        /* The tag is already linked into the swf's tag list, so destroying
+         * it here would unlink it only in the local pointer and leave a
+         * dangling entry. Leave the caller to decide — just report NG. */
         return 1; // NG
     }
     if (tag->data) {
@@ -1243,7 +1283,9 @@ swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
     if (isBitsLosslessTag(tag->code) &&
         ( (red >= 0) || (green >= 0) || (blue >= 0) ))  {
         int r, g, b;
-        swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b);
+        if (swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b)) {
+            return -1; // out (e.g. broken palette index)
+        }
         if (red >= 0) {
             int red_diff = red - r;
             if ((red_diff < -10) || (10 < red_diff)) {

@@ -17,10 +17,6 @@
 #include "jpeg_segment.h"
 #include "bitmap_util.h"
 
-swf_tag_detail_handler_t jpeg_detail_handler;
-swf_tag_detail_handler_t jpegt_detail_handler;
-swf_tag_detail_handler_t jpeg3_detail_handler;
-
 /* inflate src into a growing buffer, bounded by deflate's ~1032:1 limit */
 static unsigned char *
 _swf_tag_jpeg_uncompress_alloc(unsigned char *src, unsigned long src_len,
@@ -99,37 +95,49 @@ fail:
     return NULL;
 }
 
-swf_tag_detail_handler_t *swf_tag_jpeg_detail_handler(void) {
-    jpeg_detail_handler.create   = swf_tag_jpeg_create_detail;
-    jpeg_detail_handler.input    = swf_tag_jpeg_input_detail;
-    jpeg_detail_handler.get_cid  = swf_tag_jpeg_get_cid_detail;
-    jpeg_detail_handler.replace_cid = swf_tag_jpeg_replace_cid_detail;
-    jpeg_detail_handler.output   = swf_tag_jpeg_output_detail;
-    jpeg_detail_handler.print    = swf_tag_jpeg_print_detail;
-    jpeg_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
-    return &jpeg_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_jpeg_detail_handler_table = {
+    .create      = swf_tag_jpeg_create_detail,
+    .input       = swf_tag_jpeg_input_detail,
+    .get_cid     = swf_tag_jpeg_get_cid_detail,
+    .replace_cid = swf_tag_jpeg_replace_cid_detail,
+    .output      = swf_tag_jpeg_output_detail,
+    .print       = swf_tag_jpeg_print_detail,
+    .destroy     = swf_tag_jpeg_destroy_detail,
+};
+
+const swf_tag_detail_handler_t *
+swf_tag_jpeg_detail_handler(void) {
+    return &swf_tag_jpeg_detail_handler_table;
 }
 
-swf_tag_detail_handler_t *swf_tag_jpegt_detail_handler(void) {
-    jpegt_detail_handler.create   = swf_tag_jpeg_create_detail;
-    jpegt_detail_handler.input    = swf_tag_jpegt_input_detail;
-    jpegt_detail_handler.get_cid  = NULL;
-    jpegt_detail_handler.replace_cid = NULL;
-    jpegt_detail_handler.output   = swf_tag_jpegt_output_detail;
-    jpegt_detail_handler.print    = swf_tag_jpeg_print_detail;
-    jpegt_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
-    return &jpegt_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_jpegt_detail_handler_table = {
+    .create      = swf_tag_jpeg_create_detail,
+    .input       = swf_tag_jpegt_input_detail,
+    .get_cid     = NULL,
+    .replace_cid = NULL,
+    .output      = swf_tag_jpegt_output_detail,
+    .print       = swf_tag_jpeg_print_detail,
+    .destroy     = swf_tag_jpeg_destroy_detail,
+};
+
+const swf_tag_detail_handler_t *
+swf_tag_jpegt_detail_handler(void) {
+    return &swf_tag_jpegt_detail_handler_table;
 }
 
-swf_tag_detail_handler_t *swf_tag_jpeg3_detail_handler(void) {
-    jpeg3_detail_handler.create   = swf_tag_jpeg_create_detail;
-    jpeg3_detail_handler.input    = swf_tag_jpeg3_input_detail;
-    jpeg3_detail_handler.get_cid  = swf_tag_jpeg_get_cid_detail;
-    jpeg3_detail_handler.replace_cid = swf_tag_jpeg_replace_cid_detail;
-    jpeg3_detail_handler.output   = swf_tag_jpeg3_output_detail;
-    jpeg3_detail_handler.print    = swf_tag_jpeg_print_detail;
-    jpeg3_detail_handler.destroy  = swf_tag_jpeg_destroy_detail;
-    return &jpeg3_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_jpeg3_detail_handler_table = {
+    .create      = swf_tag_jpeg_create_detail,
+    .input       = swf_tag_jpeg3_input_detail,
+    .get_cid     = swf_tag_jpeg_get_cid_detail,
+    .replace_cid = swf_tag_jpeg_replace_cid_detail,
+    .output      = swf_tag_jpeg3_output_detail,
+    .print       = swf_tag_jpeg_print_detail,
+    .destroy     = swf_tag_jpeg_destroy_detail,
+};
+
+const swf_tag_detail_handler_t *
+swf_tag_jpeg3_detail_handler(void) {
+    return &swf_tag_jpeg3_detail_handler_table;
 }
 
 void *

@@ -20,8 +20,11 @@ Make sure that the comment is aligned:
 if test "$PHP_SWFED" != "no"; then
   dnl Write more examples of tests here...
 
+  dnl phpize runs in this directory; a php-src tree build runs at its top
   sinclude(version-lib.m4)
+  sinclude(ext/swfed/version-lib.m4)
   sinclude(config-lib.m4)
+  sinclude(ext/swfed/config-lib.m4)
 
   dnl # --with-swfed -> check with-path
   dnl SEARCH_PATH="/usr/local /usr"     # you might want to change this
@@ -77,9 +80,5 @@ if test "$PHP_SWFED" != "no"; then
 	swf_tag_place.c swf_cxform.c swf_cxformwithalpha.c trans_table.c \
 	swf_tag_button.c swf_button_record.c swf_button_condaction.c"
 
-  if test  $PHP_MAJOR_VERSION -eq 5; then
-    PHP_NEW_EXTENSION(swfed, php5_swfed.c $SWF_OBJECT_FILES, $ext_shared)
-  else
-    PHP_NEW_EXTENSION(swfed, php_swfed.c $SWF_OBJECT_FILES, $ext_shared)
-  fi
+  PHP_NEW_EXTENSION(swfed, php_swfed.c $SWF_OBJECT_FILES, $ext_shared)
 fi
