@@ -362,6 +362,74 @@ int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int t
     return 1; // not found
 }
 
+static int
+_swf_tag_shape_styles_replace_bitmap_refcid(swf_styles_t *styles, trans_table_t *table) {
+    int i, modified = 0;
+    for (i = 0 ; i < styles->fill_styles.count ; i++) {
+        swf_fill_style_t *fill_style = &(styles->fill_styles.fill_style[i]);
+        switch (fill_style->type) {
+          case 0x40: // tilled  bitmap fill with smoothed edges
+          case 0x41: // clipped bitmap fill with smoothed edges
+          case 0x42: // tilled  bitmap fill with hard edges
+          case 0x43: // clipped bitmap fill with hard edges
+            {
+                int to_cid = trans_table_get(table, fill_style->bitmap.bitmap_ref);
+                if ((to_cid > 0) && (to_cid != fill_style->bitmap.bitmap_ref)) {
+                    fill_style->bitmap.bitmap_ref = to_cid;
+                    modified = 1;
+                }
+            }
+            break;
+        }
+    }
+    return modified;
+}
+
+/*
+ * Renumber every bitmap fill (including NewStyles) through the table at
+ * once. Replacing one CID at a time can chain (1->8 then 8->9).
+ */
+int
+swf_tag_shape_bitmap_replace_refcid_by_table(swf_tag_t *tag, trans_table_t *table) {
+    swf_tag_shape_detail_t *swf_tag_shape;
+    swf_styles_t *styles;
+    swf_shape_record_t *record;
+    int modified = 0;
+    if ((tag == NULL) || (table == NULL) || ! isShapeTag(tag->code)) {
+        return 1;
+    }
+    swf_tag_shape = swf_tag_create_input_detail(tag, NULL);
+    if (swf_tag_shape == NULL) {
+        return 1;
+    }
+    if (swf_tag_shape->is_morph) {
+        styles = &(swf_tag_shape->morph_shape_with_style.styles);
+        record = &(swf_tag_shape->morph_shape_with_style.shape_records);
+    } else {
+        styles = &(swf_tag_shape->shape_with_style.styles);
+        record = &(swf_tag_shape->shape_with_style.shape_records);
+    }
+    modified |= _swf_tag_shape_styles_replace_bitmap_refcid(styles, table);
+    for ( ; record ; record = record->next) {
+        int first_bit = (record->first_6bits >> 5) & 1;
+        int next_5bits = record->first_6bits & 0x1f;
+        if (first_bit) { // edge
+            continue;
+        }
+        if (next_5bits == 0) { // end
+            break;
+        }
+        if (record->shape.shape_setup.shape_has_new_styles) {
+            modified |= _swf_tag_shape_styles_replace_bitmap_refcid(&(record->shape.shape_setup.styles), table);
+        }
+    }
+    if (modified && tag->data) { // content modified so drop the raw data
+        free(tag->data);
+        tag->data = NULL;
+    }
+    return 0;
+}
+
 unsigned char *
 swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
                            struct swf_object_ *swf) {

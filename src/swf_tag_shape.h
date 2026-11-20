@@ -11,6 +11,7 @@
 #include "swf_morph_shape_with_style.h"
 #include "swf_shape_with_style.h"
 #include "swf_tag.h"
+#include "trans_table.h"
 
 typedef struct swf_tag_shape_detail_ {
     int shape_id;
@@ -51,6 +52,8 @@ extern int swf_tag_shape_get_cid_detail(swf_tag_t *tag);
 extern int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id);
 extern int *swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num);
 extern int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid);
+extern int swf_tag_shape_bitmap_replace_refcid_by_table(swf_tag_t *tag,
+                                                        trans_table_t *table);
 // dummy start
 extern int swf_tag_shape_bitmap_get_refcid(int x);
 extern int swf_tag_shape_bitmap_replace_refcid(int y);
