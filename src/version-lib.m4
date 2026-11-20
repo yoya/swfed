@@ -16,10 +16,12 @@ else
     AC_MSG_RESULT([$PHP_VERSION])
 fi
 
-if test $PHP_MAJOR_VERSION -lt 5; then
-    AC_MSG_ERROR([need at least PHP 5.1 or newer])
-fi
-
-if test $PHP_MAJOR_VERSION -eq 5 -a $PHP_MINOR_VERSION -lt 1; then
-    AC_MSG_ERROR([need at least PHP 5.1 or newer])
+dnl PHP 5 support (php5_swfed.c) was dropped after swfed 2.1
+if test x"$PHP_VERSION" != "x"; then
+    if test $PHP_MAJOR_VERSION -lt 7; then
+        AC_MSG_ERROR([need at least PHP 7.2 or newer (use swfed 2.1 or earlier for PHP 5)])
+    fi
+    if test $PHP_MAJOR_VERSION -eq 7 -a $PHP_MINOR_VERSION -lt 2; then
+        AC_MSG_ERROR([need at least PHP 7.2 or newer])
+    fi
 fi

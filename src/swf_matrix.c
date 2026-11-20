@@ -118,12 +118,16 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
                         double scale_x, double scale_y,
                         double rotate_rad,
                         signed int trans_x, signed int trans_y) {
+    /* x' = ScaleX * x + RotateSkew1 * y, y' = RotateSkew0 * x + ScaleY * y:
+     * scaling the result (shape coordinates) scales each row */
     if (matrix->has_scale == 0) {
         matrix->has_scale = 1;
-        matrix->scale_x = 20 * 65536;
-        matrix->scale_y = 20 * 65536;
+        matrix->scale_x = 65536; // 1.0 when the scale is omitted
+        matrix->scale_y = 65536;
     }
     matrix->scale_x *= scale_x;
+    matrix->rotate_skew1 *= scale_x;
+    matrix->rotate_skew0 *= scale_y;
     matrix->scale_y *= scale_y;
     if ((rotate_rad != 0)) {
         double rot_sin, rot_cos;
@@ -146,5 +150,20 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
     }
     matrix->translate_x += 20 * trans_x;
     matrix->translate_y += 20 * trans_y;
+    return 0;
+}
+
+/* scale on the source side (e.g. bitmap pixels): scales each column */
+int
+swf_matrix_scale_source(swf_matrix_t *matrix, double scale_x, double scale_y) {
+    if (matrix->has_scale == 0) {
+        matrix->has_scale = 1;
+        matrix->scale_x = 65536;
+        matrix->scale_y = 65536;
+    }
+    matrix->scale_x *= scale_x;
+    matrix->rotate_skew0 *= scale_x;
+    matrix->rotate_skew1 *= scale_y;
+    matrix->scale_y *= scale_y;
     return 0;
 }
