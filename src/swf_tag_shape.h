@@ -11,6 +11,7 @@
 #include "swf_morph_shape_with_style.h"
 #include "swf_shape_with_style.h"
 #include "swf_tag.h"
+#include "trans_table.h"
 
 typedef struct swf_tag_shape_detail_ {
     int shape_id;
@@ -37,15 +38,13 @@ typedef struct swf_tag_shape_detail_ {
    * parse context
    */ 
     swf_styles_count_t _current_styles_count;
-    int _current_fill_style_num;
-    int _current_line_style_num;
     signed /* twips */ _current_x, _current_y;
     int _parse_condition;
 #define SWF_TAG_SHAPE_PARSE_CONDITION_BITMAP 1
 } swf_tag_shape_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
-extern swf_tag_detail_handler_t *swf_tag_shape_cid_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_shape_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_shape_cid_handler(void);
 
 extern void *swf_tag_shape_create_detail(void);
 extern int swf_tag_shape_input_detail(swf_tag_t *tag, struct swf_object_ *swf);
@@ -53,6 +52,8 @@ extern int swf_tag_shape_get_cid_detail(swf_tag_t *tag);
 extern int swf_tag_shape_replace_cid_detail(swf_tag_t *tag, int id);
 extern int *swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num);
 extern int swf_tag_shape_bitmap_replace_refcid_list(swf_tag_t *tag, int from_cid, int to_cid);
+extern int swf_tag_shape_bitmap_replace_refcid_by_table(swf_tag_t *tag,
+                                                        trans_table_t *table);
 // dummy start
 extern int swf_tag_shape_bitmap_get_refcid(int x);
 extern int swf_tag_shape_bitmap_replace_refcid(int y);

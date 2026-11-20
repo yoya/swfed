@@ -15,7 +15,7 @@ typedef struct swf_tag_action_detail_ {
     swf_action_list_t *action_list;
 } swf_tag_action_detail_t;
 
-extern swf_tag_detail_handler_t *swf_tag_action_detail_handler(void);
+extern const swf_tag_detail_handler_t *swf_tag_action_detail_handler(void);
 
 extern void *swf_tag_action_create_detail(void);
 extern int swf_tag_action_input_detail(swf_tag_t *tag,

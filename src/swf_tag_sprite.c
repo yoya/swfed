@@ -10,18 +10,19 @@
 #include "swf_tag_sprite.h"
 #include "swf_object.h"
 
-swf_tag_detail_handler_t sprite_detail_handler;
+static const swf_tag_detail_handler_t swf_tag_sprite_detail_handler_table = {
+    .create      = swf_tag_sprite_create_detail,
+    .input       = swf_tag_sprite_input_detail,
+    .get_cid     = swf_tag_sprite_get_cid_detail,
+    .replace_cid = swf_tag_sprite_replace_cid_detail,
+    .output      = swf_tag_sprite_output_detail,
+    .print       = swf_tag_sprite_print_detail,
+    .destroy     = swf_tag_sprite_destroy_detail,
+};
 
-swf_tag_detail_handler_t *
+const swf_tag_detail_handler_t *
 swf_tag_sprite_detail_handler(void) {
-    sprite_detail_handler.create   = swf_tag_sprite_create_detail;
-    sprite_detail_handler.input    = swf_tag_sprite_input_detail;
-    sprite_detail_handler.get_cid  = swf_tag_sprite_get_cid_detail;
-    sprite_detail_handler.replace_cid = swf_tag_sprite_replace_cid_detail;
-    sprite_detail_handler.output   = swf_tag_sprite_output_detail;
-    sprite_detail_handler.print    = swf_tag_sprite_print_detail;
-    sprite_detail_handler.destroy  = swf_tag_sprite_destroy_detail;
-    return &sprite_detail_handler;
+    return &swf_tag_sprite_detail_handler_table;
 }
 
 void *
