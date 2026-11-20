@@ -1,8 +1,10 @@
+<?php require_once('define.php'); ?>
 <html>
+<head>
+<?php echo swfed_ruffle_script_tag(); ?>
+</head>
 <body bgcolor="#f0f0ff">
 <?php
-
-require_once('define.php');
 
 $id = hex_from_string($_REQUEST['id']);
 

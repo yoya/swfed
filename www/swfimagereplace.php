@@ -44,11 +44,12 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
         exit(0);
     }
 //    header("Location: ./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext");
+$ruffle = swfed_ruffle_script_tag();
 echo <<< FORM
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-</head>
+$ruffle</head>
 <body bgcolor="#fff0f0">
 <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
 codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">

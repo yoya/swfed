@@ -674,6 +674,27 @@ php sample/swfreplacebitmapdata.php input.swf 1 new.png > output.swf
 
 The tests in `src/tests/*.phpt` are also short usage examples.
 
+## Demo pages (`www/`)
+
+The PHP pages in `www/` upload a SWF, list its images and shapes, and replace
+an image. Try them with PHP's built-in server (the extension has to be loaded):
+
+```
+cd www
+php -d extension=swfed -S 127.0.0.1:8000
+```
+
+The pages show SWF files with `<object>` / `<embed>`, which need Flash Player,
+and no current browser runs it. So they load [Ruffle](https://ruffle.rs/), a
+Flash Player emulator, in the browser (it plays the SWF without a click). By
+default `ruffle.js` 0.8.0 is loaded from unpkg, with a Subresource Integrity
+hash. The environment variable `SWFED_RUFFLE_URL` changes this: set it to the
+URL of your own copy of `ruffle.js`, or to an empty string to load nothing (for
+a browser that still has Flash Player).
+
+Uploaded files are kept in `swfed-<uid>/` under the system temporary directory
+(see `SWFED_TMP_DIR` in `www/define.php`) and removed after an hour.
+
 ## Links
 
 - Repository: https://github.com/yoya/swfed

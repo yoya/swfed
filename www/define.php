@@ -124,3 +124,39 @@ if (! function_exists('multiply_unit')) {
         return $str;
     }
 }
+
+/*
+ * The demo pages show SWF files with <object> / <embed>, which need Flash
+ * Player, and no current browser runs it. Ruffle (https://ruffle.rs/), a Flash
+ * Player emulator, replaces those elements in the browser, so the pages
+ * include its script.
+ *
+ * - default: ruffle.js 0.8.0 on unpkg, checked with Subresource Integrity
+ * - SWFED_RUFFLE_URL=<URL>: ruffle.js of your own copy (a self-hosted Ruffle)
+ * - SWFED_RUFFLE_URL= (empty): no emulator, for a browser that still has Flash Player
+ */
+define('SWFED_RUFFLE_DEFAULT_URL', 'https://unpkg.com/@ruffle-rs/ruffle@0.8.0/ruffle.js');
+define('SWFED_RUFFLE_DEFAULT_INTEGRITY', 'sha384-QkUl27FYChnBloiwoEpIU1b1xXHyCq62i6CpX0taseumQpWzJjDjQAILMWBUBtTQ');
+
+function swfed_ruffle_script_tag() {
+    $url = getenv('SWFED_RUFFLE_URL');
+    if ($url === false) {
+        $integrity = SWFED_RUFFLE_DEFAULT_INTEGRITY;
+        $url = SWFED_RUFFLE_DEFAULT_URL;
+    } elseif ($url === '') {
+        return '';
+    } elseif (! preg_match('#^(https?://|/|\./)#i', $url)) {
+        error_log("swfed: SWFED_RUFFLE_URL must be an http(s) URL or a path: $url");
+        return '';
+    } else {
+        $integrity = '';
+    }
+    // the demo SWFs have no sound to wait for: play them without a click
+    $tag = "<script>window.RufflePlayer = window.RufflePlayer || {}; "
+         . "window.RufflePlayer.config = {autoplay: \"on\", unmuteOverlay: \"hidden\"};</script>\n";
+    $tag .= '<script src="' . htmlspecialchars($url, ENT_QUOTES) . '"';
+    if ($integrity !== '') {
+        $tag .= ' integrity="' . $integrity . '" crossorigin="anonymous"';
+    }
+    return $tag . "></script>\n";
+}
