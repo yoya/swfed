@@ -1222,7 +1222,9 @@ swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
     if (isBitsLosslessTag(tag->code) &&
         ( (red >= 0) || (green >= 0) || (blue >= 0) ))  {
         int r, g, b;
-        swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b);
+        if (swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b)) {
+            return -1; // out (e.g. broken palette index)
+        }
         if (red >= 0) {
             int red_diff = red - r;
             if ((red_diff < -10) || (10 < red_diff)) {
