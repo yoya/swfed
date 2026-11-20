@@ -46,7 +46,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceTagContentsByCID arginfo_class_SWFEditor_replaceTagDataByCID
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 0, 2)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_removeTag, 0, 0, 1)
 	ZEND_ARG_INFO(0, index)
 	ZEND_ARG_INFO(0, index_sprint)
 ZEND_END_ARG_INFO()
@@ -73,7 +73,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_getJpegAlpha arginfo_class_SWFEditor_getTagDetail
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceJpegData, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceJpegData, 0, 0, 2)
 	ZEND_ARG_INFO(0, index)
 	ZEND_ARG_INFO(0, data)
 	ZEND_ARG_INFO(0, alpha_data)
@@ -81,7 +81,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_getPNGData arginfo_class_SWFEditor_getTagDetail
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replacePNGData, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replacePNGData, 0, 0, 2)
 	ZEND_ARG_INFO(0, index)
 	ZEND_ARG_INFO(0, data)
 	ZEND_ARG_INFO(0, option)
@@ -89,7 +89,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceGIFData arginfo_class_SWFEditor_replaceTagData
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceBitmapData, 0, 0, 4)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceBitmapData, 0, 0, 2)
 	ZEND_ARG_INFO(0, arg1)
 	ZEND_ARG_INFO(0, data)
 	ZEND_ARG_INFO(0, data_alpha)
@@ -138,7 +138,7 @@ ZEND_END_ARG_INFO()
 
 #define arginfo_class_SWFEditor_replaceActionStrings arginfo_class_SWFEditor_setActionVariables
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceMovieClip, 0, 0, 3)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_class_SWFEditor_replaceMovieClip, 0, 0, 2)
 	ZEND_ARG_INFO(0, instance_name)
 	ZEND_ARG_INFO(0, swf_data)
 	ZEND_ARG_INFO(0, unused_cid_purge)

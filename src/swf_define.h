@@ -69,8 +69,44 @@ extern void print_hexbin(unsigned char *data, int data_len);
 #define GetUShortLE(data) ((unsigned short) GV2B(data[1], data[0]))
 
 #define GetULongLE(data) ((unsigned long) GV4B(data[3], data[2], data[1], data[0]))
-#define GetFloatIEEE(data) ((double) GV4B(data[0], data[1], data[2], data[3]))
-#define GetDoubleIEEE(data) ((double) GV8B(data[4], data[5], data[6], data[7], data[0], data[1], data[2], data[3]))
+
+/*
+ * Reinterpret 4 little-endian bytes as an IEEE 754 single-precision float,
+ * and 8 bytes (stored in SWF as upper-half / lower-half swapped) as a double.
+ * The previous macros built an integer from the bits and then numerically cast
+ * it to double, which produced the raw bit value as an integer (e.g. 0x3FC00000
+ * displayed as 1069547520.0 instead of 1.5).
+ */
+#include <string.h>
+#include <stdint.h>
+
+static inline float swfed_get_float_ieee(const unsigned char *data) {
+    uint32_t bits = ((uint32_t)data[0]) |
+                    ((uint32_t)data[1] << 8) |
+                    ((uint32_t)data[2] << 16) |
+                    ((uint32_t)data[3] << 24);
+    float f;
+    memcpy(&f, &bits, sizeof(f));
+    return f;
+}
+
+static inline double swfed_get_double_ieee(const unsigned char *data) {
+    /* SWF stores Double with upper 4 bytes and lower 4 bytes swapped. */
+    uint64_t bits = ((uint64_t)data[4]) |
+                    ((uint64_t)data[5] << 8) |
+                    ((uint64_t)data[6] << 16) |
+                    ((uint64_t)data[7] << 24) |
+                    ((uint64_t)data[0] << 32) |
+                    ((uint64_t)data[1] << 40) |
+                    ((uint64_t)data[2] << 48) |
+                    ((uint64_t)data[3] << 56);
+    double d;
+    memcpy(&d, &bits, sizeof(d));
+    return d;
+}
+
+#define GetFloatIEEE(data) swfed_get_float_ieee((const unsigned char *)(data))
+#define GetDoubleIEEE(data) swfed_get_double_ieee((const unsigned char *)(data))
 
 #define PutUShortLE(data, value) ((data[0] = (value & 0xff)), (data[1] = (value >> 8)))
 

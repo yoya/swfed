@@ -42,62 +42,6 @@ PHP_RINIT_FUNCTION(swfed);
 PHP_RSHUTDOWN_FUNCTION(swfed);
 PHP_MINFO_FUNCTION(swfed);
 
-PHP_FUNCTION(confirm_swfed_compiled);	/* For testing, remove later. */
-
-static zend_class_entry *swfeditor_ce;
-
-PHP_METHOD(swfed, __construct);
-PHP_METHOD(swfed, input);
-PHP_METHOD(swfed, output);
-PHP_METHOD(swfed, swfInfo);
-PHP_METHOD(swfed, _destroy_and_exit); // for debug
-//
-PHP_METHOD(swfed, getHeaderInfo);
-PHP_METHOD(swfed, setHeaderInfo);
-PHP_METHOD(swfed, getTagList);
-PHP_METHOD(swfed, getTagDetail);
-PHP_METHOD(swfed, getTagInfo);
-PHP_METHOD(swfed, getTagData);
-PHP_METHOD(swfed, replaceTagData);
-PHP_METHOD(swfed, getTagDataByCID);
-PHP_METHOD(swfed, replaceTagDataByCID);
-PHP_METHOD(swfed, getTagContentsByCID);
-PHP_METHOD(swfed, replaceTagContentsByCID);
-PHP_METHOD(swfed, removeTag);
-PHP_METHOD(swfed, printTagData);
-//
-PHP_METHOD(swfed, getShapeData);
-PHP_METHOD(swfed, replaceShapeData);
-PHP_METHOD(swfed, setShapeAdjustMode);
-PHP_METHOD(swfed, getShapeIdListByBitmapRef);
-PHP_METHOD(swfed, getBitmapSize);
-//
-PHP_METHOD(swfed, getJpegData);
-PHP_METHOD(swfed, getJpegAlpha);
-PHP_METHOD(swfed, replaceJpegData);
-PHP_METHOD(swfed, getPNGData);
-PHP_METHOD(swfed, replacePNGData);
-PHP_METHOD(swfed, replaceGIFData);
-PHP_METHOD(swfed, replaceBitmapData);
-PHP_METHOD(swfed, convertBitmapDataToJpegTag);
-PHP_METHOD(swfed, applyShapeMatrixFactor);
-PHP_METHOD(swfed, applyShapeRectFactor);
-PHP_METHOD(swfed, getSoundData);
-PHP_METHOD(swfed, replaceMLDData);
-PHP_METHOD(swfed, getEditString);
-PHP_METHOD(swfed, replaceEditString);
-PHP_METHOD(swfed, getActionData);
-PHP_METHOD(swfed, disasmActionData);
-PHP_METHOD(swfed, setActionVariables);
-PHP_METHOD(swfed, replaceActionStrings);
-PHP_METHOD(swfed, replaceMovieClip);
-
-PHP_METHOD(swfed, setCompressLevel);
-PHP_METHOD(swfed, rebuild);
-PHP_METHOD(swfed, purgeUselessContents);
-
-PHP_METHOD(swfed, isShapeTagData);
-PHP_METHOD(swfed, isBitmapTagData);
 
 ZEND_BEGIN_MODULE_GLOBALS(swfed)
     char *error_output; // swfed.error_output: "stderr", "warning" or "none"

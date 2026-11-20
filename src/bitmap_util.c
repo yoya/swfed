@@ -20,6 +20,11 @@ int jpeg_size_segment(jpeg_segment_t *jpeg_seg, int *width, int *height) {
     for (node = jpeg_seg->head ; node ; node = node->next) {
         register int marker = node->marker;
         if (isJPEG_SOFXX(marker)) {
+            /* A valid SOF segment body is 'precision(1)+height(2)+width(2)+...'.
+             * Guard against truncated SOF so we don't read past data_ref. */
+            if (node->data_ref == NULL || node->data_len < 5) {
+                return 1; // treat broken SOF as not found
+            }
             *width  = 0x100 * node->data_ref[3] + node->data_ref[4];
             *height = 0x100 * node->data_ref[1] + node->data_ref[2];
             return 0; // found
