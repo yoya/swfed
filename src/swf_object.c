@@ -230,7 +230,11 @@ swf_object_output(swf_object_t *swf, unsigned long *length) {
         return NULL;
     }
     for (tag = swf->tag_head ; tag ; tag = tag->next) {
-        swf_tag_build(bs, tag, swf); 
+        if (swf_tag_build(bs, tag, swf)) { // don't emit a SWF with a tag missing
+            fprintf(stderr, "swf_object_output: swf_tag_build failed (code=%d)\n", tag->code);
+            bitstream_close(bs);
+            return NULL;
+        }
     }
     swf->header.file_length = bitstream_getbytepos(bs);
     bitstream_setpos(bs, SWF_MAGIC_SIZE, 0);
