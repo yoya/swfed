@@ -25,22 +25,61 @@ $o = new SWFEditor();
 $o->input($swf);
 $list = $o->getTagList();
 echo $list[2]['tagName'], "\n";
+var_dump($list[2]['detail']);
 var_dump(strlen($o->getJpegData(1)) > 0);
 var_dump($o->getJpegAlpha(1) === $alpha);
 $size = $o->getBitmapSize(1);
 echo $size['width'], "x", $size['height'], "\n";
 $d = $o->getTagDetail(2);
-echo "image_id=", $d['image_id'], "\n";
+echo "image_id=", $d['image_id'], " alpha_data_len=", $d['alpha_data_len'], "\n";
 
 // rebuild keeps DeblockParam
 var_dump($o->rebuild());
 $data = $o->getTagData(2);
 echo "deblock=", bin2hex(substr($data, 6 + 6, 2)), "\n";
 
-// replacement keeps DefineBitsJPEG4
-var_dump($o->replaceJpegData(1, $jpeg, $alpha));
+// replacement keeps DefineBitsJPEG4 and DeblockParam
+$alpha2 = str_repeat("\x40", 400 * 300);
+var_dump($o->replaceJpegData(1, $jpeg, $alpha2));
 $list = $o->getTagList();
 echo $list[2]['tagName'], "\n";
+var_dump($o->getJpegAlpha(1) === $alpha2);
+var_dump($o->rebuild());
+echo "deblock=", bin2hex(substr($o->getTagData(2), 6 + 6, 2)), "\n";
+
+// a tag that is not parsed yet (right after input()) keeps DeblockParam too
+$o->input($swf);
+var_dump($o->replaceJpegData(1, $jpeg, $alpha2));
+$list = $o->getTagList();
+echo $list[2]['tagName'], "\n";
+var_dump($o->getJpegAlpha(1) === $alpha2);
+var_dump($o->rebuild());
+echo "deblock=", bin2hex(substr($o->getTagData(2), 6 + 6, 2)), "\n";
+
+// without alpha it becomes DefineBitsJPEG2 (as DefineBitsJPEG3 does),
+// whether the tag is parsed or not, and the old alpha does not stay
+foreach (array('not parsed', 'parsed') as $state) {
+    $o->input($swf);
+    if ($state == 'parsed') {
+        $o->rebuild();
+    }
+    var_dump($o->replaceJpegData(1, $jpeg));
+    $list = $o->getTagList();
+    echo $state, ": ", $list[2]['tagName'], "\n";
+    var_dump($o->getJpegAlpha(1));
+    $o2 = new SWFEditor();
+    var_dump($o2->input($o->output()));
+    $list = $o2->getTagList();
+    echo $list[2]['tagName'], "\n";
+    var_dump($o2->getJpegAlpha(1));
+}
+
+var_dump($o->isBitmapTagData($jpeg4));
+
+// a rebuilt DefineBitsJPEG4 has the long form tag header even if it is short
+$o->input(swf(10, tag(90, pack('vVv', 1, 4, 0) . "\xff\xd8\xff\xd9" . gzcompress("\x00")) . tag(0, '')));
+var_dump($o->rebuild());
+echo bin2hex(substr($o->getTagData(0), 0, 2)), "\n";
 
 // replaceMovieClip moves it into the parent SWF
 $o->input(file_get_contents('tests/negimiku.swf'));
@@ -53,12 +92,36 @@ var_dump(in_array(90, $codes));
 DefineBitsJPEG4
 bool(true)
 bool(true)
+bool(true)
 400x300
-image_id=1
+image_id=1 alpha_data_len=120000
 bool(true)
 deblock=0001
 bool(true)
 DefineBitsJPEG4
+bool(true)
+bool(true)
+deblock=0001
+bool(true)
+DefineBitsJPEG4
+bool(true)
+bool(true)
+deblock=0001
+bool(true)
+not parsed: DefineBitsJPEG2
+bool(false)
+bool(true)
+DefineBitsJPEG2
+bool(false)
+bool(true)
+parsed: DefineBitsJPEG2
+bool(false)
+bool(true)
+DefineBitsJPEG2
+bool(false)
+bool(true)
+bool(true)
+bf16
 bool(true)
 bool(true)
 ===DONE===
