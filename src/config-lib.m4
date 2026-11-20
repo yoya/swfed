@@ -1,5 +1,11 @@
 dnl --with-*-dir: not given = search (auto), DIR = use that prefix,
 dnl --without-png-dir / --without-gif-dir = build without PNG / GIF support.
+dnl
+dnl The search (auto) uses a library as it is when the compiler and the linker
+dnl find it without -I / -L (system directories, the macOS SDK, ...). Adding the
+dnl prefix of such a library with -I would turn its system headers into ordinary
+dnl ones: with the macOS SDK that gives thousands of -Wnullability warnings.
+dnl Otherwise the prefix is searched: pkg-config, then the candidate directories.
 if test -z "$PHP_ZLIB_DIR"; then
 PHP_ARG_WITH(zlib-dir, for the location of ZLIB,
 [  --with-zlib-dir[=DIR]   swfed: Set the path to ZLIB install prefix.], auto, no)
@@ -52,22 +58,41 @@ SWFED_SEARCH_DIRS="/usr/local /usr /opt/homebrew /opt/local"
 #
 # ZLIB (required)
 #
-  AC_MSG_CHECKING([for the location of zlib])
-  swfed_find_prefix "$PHP_ZLIB_DIR" zlib.h zlib zlib \
-      $SWFED_SEARCH_DIRS /opt/homebrew/opt/zlib /usr/local/opt/zlib
-  if test -z "$SWFED_FOUND_DIR"; then
-    AC_MSG_ERROR([swfed support requires ZLIB. Use --with-zlib-dir=<DIR> to specify prefix where ZLIB include and library are located (e.g. --with-zlib-dir=/opt/homebrew/opt/zlib)])
+  swfed_zlib_default=no
+  if test "$PHP_ZLIB_DIR" = "auto" || test "$PHP_ZLIB_DIR" = "yes"; then
+    AC_CHECK_HEADER([zlib.h],
+      [AC_CHECK_LIB([z], [inflate], [swfed_zlib_default=yes])])
   fi
-  AC_MSG_RESULT([$SWFED_FOUND_DIR])
-  PHP_ADD_LIBRARY_WITH_PATH(z, $SWFED_FOUND_DIR/${PHP_LIBDIR:-lib}, SWFED_SHARED_LIBADD)
-  PHP_ADD_INCLUDE($SWFED_FOUND_INCDIR)
+  AC_MSG_CHECKING([for the location of zlib])
+  if test "$swfed_zlib_default" = "yes"; then
+    AC_MSG_RESULT([system default (no -I / -L needed)])
+    PHP_ADD_LIBRARY(z, 1, SWFED_SHARED_LIBADD)
+  else
+    swfed_find_prefix "$PHP_ZLIB_DIR" zlib.h zlib zlib \
+        $SWFED_SEARCH_DIRS /opt/homebrew/opt/zlib /usr/local/opt/zlib
+    if test -z "$SWFED_FOUND_DIR"; then
+      AC_MSG_ERROR([swfed support requires ZLIB. Use --with-zlib-dir=<DIR> to specify prefix where ZLIB include and library are located (e.g. --with-zlib-dir=/opt/homebrew/opt/zlib)])
+    fi
+    AC_MSG_RESULT([$SWFED_FOUND_DIR])
+    PHP_ADD_LIBRARY_WITH_PATH(z, $SWFED_FOUND_DIR/${PHP_LIBDIR:-lib}, SWFED_SHARED_LIBADD)
+    PHP_ADD_INCLUDE($SWFED_FOUND_INCDIR)
+  fi
 
 #
 # LIBPNG (optional)
 #
+  swfed_png_default=no
+  if test "$PHP_PNG_DIR" = "auto" || test "$PHP_PNG_DIR" = "yes"; then
+    AC_CHECK_HEADER([png.h],
+      [AC_CHECK_LIB([png], [png_create_read_struct], [swfed_png_default=yes], [], [-lz -lm])])
+  fi
   AC_MSG_CHECKING([for the location of libpng])
   if test "$PHP_PNG_DIR" = "no"; then
     AC_MSG_RESULT([disabled])
+  elif test "$swfed_png_default" = "yes"; then
+    AC_MSG_RESULT([system default (no -I / -L needed)])
+    AC_DEFINE(HAVE_PNG,1,[ ])
+    PHP_ADD_LIBRARY(png, 1, SWFED_SHARED_LIBADD)
   else
     swfed_find_prefix "$PHP_PNG_DIR" png.h libpng libpng \
         $SWFED_SEARCH_DIRS /opt/homebrew/opt/libpng /usr/local/opt/libpng
@@ -87,9 +112,18 @@ SWFED_SEARCH_DIRS="/usr/local /usr /opt/homebrew /opt/local"
 #
 # GIFLIB (optional)
 #
+  swfed_gif_default=no
+  if test "$PHP_GIF_DIR" = "auto" || test "$PHP_GIF_DIR" = "yes"; then
+    AC_CHECK_HEADER([gif_lib.h],
+      [AC_CHECK_LIB([gif], [DGifOpen], [swfed_gif_default=yes])])
+  fi
   AC_MSG_CHECKING([for the location of giflib])
   if test "$PHP_GIF_DIR" = "no"; then
     AC_MSG_RESULT([disabled])
+  elif test "$swfed_gif_default" = "yes"; then
+    AC_MSG_RESULT([system default (no -I / -L needed)])
+    AC_DEFINE(HAVE_GIF,1,[ ])
+    PHP_ADD_LIBRARY(gif, 1, SWFED_SHARED_LIBADD)
   else
     swfed_find_prefix "$PHP_GIF_DIR" gif_lib.h giflib "" \
         $SWFED_SEARCH_DIRS /opt/homebrew/opt/giflib /usr/local/opt/giflib

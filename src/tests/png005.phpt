@@ -1,5 +1,7 @@
 --TEST--
 getPNGData() un-premultiplies Lossless2 colors and keeps alpha 254 in tRNS
+--SKIPIF--
+<?php ob_start(); phpinfo(INFO_MODULES); if (strpos(ob_get_clean(), 'PNG support => yes') === false) die('skip swfed built without libpng'); ?>
 --FILE--
 <?php
 
