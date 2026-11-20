@@ -38,7 +38,7 @@ if (isset($_FILES['swffile']['tmp_name'])) {
         (! file_put_contents($tmp_filename, $swfdata))) {
 	header("Content-Type: text/html; charset=utf-8");
         echo "ごめんなさい。内部エラーです。";
-        fprintf(STDERR, "index.php: file_put_contents failed. zero size?\n");
+        error_log("index.php: file_put_contents failed. zero size?");
         unlink($tmp_filename);
         exit(0);
     }

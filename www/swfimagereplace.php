@@ -44,18 +44,24 @@ if (! empty($_FILES['imagefile']['tmp_name'])) {
         exit(0);
     }
 //    header("Location: ./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext");
+$swf_url = "./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext";
+$player_head = swfed_player_head();
+$object_markup = <<< OBJECT
+<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
+codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">
+<param name="movie" value="$swf_url">
+<param name="quality" value="high">
+<embed src="$swf_url" width="100%" height="100%" type="application/x-shockwave-flash" wmode="transparent">
+</object>
+OBJECT;
+$swf_embed = swfed_swf_embed($swf_url, $object_markup);
 echo <<< FORM
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-</head>
+$player_head</head>
 <body bgcolor="#fff0f0">
-<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000"
-codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,0,0" width="100%" height="100%">
-<param name="movie" value="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext">
-<param name="quality" value="high">
-<embed src="./swfimagereplace.php?id=$id&image_id=$image_id&id_image=$id_image&ext=$ext" width="100%" height="100%" type="application/x-shockwave-flash" wmode="transparent">
-</object>
+$swf_embed
 </body>
 </html>
 FORM;

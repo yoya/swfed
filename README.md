@@ -674,6 +674,31 @@ php sample/swfreplacebitmapdata.php input.swf 1 new.png > output.swf
 
 The tests in `src/tests/*.phpt` are also short usage examples.
 
+## Demo pages (`www/`)
+
+The PHP pages in `www/` upload a SWF, list its images and shapes, and replace
+an image. Try them with PHP's built-in server (the extension has to be loaded):
+
+```
+cd www
+php -d extension=swfed -S 127.0.0.1:8000
+```
+
+The pages show SWF files, which need Flash Player when they are shown with
+`<object>` / `<embed>`, and no current browser runs it. So they play the SWF
+with [Flapp](https://github.com/yoya/Flapp), a player written in JavaScript
+(the `<flapp-player>` element). `flapp.js` is loaded from jsDelivr, pinned to a
+commit. The SWF is shown at the size of its stage and starts playing without a
+click.
+
+| environment variable | |
+|---|---|
+| `SWFED_PLAYER=none` | Nothing is loaded: `<object>` / `<embed>` are used as they are (for a browser that still has Flash Player). |
+| `SWFED_PLAYER_URL` | URL (`http(s)://...` or a path) of your own copy of `flapp.js`, for a network that can't reach jsDelivr. |
+
+Uploaded files are kept in `swfed-<uid>/` under the system temporary directory
+(see `SWFED_TMP_DIR` in `www/define.php`) and removed after an hour.
+
 ## Links
 
 - Repository: https://github.com/yoya/swfed

@@ -1,8 +1,10 @@
+<?php require_once('define.php'); ?>
 <html>
+<head>
+<?php echo swfed_player_head(); ?>
+</head>
 <body bgcolor="#f0f0ff">
 <?php
-
-require_once('define.php');
 
 $id = hex_from_string($_REQUEST['id']);
 
@@ -67,14 +69,13 @@ foreach ($tag_list as $tag_seqno => $tagblock) {
     if (($ext == '.jpg') || ($ext == '.png')) {
 	echo "<td> <img src=\"./swfimage.php?id=$id&image_id=$cid&ext=$ext\"> </td>";
     } elseif ($ext == '.shape') { // shape
-	echo "<td>
-<object width='240' height='240'>
-<param name='movie' value='./swfshape.php?id=$id&shape_id=$cid&ext=$ext'>
+	$shape_url = "./swfshape.php?id=$id&shape_id=$cid&ext=$ext";
+	echo "<td>\n", swfed_swf_embed($shape_url, "<object width='240' height='240'>
+<param name='movie' value='$shape_url'>
 <param name='wmode' value='transparent'>
-<embed src='./swfshape.php?id=$id&shape_id=$cid&ext=$ext' width='240' height='240' type='application/x-shockwave-flash' wmode='transparent'>
+<embed src='$shape_url' width='240' height='240' type='application/x-shockwave-flash' wmode='transparent'>
 </embed>
-</object>
-</td>";
+</object>"), "\n</td>";
     }
     echo "</tr>\n";
 }

@@ -11,4 +11,6 @@ WORKDIR /tmp/ext/src
 
 RUN phpize && ./configure CFLAGS="-g -O1" && make
 
-CMD make test NO_INTERACTION=1 TESTS="-m --show-diff"
+# a test that valgrind complains about is only reported as LEAK: print what valgrind wrote
+CMD make test NO_INTERACTION=1 TESTS="-m --show-diff"; rc=$?; \
+    for f in tests/*.mem; do if [ -s "$f" ]; then echo "==== valgrind: $f"; cat "$f"; fi; done; exit $rc

@@ -124,3 +124,55 @@ if (! function_exists('multiply_unit')) {
         return $str;
     }
 }
+
+/*
+ * The demo pages show SWF files. <object> / <embed> need Flash Player, and no
+ * current browser runs it, so Flapp (https://github.com/yoya/Flapp), a player
+ * written in JavaScript, plays them. The pages use its <flapp-player> element.
+ * flapp.js is loaded from jsDelivr, pinned to a commit.
+ *
+ * - SWFED_PLAYER=none: nothing is loaded, <object> / <embed> are used as they
+ *   are (for a browser that still has Flash Player).
+ * - SWFED_PLAYER_URL: URL (http(s) or a path) of flapp.js of your own copy,
+ *   instead of the one above.
+ */
+define('SWFED_FLAPP_URL', 'https://cdn.jsdelivr.net/gh/yoya/Flapp@8aebb1f2f03b67a720f300283c0ee0798ba99f44/web/flapp.js');
+
+function swfed_player() {
+    $player = getenv('SWFED_PLAYER');
+    if (($player === false) || ($player === '')) {
+        return 'flapp';
+    }
+    $player = strtolower($player);
+    if (! in_array($player, array('flapp', 'none'), true)) {
+        error_log("swfed: unknown SWFED_PLAYER (flapp or none): $player");
+        return 'none';
+    }
+    return $player;
+}
+
+/* the <script> tag of the player, for the <head> of the demo pages */
+function swfed_player_head() {
+    if (swfed_player() === 'none') {
+        return '';
+    }
+    $url = getenv('SWFED_PLAYER_URL');
+    if (($url === false) || ($url === '')) {
+        $url = SWFED_FLAPP_URL;
+    } elseif (! preg_match('#^(https?://|/|\./)#i', $url)) {
+        error_log("swfed: SWFED_PLAYER_URL must be an http(s) URL or a path: $url");
+        return '';
+    }
+    return '<script type="module" src="' . htmlspecialchars($url, ENT_QUOTES) . "\"></script>\n";
+}
+
+/*
+ * The markup that shows the SWF at $src: Flapp's <flapp-player>, or
+ * $object_markup (the <object> / <embed> for Flash Player).
+ */
+function swfed_swf_embed($src, $object_markup) {
+    if (swfed_player() === 'flapp') {
+        return '<flapp-player src="' . htmlspecialchars($src, ENT_QUOTES) . '"></flapp-player>';
+    }
+    return $object_markup;
+}
