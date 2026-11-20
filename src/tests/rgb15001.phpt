@@ -36,6 +36,15 @@ $o->input(swf(6, tag(9, "\xff\xff\xff") . tag(20, $bits) . tag(1, '') . tag(0, '
 var_dump(strlen($o->getPNGData(1)) > 0);
 var_dump($o->replaceBitmapData(array('red' => 255, 'green' => 0, 'blue' => 0),
                                file_get_contents('tests/negimiku001.png')));
+
+// zlib data that inflates to less than the image needs (3x2 needs 2 rows * 8 bytes = 16 bytes):
+// rejected, instead of reading the rest of the buffer (uninitialized heap) as pixels
+foreach (array(4, 15) as $len) {
+    $bits = pack('vCvv', 1, 4, 3, 2) . gzcompress(str_repeat("\x7c", $len));
+    $o->input(swf(6, tag(9, "\xff\xff\xff") . tag(20, $bits) . tag(1, '') . tag(0, '')));
+    echo "short: ";
+    var_dump($o->getPNGData(1));
+}
 ?>
 ===DONE===
 --EXPECTF--
@@ -45,4 +54,8 @@ string(3) "PNG"
 bool(true)
 bool(true)
 bool(true)
+short: swf_tag_lossless_input_detail: format=4 data size(4) != 16
+%Abool(false)
+short: swf_tag_lossless_input_detail: format=4 data size(15) != 16
+%Abool(false)
 ===DONE===

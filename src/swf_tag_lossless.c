@@ -222,6 +222,17 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             bitstream_close(bs);
             return 1;
         }
+        if ((swf_tag_lossless->format == 4) &&
+            (origsize != rgb15_stride * (unsigned long) swf_tag_lossless->height)) {
+            /* uncompress() sets origsize to the inflated size. The rows are read
+             * straight from tmp_buff below, so short data would be read as
+             * uninitialized heap. */
+            fprintf(stderr, "swf_tag_lossless_input_detail: format=4 data size(%lu) != %lu\n",
+                    origsize, rgb15_stride * (unsigned long) swf_tag_lossless->height);
+            free(tmp_buff);
+            bitstream_close(bs);
+            return 1;
+        }
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->code == 20) { // Lossless
