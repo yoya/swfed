@@ -3,6 +3,26 @@
 #include "swf_shape_record_edge.h"
 #include "swf_tag_shape.h"
 
+/*
+ * Moves the pen by (dx, dy). The position is kept in the range of a MoveTo
+ * (31 bit signed twips, as MoveBits is 5 bits): beyond it the position means
+ * nothing, and the deltas written back by swf_shape_record_edge_build() could
+ * overflow an int. Returns 1, without moving, if it would leave the range.
+ */
+static int
+_swf_shape_pen_move(swf_tag_shape_detail_t *shape, long dx, long dy) {
+    int64_t x = (int64_t) shape->_current_x + dx;
+    int64_t y = (int64_t) shape->_current_y + dy;
+    if ((x < -1073741824) || (x > 1073741823) || (y < -1073741824) || (y > 1073741823)) {
+        fprintf(stderr, "swf_shape_record_edge_parse: the position (%lld, %lld) is out of range\n",
+                (long long) x, (long long) y);
+        return 1;
+    }
+    shape->_current_x = (signed) x;
+    shape->_current_y = (signed) y;
+    return 0;
+}
+
 int
 swf_shape_record_edge_parse(bitstream_t *bs,
                             swf_shape_record_edge_t *shape_record_edge,
@@ -27,33 +47,32 @@ swf_shape_record_edge_parse(bitstream_t *bs,
         anchor_delta_x = bitstream_getbits_signed(bs, shape_coord_real_size);
         anchor_delta_y = bitstream_getbits_signed(bs, shape_coord_real_size);
 
-        swf_tag_shape->_current_x += control_delta_x;
-        swf_tag_shape->_current_y += control_delta_y;
+        if (_swf_shape_pen_move(swf_tag_shape, control_delta_x, control_delta_y)) {
+            return 1;
+        }
         shape_record_edge->shape_control_x = swf_tag_shape->_current_x;
         shape_record_edge->shape_control_y = swf_tag_shape->_current_y;
-        swf_tag_shape->_current_x += anchor_delta_x;
-        swf_tag_shape->_current_y += anchor_delta_y;
+        if (_swf_shape_pen_move(swf_tag_shape, anchor_delta_x, anchor_delta_y)) {
+            return 1;
+        }
         shape_record_edge->shape_anchor_x = swf_tag_shape->_current_x;
         shape_record_edge->shape_anchor_y = swf_tag_shape->_current_y;
     } else {
+        signed delta_x = 0, delta_y = 0;
         shape_record_edge->shape_line_has_x_and_y = bitstream_getbit(bs);
         if (shape_record_edge->shape_line_has_x_and_y == 1) {
-            signed delta_x, delta_y;
             delta_x = bitstream_getbits_signed(bs, shape_coord_real_size);
             delta_y = bitstream_getbits_signed(bs, shape_coord_real_size);
-            swf_tag_shape->_current_x += delta_x;
-            swf_tag_shape->_current_y += delta_y;
         } else {
             shape_record_edge->shape_line_has_x_or_y = bitstream_getbit(bs);
             if (shape_record_edge->shape_line_has_x_or_y == 0) {
-                signed delta_x;
                 delta_x = bitstream_getbits_signed(bs, shape_coord_real_size);
-                swf_tag_shape->_current_x += delta_x;
             } else {
-                signed delta_y;
                 delta_y = bitstream_getbits_signed(bs, shape_coord_real_size);
-                swf_tag_shape->_current_y += delta_y;
             }
+        }
+        if (_swf_shape_pen_move(swf_tag_shape, delta_x, delta_y)) {
+            return 1;
         }
 	shape_record_edge->shape_x = swf_tag_shape->_current_x;
 	shape_record_edge->shape_y = swf_tag_shape->_current_y;
