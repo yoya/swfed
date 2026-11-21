@@ -706,8 +706,9 @@ swf_object_get_tagdata(swf_object_t *swf, int tag_seqno,
     tag = swf_object_search_tag_byseqno(swf, tag_seqno);
     if (tag) {
         bitstream_t *bs = bitstream_open();
-        swf_tag_build(bs, tag, swf);
-        data = bitstream_steal(bs, length);
+        if (swf_tag_build(bs, tag, swf) == 0) {
+            data = bitstream_steal(bs, length);
+        }
         bitstream_close(bs);
     }
     return data;
@@ -740,8 +741,9 @@ swf_object_get_tagdata_bycid(swf_object_t *swf, int cid,
     tag = swf_object_search_tag_bycid(swf, cid);
     if (tag) {
         bitstream_t *bs = bitstream_open();
-        swf_tag_build(bs, tag, swf);
-        data = bitstream_steal(bs, length);
+        if (swf_tag_build(bs, tag, swf) == 0) {
+            data = bitstream_steal(bs, length);
+        }
         bitstream_close(bs);
     }
     return data;
@@ -946,8 +948,9 @@ swf_object_get_shapedata(swf_object_t *swf, int cid, unsigned long *length) {
             return NULL;
         }
         bs = bitstream_open();
-        swf_tag_build(bs, tag, swf);
-        data = bitstream_steal(bs, length);
+        if (swf_tag_build(bs, tag, swf) == 0) {
+            data = bitstream_steal(bs, length);
+        }
         bitstream_close(bs);
     }
     if (data == NULL) {

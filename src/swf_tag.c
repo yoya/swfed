@@ -211,8 +211,11 @@ int swf_tag_build(bitstream_t *bs, swf_tag_t *tag, struct swf_object_ *swf) {
         }
         data = detail_handler->output(tag, &data_len, swf);
         if (data == NULL) {
-            fprintf(stderr, "swf_tag_build: Can't output: data=%p data_len=%lu\n",
-                    data, data_len);
+            /* writing a tag header with no body instead would silently drop
+             * the content of the tag */
+            fprintf(stderr, "swf_tag_build: can't output the detail of tag->code=%d\n",
+                    tag->code);
+            return 1;
         }
         tag->length = data_len;
         swf_tag_and_length_build(bs, tag);
