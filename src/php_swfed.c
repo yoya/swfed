@@ -464,6 +464,23 @@ static swf_object_t  *get_swf_object(zval *obj);
             RETURN_FALSE; \
         } \
     } while (0)
+/* applyShape{Matrix,Rect}Factor(): the scales must be numbers, and the move
+ * (pixels) must fit in the twips of a RECT / MATRIX */
+#define SWFED_CHECK_FACTOR(v) do { \
+        if (! zend_finite(v)) { \
+            php_error_docref(NULL, E_WARNING, #v " must be a finite number"); \
+            RETURN_FALSE; \
+        } \
+    } while (0)
+#define SWFED_TRANS_PIXELS_MAX 53687091 /* 1073741823 / SWF_TWIPS */
+#define SWFED_CHECK_TRANS(v) do { \
+        if (((v) < -SWFED_TRANS_PIXELS_MAX) || ((v) > SWFED_TRANS_PIXELS_MAX)) { \
+            php_error_docref(NULL, E_WARNING, #v "(" ZEND_LONG_FMT \
+                             ") must be between %d and %d", (zend_long) (v), \
+                             -SWFED_TRANS_PIXELS_MAX, SWFED_TRANS_PIXELS_MAX); \
+            RETURN_FALSE; \
+        } \
+    } while (0)
 /* RECT is written with 5bit NBits, i.e. up to 31bit signed twips */
 #define SWFED_RECT_TWIPS_MIN (-1073741824.0)
 #define SWFED_RECT_TWIPS_MAX (1073741823.0)
@@ -1584,6 +1601,11 @@ SWFED_METHOD(applyShapeMatrixFactor) {
         RETURN_FALSE;
     }
     SWFED_CHECK_CID(shape_id);
+    SWFED_CHECK_FACTOR(scale_x);
+    SWFED_CHECK_FACTOR(scale_y);
+    SWFED_CHECK_FACTOR(rotate_rad);
+    SWFED_CHECK_TRANS(trans_x);
+    SWFED_CHECK_TRANS(trans_y);
     SWFED_GET_OBJECT(swf);
     result = swf_object_apply_shapematrix_factor(swf, shape_id, -1,
                                                  scale_x, scale_y, rotate_rad,
@@ -1607,6 +1629,10 @@ SWFED_METHOD(applyShapeRectFactor) {
         RETURN_FALSE;
     }
     SWFED_CHECK_CID(shape_id);
+    SWFED_CHECK_FACTOR(scale_x);
+    SWFED_CHECK_FACTOR(scale_y);
+    SWFED_CHECK_TRANS(trans_x);
+    SWFED_CHECK_TRANS(trans_y);
     SWFED_GET_OBJECT(swf);
     result = swf_object_apply_shaperect_factor(swf, shape_id, -1,
                                                  scale_x, scale_y,

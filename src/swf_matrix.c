@@ -113,6 +113,14 @@ swf_matrix_print(swf_matrix_t *matrix, int indent_depth) {
     return 0;
 }
 
+/* the values of a MATRIX are written with 5bit NBits: up to 31bit signed
+ * (n.16 fixed point, twips) */
+static int
+_swf_matrix_value_fits(double v) {
+    return (v >= -1073741824.0) && (v <= 1073741823.0); // false for NaN
+}
+
+/* returns 1, and changes nothing, if a result doesn't fit in a MATRIX */
 int
 swf_matrix_apply_factor(swf_matrix_t *matrix,
                         double scale_x, double scale_y,
@@ -120,50 +128,74 @@ swf_matrix_apply_factor(swf_matrix_t *matrix,
                         signed int trans_x, signed int trans_y) {
     /* x' = ScaleX * x + RotateSkew1 * y, y' = RotateSkew0 * x + ScaleY * y:
      * scaling the result (shape coordinates) scales each row */
-    if (matrix->has_scale == 0) {
-        matrix->has_scale = 1;
-        matrix->scale_x = 65536; // 1.0 when the scale is omitted
-        matrix->scale_y = 65536;
+    double sx, sy, s0, s1, tx, ty;
+    sx = (matrix->has_scale ? matrix->scale_x : 65536) * scale_x; // 1.0 when the scale is omitted
+    s1 = matrix->rotate_skew1 * scale_x;
+    s0 = matrix->rotate_skew0 * scale_y;
+    sy = (matrix->has_scale ? matrix->scale_y : 65536) * scale_y;
+    if (! (_swf_matrix_value_fits(sx) && _swf_matrix_value_fits(s1) &&
+           _swf_matrix_value_fits(s0) && _swf_matrix_value_fits(sy))) {
+        goto out_of_range;
     }
-    matrix->scale_x *= scale_x;
-    matrix->rotate_skew1 *= scale_x;
-    matrix->rotate_skew0 *= scale_y;
-    matrix->scale_y *= scale_y;
+    sx = (double) (signed long) sx; s1 = (double) (signed long) s1;
+    s0 = (double) (signed long) s0; sy = (double) (signed long) sy;
     if ((rotate_rad != 0)) {
-        double rot_sin, rot_cos;
-        long sx, sy, s0, s1;
+        double rot_sin, rot_cos, rx, ry, r0, r1;
         if (matrix->has_rotate == 0) {
-            matrix->has_rotate = 1;
-            matrix->rotate_skew0 = 0;
-            matrix->rotate_skew1 = 0;
+            s0 = 0;
+            s1 = 0;
         }
         rot_cos = cos(rotate_rad);
         rot_sin = sin(rotate_rad);
-        sx = rot_cos * matrix->scale_x - rot_sin * matrix->rotate_skew0;
-        s0 = rot_sin * matrix->scale_x + rot_cos * matrix->rotate_skew0;
-        s1 = rot_cos * matrix->rotate_skew1 - rot_sin * matrix->scale_y;
-        sy = rot_sin * matrix->rotate_skew1 + rot_cos * matrix->scale_y;
-        matrix->scale_x = sx;
-        matrix->scale_y = sy;
-        matrix->rotate_skew0 = s0;
-        matrix->rotate_skew1 = s1;
+        rx = rot_cos * sx - rot_sin * s0;
+        r0 = rot_sin * sx + rot_cos * s0;
+        r1 = rot_cos * s1 - rot_sin * sy;
+        ry = rot_sin * s1 + rot_cos * sy;
+        if (! (_swf_matrix_value_fits(rx) && _swf_matrix_value_fits(r0) &&
+               _swf_matrix_value_fits(r1) && _swf_matrix_value_fits(ry))) {
+            goto out_of_range;
+        }
+        sx = rx; sy = ry; s0 = r0; s1 = r1;
     }
-    matrix->translate_x += 20 * trans_x;
-    matrix->translate_y += 20 * trans_y;
+    tx = matrix->translate_x + 20.0 * trans_x;
+    ty = matrix->translate_y + 20.0 * trans_y;
+    if (! (_swf_matrix_value_fits(tx) && _swf_matrix_value_fits(ty))) {
+        goto out_of_range;
+    }
+    matrix->has_scale = 1;
+    if ((rotate_rad != 0)) {
+        matrix->has_rotate = 1;
+    }
+    matrix->scale_x = (signed long) sx;
+    matrix->scale_y = (signed long) sy;
+    matrix->rotate_skew0 = (signed long) s0;
+    matrix->rotate_skew1 = (signed long) s1;
+    matrix->translate_x = (signed) tx;
+    matrix->translate_y = (signed) ty;
     return 0;
+out_of_range:
+    fprintf(stderr, "swf_matrix_apply_factor: the result is out of the range of a MATRIX\n");
+    return 1;
 }
 
-/* scale on the source side (e.g. bitmap pixels): scales each column */
+/* scale on the source side (e.g. bitmap pixels): scales each column.
+ * returns 1, and changes nothing, if a result doesn't fit in a MATRIX */
 int
 swf_matrix_scale_source(swf_matrix_t *matrix, double scale_x, double scale_y) {
-    if (matrix->has_scale == 0) {
-        matrix->has_scale = 1;
-        matrix->scale_x = 65536;
-        matrix->scale_y = 65536;
+    double sx, sy, s0, s1;
+    sx = (matrix->has_scale ? matrix->scale_x : 65536) * scale_x;
+    s0 = matrix->rotate_skew0 * scale_x;
+    s1 = matrix->rotate_skew1 * scale_y;
+    sy = (matrix->has_scale ? matrix->scale_y : 65536) * scale_y;
+    if (! (_swf_matrix_value_fits(sx) && _swf_matrix_value_fits(s1) &&
+           _swf_matrix_value_fits(s0) && _swf_matrix_value_fits(sy))) {
+        fprintf(stderr, "swf_matrix_scale_source: the result is out of the range of a MATRIX\n");
+        return 1;
     }
-    matrix->scale_x *= scale_x;
-    matrix->rotate_skew0 *= scale_x;
-    matrix->rotate_skew1 *= scale_y;
-    matrix->scale_y *= scale_y;
+    matrix->has_scale = 1;
+    matrix->scale_x = (signed long) sx;
+    matrix->rotate_skew0 = (signed long) s0;
+    matrix->rotate_skew1 = (signed long) s1;
+    matrix->scale_y = (signed long) sy;
     return 0;
 }

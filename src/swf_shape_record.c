@@ -130,14 +130,32 @@ swf_shape_record_delete(swf_shape_record_t *shape_record) {
     return 0;
 }
 
+/*
+ * trunc((v - base) * scale) + base + trans (pixels), as twips.
+ * A coordinate is written with up to 31 bits (MoveBits is 5 bits): when a step
+ * is not a number that fits, *out_of_range is set and 0 is returned.
+ */
+static signed
+_swf_shape_scale(signed v, signed base, double scale, signed trans, int *out_of_range) {
+    double d = ((double) v - base) * scale;
+    if ((d >= -1073741824.0) && (d <= 1073741823.0)) {
+        d = (double) (signed) d + base + (double) trans * SWF_TWIPS;
+        if ((d >= -1073741824.0) && (d <= 1073741823.0)) {
+            return (signed) d;
+        }
+    }
+    *out_of_range = 1;
+    return 0;
+}
+
 int
 swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
                                    signed base_x, signed base_y,
                                    double scale_x, double scale_y,
                                    signed trans_x, signed trans_y) {
-    int pass;
-#define SCALE_X(v) ((signed) (((v) - base_x) * scale_x) + base_x + trans_x * SWF_TWIPS)
-#define SCALE_Y(v) ((signed) (((v) - base_y) * scale_y) + base_y + trans_y * SWF_TWIPS)
+    int pass, out_of_range = 0;
+#define SCALE_X(v) _swf_shape_scale((v), base_x, scale_x, trans_x, &out_of_range)
+#define SCALE_Y(v) _swf_shape_scale((v), base_y, scale_y, trans_y, &out_of_range)
     /* pass 0 checks that every edge delta still fits in 17 bits (NumBits is
      * 4 bits + 2), pass 1 applies; so a failure changes nothing */
     for (pass = 0 ; pass < 2 ; pass++) {
@@ -186,6 +204,10 @@ swf_shape_record_edge_apply_factor(swf_shape_record_t *shape_record,
                 }
             } else { // end
                 break;
+            }
+            if (out_of_range) {
+                fprintf(stderr, "swf_shape_record_edge_apply_factor: a coordinate is out of range\n");
+                return 1; // found in pass 0: nothing has been changed
             }
         }
     }

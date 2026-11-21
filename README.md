@@ -443,7 +443,9 @@ PHP の出力に表示します。`$data` が完全なタグでなければ `fal
 変換します。拡大縮小し、`$rotate_rad` ラジアン回転し、
 （`$trans_x`、`$trans_y`）ピクセル移動します。輪郭は変わりません。その ID の
 `DefineShape` / `2` / `3` が無ければ `false` を返します（`DefineMorphShape` は
-サポートしていません）。
+サポートしていません）。結果が SWF の値の範囲（31 ビット）に収まらない場合も、何も
+変更せずに `false` を返します。倍率や回転が有限の数でない場合と、移動量が
+±53687091 ピクセルを超える場合は、`E_WARNING` も出します。
 
 #### `applyShapeRectFactor(int $shape_id, float $scale_x, float $scale_y, int $trans_x, int $trans_y): bool`
 

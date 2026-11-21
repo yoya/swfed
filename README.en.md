@@ -440,6 +440,9 @@ Transforms the fill matrices of every bitmap and gradient fill in the shape:
 scales them, rotates them by `$rotate_rad` radians, then moves them by
 (`$trans_x`, `$trans_y`) pixels. The outline is not changed. Returns `false` if no
 `DefineShape`/`2`/`3` with that ID exists (`DefineMorphShape` is not supported).
+It also returns `false`, and changes nothing, if a result does not fit in the
+range of the SWF values (31 bits). A scale or rotation that is not a finite
+number, and a move over ±53687091 pixels, raise `E_WARNING` as well.
 
 #### `applyShapeRectFactor(int $shape_id, float $scale_x, float $scale_y, int $trans_x, int $trans_y): bool`
 
