@@ -192,7 +192,7 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             }
         }
     } else { // format != 3
-        unsigned long bitmap_count;
+        unsigned long bitmap_count, expected_size;
         /* format=4: 16bit per pixel, each row padded to 32bit */
         unsigned long rgb15_stride = (((unsigned long) swf_tag_lossless->width * 2) + 3) & ~3UL;
         bitmap_count = (unsigned long) swf_tag_lossless->width *
@@ -240,13 +240,15 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             bitstream_close(bs);
             return 1;
         }
-        if ((swf_tag_lossless->format == 4) &&
-            (origsize != rgb15_stride * (unsigned long) swf_tag_lossless->height)) {
-            /* uncompress() sets origsize to the inflated size. The rows are read
-             * straight from tmp_buff below, so short data would be read as
-             * uninitialized heap. */
-            fprintf(stderr, "swf_tag_lossless_input_detail: format=4 data size(%lu) != %lu\n",
-                    origsize, rgb15_stride * (unsigned long) swf_tag_lossless->height);
+        expected_size = (swf_tag_lossless->format == 4) ?
+            rgb15_stride * (unsigned long) swf_tag_lossless->height : 4 * bitmap_count;
+        if (origsize != expected_size) {
+            /* uncompress() sets origsize to the inflated size. With short data
+             * the pixels it doesn't cover would be left as uninitialized heap
+             * (format=4 reads the rows straight from tmp_buff, and the other
+             * formats stop filling the bitmap at the end of the data). */
+            fprintf(stderr, "swf_tag_lossless_input_detail: format=%d data size(%lu) != %lu\n",
+                    swf_tag_lossless->format, origsize, expected_size);
             free(tmp_buff);
             bitstream_close(bs);
             return 1;
@@ -254,7 +256,7 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         bs2 = bitstream_open();
         bitstream_input(bs2, tmp_buff, origsize);
         if (tag->code == 20) { // Lossless
-            swf_tag_lossless->bitmap = malloc((bitmap_count ? bitmap_count : 1) * sizeof(swf_xrgb_t));
+            swf_tag_lossless->bitmap = calloc(bitmap_count ? bitmap_count : 1, sizeof(swf_xrgb_t));
             if (swf_tag_lossless->bitmap == NULL) {
                 bitstream_close(bs2);
                 free(tmp_buff);
@@ -284,7 +286,7 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
                 }
             }
         } else { // tag == 36 (Lossless2)
-            swf_tag_lossless->bitmap2 = malloc((bitmap_count ? bitmap_count : 1) * sizeof(swf_argb_t));
+            swf_tag_lossless->bitmap2 = calloc(bitmap_count ? bitmap_count : 1, sizeof(swf_argb_t));
             if (swf_tag_lossless->bitmap2 == NULL) {
                 bitstream_close(bs2);
                 free(tmp_buff);
