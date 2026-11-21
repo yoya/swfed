@@ -563,27 +563,83 @@ _swf_action_list_fix_offsets(swf_action_list_t *action_list, long *old_pos, int 
     return ret;
 }
 
+/* a copy of the list (action_data has one more byte, as in swf_action_parse()) */
+static swf_action_list_t *
+_swf_action_list_clone(swf_action_list_t *action_list) {
+    swf_action_list_t *clone = swf_action_list_create();
+    swf_action_t *action;
+    if (clone == NULL) {
+        return NULL;
+    }
+    for (action = action_list->head ; action ; action = action->next) {
+        swf_action_t *copy = calloc(sizeof(*copy), 1);
+        if (copy == NULL) {
+            swf_action_list_destroy(clone);
+            return NULL;
+        }
+        *copy = *action;
+        copy->action_data = NULL;
+        copy->next = NULL;
+        if (clone->head == NULL) { // linked first: destroy() then frees it too
+            clone->head = copy;
+        } else {
+            clone->tail->next = copy;
+        }
+        clone->tail = copy;
+        if (action->action_data) {
+            copy->action_data = malloc((unsigned long) action->action_length + 1);
+            if (copy->action_data == NULL) {
+                swf_action_list_destroy(clone);
+                return NULL;
+            }
+            memcpy(copy->action_data, action->action_data, action->action_length);
+            copy->action_data[action->action_length] = '\0';
+        }
+    }
+    return clone;
+}
+
+/*
+ * The strings are replaced, and the branch offsets / sizes fixed, in a copy of
+ * the list, which takes the place of the list only when all of it succeeded.
+ * A failure half way leaves the list as it was: replaced strings with the
+ * branch offsets of the old lengths must never be written out.
+ */
 int
 swf_action_list_replace_strings(swf_action_list_t *action_list,
                                 int *modified, y_keyvalue_t *kv) {
     int ret;
     long *old_pos;
     int count = 0, changed = 0;
+    swf_action_list_t *work;
     if (modified) {
         *modified = 0;
     }
-    old_pos = _swf_action_list_offsets(action_list, &count);
-    if (old_pos == NULL) {
+    work = _swf_action_list_clone(action_list);
+    if (work == NULL) {
         return 1; // FAILURE
     }
-    ret = _swf_action_list_replace_strings(action_list, &changed, kv);
+    old_pos = _swf_action_list_offsets(work, &count);
+    if (old_pos == NULL) {
+        swf_action_list_destroy(work);
+        return 1; // FAILURE
+    }
+    ret = _swf_action_list_replace_strings(work, &changed, kv);
     if ((ret == 0) && changed) {
-        ret = _swf_action_list_fix_offsets(action_list, old_pos, count);
+        ret = _swf_action_list_fix_offsets(work, old_pos, count);
     }
     free(old_pos);
-    if (modified) {
-        *modified = changed;
+    if ((ret == 0) && changed) { // commit: swap the contents
+        swf_action_t *head = action_list->head, *tail = action_list->tail;
+        action_list->head = work->head;
+        action_list->tail = work->tail;
+        work->head = head;
+        work->tail = tail;
+        if (modified) {
+            *modified = 1;
+        }
     }
+    swf_action_list_destroy(work);
     return ret;
 }
 
