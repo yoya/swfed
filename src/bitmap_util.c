@@ -66,12 +66,20 @@ int jpeg_size(unsigned char *data, unsigned long data_len,
 int
 png_size(unsigned char *data, unsigned long data_len,
          int *width, int *height) {
+    unsigned long w, h;
     if (data_len < 24) {
-        fprintf(stderr, "png_size: data_len(%lu) < 16\n", data_len);
+        fprintf(stderr, "png_size: data_len(%lu) < 24\n", data_len);
         return 1;
     }
-    *width = (((data[16]*0x100) + data[17])*0x100 + data[18])*0x100 + data[19];
-    *height =(((data[20]*0x100) + data[21])*0x100 + data[22])*0x100 + data[23];
+    w = ((unsigned long) data[16] << 24) | (data[17] << 16) | (data[18] << 8) | data[19];
+    h = ((unsigned long) data[20] << 24) | (data[21] << 16) | (data[22] << 8) | data[23];
+    /* PNG allows 1 .. 2^31-1; anything else would not fit in the int either */
+    if ((w == 0) || (w > 0x7fffffffUL) || (h == 0) || (h > 0x7fffffffUL)) {
+        fprintf(stderr, "png_size: invalid size (%lu, %lu)\n", w, h);
+        return 1;
+    }
+    *width = (int) w;
+    *height = (int) h;
     return 0;
 }
 
