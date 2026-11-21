@@ -59,7 +59,10 @@ swf_line_style_array_build(bitstream_t *bs, swf_line_style_array_t *line_style_a
         bitstream_putbytesLE(bs, line_style_array->count, 2);
     }
     for (i = 0 ; i < line_style_array->count ; i++) {
-        swf_line_style_build(bs, &(line_style_array->line_style[i]), tag);
+        if (swf_line_style_build(bs, &(line_style_array->line_style[i]), tag)) {
+            fprintf(stderr, "swf_line_style_array_build: swf_line_style_build failed i=%d/count=%d\n", i, line_style_array->count);
+            return 1;
+        }
     }
     return 0;
 }

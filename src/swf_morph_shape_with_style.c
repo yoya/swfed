@@ -29,15 +29,21 @@ int
 swf_morph_shape_with_style_build(bitstream_t *bs,
                                  swf_morph_shape_with_style_t *morph_shape_with_style,
                                  swf_tag_t *tag) {
-    swf_styles_build(bs, &(morph_shape_with_style->styles), tag);
-    swf_shape_record_build(bs, &(morph_shape_with_style->shape_records), tag);
+    if (swf_styles_build(bs, &(morph_shape_with_style->styles), tag) ||
+        swf_shape_record_build(bs, &(morph_shape_with_style->shape_records), tag)) {
+        fprintf(stderr, "swf_morph_shape_with_style_build: the start shape can't be built\n");
+        return 1;
+    }
 
     bitstream_align(bs);
     morph_shape_with_style->offset_of_end_edges = bitstream_getbytepos(bs);
 
     swf_styles_count_build(bs, &(morph_shape_with_style->styles_count));
-    swf_shape_record_build(bs, &(morph_shape_with_style->shape_records_morph),
-                           tag);
+    if (swf_shape_record_build(bs, &(morph_shape_with_style->shape_records_morph),
+                               tag)) {
+        fprintf(stderr, "swf_morph_shape_with_style_build: the end shape can't be built\n");
+        return 1;
+    }
     return 0;
 }
 

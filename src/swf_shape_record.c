@@ -61,14 +61,19 @@ swf_shape_record_build(bitstream_t *bs, swf_shape_record_t *shape_record,
     while (current_record) {
         first_bit = (current_record->first_6bits >> 5) & 1;
         next_5bits = current_record->first_6bits & 0x1f;
+        int ret;
         if ((first_bit == 0) && (next_5bits == 0)) {
             swf_shape_record_end_build(bs, &(current_record->shape.shape_end));
             break;
         } if (first_bit == 0) {
-            swf_shape_record_setup_build(bs, &(current_record->shape.shape_setup),
-                                         tag);
+            ret = swf_shape_record_setup_build(bs, &(current_record->shape.shape_setup),
+                                               tag);
         } else {
-            swf_shape_record_edge_build(bs, &(current_record->shape.shape_edge), tag);
+            ret = swf_shape_record_edge_build(bs, &(current_record->shape.shape_edge), tag);
+        }
+        if (ret) { // e.g. the styles of a NewStyles can't be written
+            fprintf(stderr, "swf_shape_record_build: a record can't be built\n");
+            return ret;
         }
         current_record = current_record->next;
     }
