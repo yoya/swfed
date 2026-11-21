@@ -203,8 +203,7 @@ if ($swf->input($data) === false) {
 - 圧縮された SWF（`CWS` / `ZWS`）のヘッダにあるファイル長（`input()`、
   `replaceMovieClip()`）。超えると `E_WARNING` を出して `false` を返します。
 - DefineBitsLossless / DefineBitsLossless2 の画像データと、DefineBitsJPEG3 /
-  DefineBitsJPEG4 のアルファを展開したサイズ。超えると、そのタグの解析が失敗します
-  （アルファは無いものとして扱います）。
+  DefineBitsJPEG4 のアルファを展開したサイズ。超えると、そのタグの解析が失敗します。
 - `replacePNGData()` / `replaceGIFData()` / `replaceBitmapData()` に渡した PNG / GIF を
   デコードしたサイズ（GIF は、論理画面と全フレームの合計）。超えると `false` を返します。
 

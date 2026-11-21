@@ -293,8 +293,13 @@ swf_tag_jpeg3_input_detail(swf_tag_t *tag,
     if (new_buff) {
         swf_tag_jpeg->alpha_data = new_buff;
         swf_tag_jpeg->alpha_data_len = origsize;
-    } else {
-        fprintf(stderr, "swf_tag_jpeg3_create_detail: can't uncompress alpha data\n");
+    } else if (alpha_data_len > 0) {
+        /* corrupt, truncated, or over the size limit. Taking it as "no alpha"
+         * would silently drop the alpha when the tag is written out again:
+         * the tag can't be parsed, and stays as it was read. */
+        fprintf(stderr, "swf_tag_jpeg3_input_detail: can't uncompress alpha data (%lu bytes)\n", alpha_data_len);
+        bitstream_close(bs);
+        return 1;
     }
     bitstream_close(bs);
     return 0;
@@ -411,6 +416,13 @@ swf_tag_jpeg3_output_detail(swf_tag_t *tag, unsigned long *length,
     }
     bitstream_putstring(bs, swf_tag_jpeg->jpeg_data, swf_tag_jpeg->jpeg_data_len);
     offset_to_alpha = swf_tag_jpeg->jpeg_data_len;
+    if (swf_tag_jpeg->alpha_data == NULL) {
+        /* a tag with no alpha bytes (e.g. a PNG / GIF in the tag) is written
+         * with none, not with an empty zlib stream */
+        data = bitstream_steal(bs, length);
+        bitstream_close(bs);
+        return data;
+    }
     old_size = swf_tag_jpeg->alpha_data_len;
     compsize = compressBound(old_size);
     new_buff = malloc(compsize);
