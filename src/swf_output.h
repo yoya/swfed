@@ -27,6 +27,18 @@ extern void swf_set_output_handler(swf_output_handler_t print_handler,
 #else
 #define SWF_PRINTF_FORMAT(format_idx, first_arg)
 #endif
+/*
+ * The upper limit (bytes) of what one decompression or one image conversion
+ * may allocate: the data of DefineBitsLossless / the alpha of DefineBitsJPEG3,
+ * a PNG or a GIF turned into a bitmap. The handler returns it, 0 for no limit.
+ * Without a handler there is no limit.
+ */
+typedef unsigned long (*swf_size_limit_handler_t)(void);
+extern void swf_set_size_limit_handler(swf_size_limit_handler_t handler);
+extern unsigned long swf_size_limit(void);
+/* returns 1 (with an error message that starts with func) when size is over the limit */
+extern int swf_size_limit_exceeded(const char *func, unsigned long size);
+
 extern int swf_printf(const char *format, ...) SWF_PRINTF_FORMAT(1, 2);
 extern int swf_fprintf(FILE *fp, const char *format, ...) SWF_PRINTF_FORMAT(2, 3);
 

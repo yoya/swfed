@@ -23,7 +23,7 @@ _swf_tag_jpeg_uncompress_alloc(unsigned char *src, unsigned long src_len,
                                unsigned long *out_len) {
     z_stream z;
     unsigned char *buf, *tmp;
-    unsigned long buf_len, max_len;
+    unsigned long buf_len, max_len, limit;
     int ret;
     *out_len = 0;
     if ((src_len == 0) || (src_len > 0xFFFFFFFFUL)) {
@@ -32,6 +32,10 @@ _swf_tag_jpeg_uncompress_alloc(unsigned char *src, unsigned long src_len,
     max_len = (src_len + 1) * 1032UL;
     if (max_len / 1032UL != src_len + 1) {
         max_len = (unsigned long) -1;
+    }
+    limit = swf_size_limit();
+    if (limit && (max_len > limit)) {
+        max_len = limit;
     }
     buf_len = src_len * 4;
     if ((buf_len < 1024) || (buf_len / 4 != src_len)) {
@@ -64,6 +68,9 @@ _swf_tag_jpeg_uncompress_alloc(unsigned char *src, unsigned long src_len,
         if (z.avail_out == 0) {
             unsigned long new_len = buf_len * 2;
             if (buf_len >= max_len) {
+                if (limit && (max_len == limit)) {
+                    fprintf(stderr, "swf_tag_jpeg3_input_detail: the size of the alpha data after decompression exceeds the limit (%lu)\n", limit);
+                }
                 goto fail;
             }
             if ((new_len < buf_len) || (new_len > max_len)) {

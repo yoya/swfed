@@ -54,6 +54,55 @@ gif_data_read_func(GifFileType* GifFile, GifByteType* buf, int count) {
 }
 
 /*
+ * What decoding the GIF allocates, from the sizes written in it: the logical
+ * screen (rows aligned to 4 bytes, for the bitmap) and every frame (giflib).
+ * It follows the blocks as giflib does and stops at the first thing it can't
+ * follow, where giflib fails too.
+ */
+static unsigned long
+gif_decoded_size(const unsigned char *d, unsigned long len) {
+    unsigned long pos, total, w, h;
+    if (len < 13) {
+        return 0;
+    }
+    w = d[6] | (d[7] << 8);
+    h = d[8] | (d[9] << 8);
+    total = ((w + 3) & ~3UL) * h;
+    pos = 13;
+    if (d[10] & 0x80) { // global color table
+        pos += 3UL << ((d[10] & 0x07) + 1);
+    }
+    while (pos < len) {
+        int c = d[pos++];
+        if (c == 0x2C) { // image descriptor: left, top, width, height, flags
+            unsigned long frame;
+            if (len - pos < 9) {
+                break;
+            }
+            frame = (unsigned long) (d[pos + 4] | (d[pos + 5] << 8)) *
+                (unsigned long) (d[pos + 6] | (d[pos + 7] << 8));
+            if (total + frame < total) {
+                return (unsigned long) -1;
+            }
+            total += frame;
+            if (d[pos + 8] & 0x80) { // local color table
+                pos += 3UL << ((d[pos + 8] & 0x07) + 1);
+            }
+            pos += 9 + 1; // + LZW minimum code size
+        } else if (c == 0x21) { // extension: label
+            pos++;
+        } else { // trailer, or unknown
+            break;
+        }
+        while ((pos < len) && d[pos]) { // data sub-blocks
+            pos += 1 + (unsigned long) d[pos];
+        }
+        pos++; // block terminator
+    }
+    return total;
+}
+
+/*
  * getTransparentIndex
  */
 int
@@ -101,6 +150,10 @@ gifconv_gif2lossless(unsigned char *gif_data, unsigned long gif_data_len,
     int i;
     unsigned char *indices_data;
 
+    if (swf_size_limit_exceeded("gifconv_gif2lossless",
+                                gif_decoded_size(gif_data, gif_data_len))) {
+        return NULL;
+    }
     gif_buff.data = gif_data;
     gif_buff.data_len = gif_data_len;
     gif_buff.data_offset = 0;

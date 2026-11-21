@@ -198,6 +198,26 @@ if ($swf->input($data) === false) {
 メソッドが引数について出す PHP の警告（たとえば範囲外のキャラクター ID）は、この
 設定に関係なく、`getLastError()` にも入りません。
 
+#### `swfed.max_uncompressed_size`
+
+展開後のサイズの上限（バイト）を決める ini 設定です（`PHP_INI_ALL`）。ライブラリは
+`malloc()` でメモリを確保するので、`memory_limit` の対象になりません。小さい入力が
+大きなメモリを使わないように、次のそれぞれのサイズをこの値と比べます。
+
+- 圧縮された SWF（`CWS` / `ZWS`）のヘッダにあるファイル長（`input()`、
+  `replaceMovieClip()`）。超えると `E_WARNING` を出して `false` を返します。
+- DefineBitsLossless / DefineBitsLossless2 の画像データと、DefineBitsJPEG3 /
+  DefineBitsJPEG4 のアルファを展開したサイズ。超えると、そのタグの解析が失敗します
+  （アルファは無いものとして扱います）。
+- `replacePNGData()` / `replaceGIFData()` / `replaceBitmapData()` に渡した PNG / GIF を
+  デコードしたサイズ（GIF は、論理画面と全フレームの合計）。超えると `false` を返します。
+
+| 値 | 上限 |
+|---|---|
+| `0`（既定） | `memory_limit` の値。`memory_limit` が無制限なら、無制限 |
+| 正の数（`64M` のような書き方も可） | その値 |
+| `-1` | 無制限 |
+
 ### SWFEditor オブジェクト
 
 - `new SWFEditor()` は、空のエディタを作ります。同じオブジェクトで
