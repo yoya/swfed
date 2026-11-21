@@ -146,9 +146,10 @@ static ZEND_INI_MH(OnUpdateErrorOutput)
 
 /* {{{ PHP_INI
  */
-/* swfed.max_uncompressed_size: upper limit of the SWF size after decompression
- * (the header file_length of a compressed SWF: CWS / ZWS). The C library
- * allocates with malloc(), outside memory_limit.
+/* swfed.max_uncompressed_size: upper limit of a size after decompression:
+ * the SWF (the header file_length of a compressed SWF: CWS / ZWS), and each
+ * DefineBitsLossless, alpha channel, PNG or GIF (swfed_size_limit_handler()).
+ * The C library allocates with malloc(), outside memory_limit.
  * 0 (default) uses memory_limit, -1 means unlimited. */
 PHP_INI_BEGIN()
     PHP_INI_ENTRY("swfed.max_uncompressed_size", "0", PHP_INI_ALL, NULL)
@@ -183,6 +184,18 @@ static zend_long swfed_max_uncompressed_size(void) {
         return (zend_long) PG(memory_limit);
     }
     return (limit < 0) ? -1 : limit;
+}
+
+/* the limit the C library asks for (swf_set_size_limit_handler()): what one
+ * DefineBitsLossless, one alpha channel, one PNG or GIF may take after
+ * decompression. 0 means unlimited there. It runs inside the library and runs
+ * no PHP code. */
+static unsigned long swfed_size_limit_handler(void) {
+    zend_long limit = swfed_max_uncompressed_size();
+    unsigned long size = (limit < 0) ? 0 : (unsigned long) limit;
+    /* a limit that unsigned long can't hold (32bit on 64bit Windows) is larger
+     * than any size the library can ask about */
+    return ((limit > 0) && ((zend_long) size != limit)) ? 0 : size;
 }
 
 /* checks the file_length in the header of a compressed SWF (CWS / ZWS), which
@@ -483,6 +496,7 @@ PHP_MINIT_FUNCTION(swfed)
 {
     REGISTER_INI_ENTRIES();
     swf_set_output_handler(swfed_print_handler, swfed_error_handler);
+    swf_set_size_limit_handler(swfed_size_limit_handler);
     swfed_entry_ptr = register_class_SWFEditor();
     swfed_entry_ptr->create_object = swfed_create_object;
     memcpy(&swfed_object_handlers, zend_get_std_object_handlers(),
@@ -514,6 +528,7 @@ PHP_MINIT_FUNCTION(swfed)
 PHP_MSHUTDOWN_FUNCTION(swfed)
 {
         swf_set_output_handler(NULL, NULL);
+        swf_set_size_limit_handler(NULL);
         UNREGISTER_INI_ENTRIES();
         return SUCCESS;
 }

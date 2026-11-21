@@ -260,6 +260,22 @@ pngconv_png2lossless(unsigned char *png_data, unsigned long png_data_len,
     }
     
     rowbytes = png_get_rowbytes(png_ptr, png_info_ptr);
+    {
+        /* the decoded rows, and the bitmap made from them (png_height >= 1).
+         * unsigned long is 32bit on 64bit Windows: don't let the products wrap */
+        unsigned long max = (unsigned long) -1;
+        unsigned long result_row = (color_type == PNG_COLOR_TYPE_PALETTE) ?
+            (((unsigned long) png_width + 3) & ~3UL) :
+            ((color_type == PNG_COLOR_TYPE_RGB) ? sizeof(swf_xrgb_t) : sizeof(swf_argb_t)) *
+            (unsigned long) png_width;
+        unsigned long row = ((unsigned long) rowbytes > result_row) ? (unsigned long) rowbytes : result_row;
+        if (swf_size_limit_exceeded("pngconv_png2lossless",
+                                    (row > max / png_height) ? max : row * png_height)) {
+            png_destroy_read_struct((png_structpp)&png_ptr,
+                                    (png_infopp)&png_info_ptr, NULL);
+            return NULL;
+        }
+    }
     png_image_data = (png_bytepp) calloc(png_height, sizeof(png_bytep));
     if (png_image_data == NULL) {
         png_destroy_read_struct((png_structpp)&png_ptr,

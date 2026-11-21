@@ -109,6 +109,10 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
             bitstream_close(bs);
             return 1;
         }
+        if (swf_size_limit_exceeded("swf_tag_lossless_input_detail", origsize)) {
+            bitstream_close(bs);
+            return 1;
+        }
         tmp_buff = malloc(origsize);
         if (tmp_buff == NULL) {
             fprintf(stderr, "swf_tag_lossless_input_detail: Can't malloc(%lu)\n", origsize);
@@ -214,6 +218,10 @@ swf_tag_lossless_input_detail(swf_tag_t *tag,
         if (origsize / 1032 > old_size) {
             fprintf(stderr, "swf_tag_lossless_input_detail: image size too large for data (%lu > %lu*1032)\n",
                     origsize, old_size);
+            bitstream_close(bs);
+            return 1;
+        }
+        if (swf_size_limit_exceeded("swf_tag_lossless_input_detail", origsize)) {
             bitstream_close(bs);
             return 1;
         }

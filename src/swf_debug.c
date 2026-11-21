@@ -75,6 +75,29 @@ swf_fprintf(FILE *fp, const char *format, ...) {
     return ret;
 }
 
+static swf_size_limit_handler_t swf_size_limit_handler = NULL;
+
+void
+swf_set_size_limit_handler(swf_size_limit_handler_t handler) {
+    swf_size_limit_handler = handler;
+}
+
+unsigned long
+swf_size_limit(void) {
+    return swf_size_limit_handler ? swf_size_limit_handler() : 0;
+}
+
+int
+swf_size_limit_exceeded(const char *func, unsigned long size) {
+    unsigned long limit = swf_size_limit();
+    if ((limit == 0) || (size <= limit)) {
+        return 0;
+    }
+    swf_fprintf(stderr, "%s: the size after decompression (%lu) exceeds the limit (%lu)\n",
+                func, size, limit);
+    return 1;
+}
+
 // the messages below go through the handlers too
 #define printf swf_printf
 #define fprintf swf_fprintf

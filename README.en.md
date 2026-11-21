@@ -197,6 +197,28 @@ if ($swf->input($data) === false) {
 PHP warnings that a method raises for its arguments (for example a character ID
 out of range) do not depend on this setting and are not in `getLastError()`.
 
+#### `swfed.max_uncompressed_size`
+
+An ini setting (`PHP_INI_ALL`) for the upper limit, in bytes, of a size after
+decompression. The library allocates with `malloc()`, which `memory_limit` does
+not cover. So that a small input can't use a lot of memory, each of these sizes
+is compared with it:
+
+- the file length in the header of a compressed SWF (`CWS` / `ZWS`), in `input()`
+  and `replaceMovieClip()`. Over the limit: `E_WARNING` and `false`.
+- the image data of a DefineBitsLossless / DefineBitsLossless2 and the alpha of a
+  DefineBitsJPEG3 / DefineBitsJPEG4, after decompression. Over the limit: the tag
+  can't be parsed (the alpha is treated as missing).
+- the decoded size of the PNG / GIF given to `replacePNGData()` /
+  `replaceGIFData()` / `replaceBitmapData()` (for a GIF: the logical screen plus
+  every frame). Over the limit: `false`.
+
+| value | limit |
+|---|---|
+| `0` (default) | the value of `memory_limit`; no limit if `memory_limit` is unlimited |
+| a positive number (`64M` etc. are accepted) | that value |
+| `-1` | no limit |
+
 ### The SWFEditor object
 
 - `new SWFEditor()` creates an empty editor. Calling `__construct()` again on the
