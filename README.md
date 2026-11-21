@@ -22,14 +22,15 @@ swfed が解釈できないタグ（たとえば ActionScript 3 の `DoABC`）�
 ## 必要なもの
 
 - PHP 7.2 以降と、`phpize`（たいてい `php-dev` / `php-devel` パッケージに入っています）。
-  CI は PHP 7.2、8.0、8.3 でビルドとテストをしています。
+  CI は、Linux の PHP 7.2、8.0、8.3、8.4、8.5（UBSan と valgrind でも）と、
+  Windows の PHP 8.3 で、ビルドとテストをしています。
 - zlib（ヘッダ付き）。見つからないと `configure` は止まります。
 - libpng、giflib、liblzma（xz）（ヘッダ付き）。これらは任意です。どれかが無くても
   `configure` は警告を出すだけで、その機能（PNG、GIF、LZMA 圧縮の `ZWS` ファイルの
   読み書き）なしでビルドします。
   - Debian / Ubuntu: `apt-get install zlib1g-dev libpng-dev libgif-dev liblzma-dev`
   - Homebrew: `brew install zlib libpng giflib xz`
-- Unix 系 OS（Linux、macOS、*BSD）。Windows のビルドは CI の対象外です。
+- Unix 系 OS（Linux、macOS、*BSD）、または Windows（`src/config.w32`）。
 
 ## ビルドとインストール
 
@@ -118,7 +119,7 @@ PHP のスタブでは、いくつかのビットマップ・サウンドのメ�
 
 サイズと位置（`getHeaderInfo()`、`getBitmapSize()`、`trans_x` / `trans_y` 引数）は
 ピクセル単位です。SWF は twip（1 ピクセル = 20 twip）で保存していて、
-`getHeaderInfo()` は整数のピクセルに切り捨てます。
+`getHeaderInfo()` は、値がピクセルの整数倍でないときは float を返します。
 
 ### 文字列と文字エンコーディング
 
@@ -153,11 +154,9 @@ SWF の文字列は NUL で終わるため、新しい文字列に NUL バイト
   既定ではプロセスの stderr に書き出されます。これらは PHP の警告ではないので、
   `error_reporting()`、`@`、エラーハンドラからは見えません。
 - 一部の失敗は、PHP の `E_WARNING` を出して `false` を返します。それらは、
-  以下のメソッドの説明に書いてあります。`replaceBitmapData()`、
-  `applyShapeMatrixFactor()`、`applyShapeRectFactor()`、`getSoundData()`、
-  `replaceMLDData()`、`getEditString()`、`replaceEditString()`、
-  `replaceMovieClip()` の最初の引数に `null` を渡すと、
-  "1st arg must be not NULL" という警告になります。
+  以下のメソッドの説明に書いてあります。負の、または 2147483647 を超えるタグ
+  インデックスと、0〜65535 の範囲にないキャラクター ID は、どのメソッドでも
+  そうなります。
 - 引数の型や個数が違うと、PHP 8 では `TypeError` / `ArgumentCountError` を投げます。
   PHP 7 では警告を出し、メソッドは `false` または `null` を返します。
 - `swfInfo()`、`printTagData()`、`disasmActionData()` は、PHP の出力
@@ -167,10 +166,7 @@ SWF の文字列は NUL で終わるため、新しい文字列に NUL バイト
   そのため、出力バッファのコールバックやエラーハンドラの中から、同じ `SWFEditor` の
   メソッドを（`input()` でも）呼べます。そこで例外が投げられると、まだ書き出していない
   出力は捨てられます（`getLastError()` にはメッセージが残ります）。
-- `replace*Data()` が失敗したとき、対象のビットマップタグはすでに変更されていて
-  （たとえばタグの種類が切り替わっていて）、壊れたままになることがあります。
-  データが全く無くなったタグは、`output()` から黙って省かれます。元の SWF を
-  取っておいて、置換に失敗したら `input()` をやり直してください。
+- `replace*Data()` が失敗したとき、対象のビットマップタグは元のまま残ります。
 
 #### `swfed.error_output`
 
@@ -225,8 +221,8 @@ liblzma 付きのビルドが必要で、無いと `ZWS` ファイルでは `inp
 `FWS` / `CWS` / `ZWS` ではない、展開に失敗した（`ZWS` の場合は、LZMA データの
 破損や途中での切断、ヘッダのファイル長と合わないサイズ）ときは `false` を返し、
 それまでに読み込んでいたムービーはそのまま残ります。
-タグのデータが途中で切れていてもエラーにはなりません。最初の不完全なタグで
-解析をやめ、`true` を返します。
+途中で切れたタグがある場合と、ヘッダのファイル長より前でデータが終わる場合も、
+`false` を返します。最後の `End` タグが無いことだけは受け付けます。
 
 #### `output(): string|false`
 
@@ -246,7 +242,7 @@ liblzma 付きのビルドが必要で、無いと `ZWS` ファイルでは `inp
 | `compress` | bool | `CWS` と `ZWS` なら `true`、`FWS` なら `false` |
 | `lzma` | bool | `ZWS`（LZMA）なら `true`、`FWS` と `CWS` なら `false` |
 | `version` | int | SWF バージョン |
-| `x_min`、`y_min`、`x_max`、`y_max` | int | フレームの矩形（ピクセル） |
+| `x_min`、`y_min`、`x_max`、`y_max` | int\|float | フレームの矩形（ピクセル。整数でないときは float） |
 
 フレームレートとフレーム数は返しません。`input()` の前は、すべての値が
 0 / `false` です。
@@ -295,12 +291,13 @@ swfed が解釈できるすべてのタグを解析します。これで `output
 
 #### `purgeUselessContents(): bool`
 
-どの `PlaceObject` / `PlaceObject2` からも、直接にも、シェイプ・ボタン・配置された
-スプライトを経由しても使われていない、シェイプ（`DefineShape`、`DefineShape2`、
-`DefineShape3`、`DefineMorphShape`）とビットマップ（`DefineBits*`）のタグを削除
-します。ほかのキャラクターの種類（スプライト、フォント、テキスト、サウンドなど）は
-残ります。`ExportAssets` は考慮しないので、リンケージ名だけで使われているシェイプや
-ビットマップ（たとえば `BitmapData.loadBitmap()`）も削除されます。`true` を返します。
+どの `PlaceObject` / `PlaceObject2` / `PlaceObject3` からも、直接にも、シェイプ・
+ボタン・配置されたスプライトを経由しても使われておらず、書き出し（`ExportAssets` /
+`SymbolClass`。たとえば `BitmapData.loadBitmap()` 用）もされていない、シェイプ
+（`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineShape4`、`DefineMorphShape`、
+`DefineMorphShape2`）とビットマップ（`DefineBits*`）のタグを削除します。ほかの
+キャラクターの種類（スプライト、フォント、テキスト、サウンドなど）は残ります。
+`true` を返します。
 
 ### タグ
 
@@ -313,10 +310,10 @@ swfed が解釈できるすべてのタグを解析します。これで `output
 | `code` | int | タグの種類 |
 | `tag` | int | `code` と同じ |
 | `tagName` | string | タグの名前。swfed が知らない種類のタグには無い |
-| `length` | int | タグヘッダを除いた、タグ本体のバイト長。最後の `input()` / `output()` のあとに編集されたタグは `0` |
-| `detail` | bool | そのタグの種類のパーサが swfed にあれば `true`。無ければキー自体が無い |
+| `length` | int | タグヘッダを除いた、タグ本体のバイト長 |
+| `detail` | bool | `getTagDetail()` がそのタグの種類を説明できれば `true`。できなければキー自体が無い |
 
-#### `getTagDetail(int $index): array|false|null`
+#### `getTagDetail(int $index): array|false`
 
 `$index` のタグを解析した情報を返します。タグの種類ごとのキーは次のとおりです。
 
@@ -328,26 +325,23 @@ swfed が解釈できるすべてのタグを解析します。これで `output
 | DoAction (12)、DoInitAction (59) | `action_list_count`（空なら無い）、`action_sprite`（DoInitAction だけ） |
 | DefineEditText (37) | `edit_id`、`variable_name` と `initial_text`（それぞれ、空でないときだけ） |
 | DefineSprite (39) | `sprite_id`、`frame_count` |
-| DefineShape (2)、DefineShape2 (22)、DefineShape3 (32)、DefineMorphShape (46) | `shape_id`、`fill_styles.count`、`line_styles.count`、`bitmap_ref`（参照しているビットマップ ID のリスト。無ければ無い） |
+| DefineShape (2)、DefineShape2 (22)、DefineShape3 (32)、DefineShape4 (83)、DefineMorphShape (46)、DefineMorphShape2 (84) | `shape_id`、`fill_styles.count`、`line_styles.count`、`bitmap_ref`（参照しているビットマップ ID のリスト。無ければ無い） |
 | PlaceObject (4)、PlaceObject2 (26) | `character_id`（PlaceObject2 は、設定されているときだけ）、`depth`、`name`（設定されているときだけ） |
 
-`$index` が範囲外か負の場合、そのタグの種類にパーサが無い場合、またはタグを
-解析できない場合は、`false` を返します。`JPEGTables` (8)、`DefineButton` (7)、
-`DefineButton2` (34) では `null` を返します。`getTagList()` はこれらに `detail` を
-報告しますが、キーは実装されていません。`DefineShape4` (83) と
-`DefineMorphShape2` (84) も `detail` を報告しますが、`false` を返します。
+`$index` が範囲外の場合、タグの種類がこの表に無い場合（`getTagList()` に `detail` が
+無い）、またはタグを解析できない場合は、`false` を返します。
 
 #### `getTagData(int $index): string|false`
 
 `$index` のタグ全体（タグヘッダと本体）を、`output()` が書き出すとおりに返します。
-`$index` が範囲外なら `false` を返します。負の `$index` は 0 として扱います。
+`$index` が範囲外なら `false` を返します。
 
 #### `replaceTagData(int $index, string $data): bool`
 
 `$index` のタグを `$data` で置き換えます。`$data` は、完全な 1 つのタグ（ヘッダと
 本体。たとえば `getTagData()` の結果）でなければなりません。検査するのはタグ
 ヘッダだけです。`$index` が範囲外か、`$data` が完全なタグでなければ `false` を
-返します。負の `$index` は 0 として扱います。
+返します。
 
 #### `getTagDataByCID(int $cid): string|false`
 
@@ -377,8 +371,8 @@ swfed が解釈できるすべてのタグを解析します。これで `output
 `$index` にある `DefineSprite` の中の、その位置のタグを削除します。`null` または
 負の値は「指定なし」です。インデックスが範囲外のとき、または
 `$index_in_sprite` を指定したのに `$index` のタグが `DefineSprite` ではないときは、
-`false` を返します。負の `$index` は 0 として扱います。（スタブでは、2 番目の
-引数の名前が `$index_sprint` になっています。）
+`false` を返します。（スタブでは、2 番目の引数の名前が `$index_sprint` に
+なっています。）
 
 #### `printTagData(string $data): bool`
 
@@ -387,8 +381,9 @@ PHP の出力に表示します。`$data` が完全なタグでなければ `fal
 
 #### `isShapeTagData(string $data): bool`
 
-`$data` が、`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineMorphShape` の
-いずれかの、完全なタグであれば `true` を返します。検査するのはタグヘッダだけです。
+`$data` が、`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineShape4`、
+`DefineMorphShape`、`DefineMorphShape2` のいずれかの、完全なタグであれば `true` を
+返します。検査するのはタグヘッダだけです。
 読み込んだムービーは使いません。
 
 #### `isBitmapTagData(string $data): bool`
@@ -398,9 +393,8 @@ PHP の出力に表示します。`$data` が完全なタグでなければ `fal
 
 ### シェイプ
 
-これらのメソッドは、`DefineShape`、`DefineShape2`、`DefineShape3`、および
-（取得と置換だけ）`DefineMorphShape` を扱います。`DefineShape4` は
-サポートしていません。
+これらのメソッドは、`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineShape4`、
+および（取得と置換だけ）`DefineMorphShape`、`DefineMorphShape2` を扱います。
 
 #### `getShapeData(int $cid): string|false`
 
@@ -482,15 +476,15 @@ PHP の出力に表示します。`$data` が完全なタグでなければ `fal
 `DefineBitsJPEG3` になります。すでに `DefineBitsJPEG4` だった場合は、
 `DefineBitsJPEG4` のまま（`DeblockParam` を保ったまま）です。`$alpha` は、
 `getJpegAlpha()` の形式の、展開されたアルファのデータで、swfed が圧縮します。
-JPEG データもアルファの長さも検査しないので、JPEG ではないデータでも `true` を
-返します。その ID のビットマップが無ければ `false` を返します。`$alpha` に
-`null` を渡しても動きますが、PHP 8.1 以降では `E_DEPRECATED` になるので、
-省略してください。
+その ID のビットマップが無い場合と、`$jpeg` が JPEG でない場合（SOI が無い、
+セグメントが壊れている、SOF / SOS が無い）は、`false` を返します。EOI より後ろの
+データは捨てます。`$alpha` の長さは検査しません。`$alpha` に `null` を渡しても
+動きますが、PHP 8.1 以降では `E_DEPRECATED` になるので、省略してください。
 
 #### `getPNGData(int $image_id): string|false`
 
-`DefineBitsLossless` / `2` タグを PNG ファイルとして返します。ほかのタグと、
-15 ビット（format 4）のビットマップでは `false` を返します。
+`DefineBitsLossless` / `2` タグを PNG ファイルとして返します（15 ビットカラーの
+format 4 は、1 チャンネル 8 ビットになります）。ほかのタグでは `false` を返します。
 
 #### `replacePNGData(int $image_id, string $png [, array $options]): bool`
 
@@ -502,8 +496,9 @@ JPEG データもアルファの長さも検査しないので、JPEG ではな�
 | RGB | `DefineBitsLossless`、format 5（`rgb15` では format 4） |
 | RGB + アルファ | `DefineBitsLossless2`、format 5 |
 
-グレースケールの PNG と、1 チャンネルが 8 ビットより大きい PNG はサポートして
-いません。オプションのキー:
+グレースケールは RGB に変換し、1 チャンネル 16 ビットは 8 ビットに減らします。
+グレースケールや RGB の PNG の透明（tRNS）は、アルファチャンネルになります。
+オプションのキー:
 
 - `rgb15`（bool）: RGB の PNG を 15 ビットカラー（format 4）で保存します。ほかの
   種類の PNG では、エラーメッセージ（「エラー」を参照）を出して無視します。
@@ -534,8 +529,7 @@ JPEG データもアルファの長さも検査しないので、JPEG ではな�
 | `red`、`green`、`blue` | 最初のピクセルの色が、±10 の範囲で一致。ロスレスのビットマップだけが一致しうる |
 
 `$alpha` は、JPEG データのときだけ使います。アルファのデータなしで `$options` を
-渡すには、`$alpha` に `''` を渡します（`null` は PHP 8.1 以降で `E_DEPRECATED` に
-なります）。
+渡すには、`$alpha` に `''` か `null` を渡します。
 
 `$options` は、bool（`without_converting` と同じ）か、次のキーを持つ配列です。
 
@@ -545,7 +539,8 @@ JPEG データもアルファの長さも検査しないので、JPEG ではな�
 - `rgb15`（bool）: `replacePNGData()` と同じです。
 
 失敗すると `false` を返します。次の場合は `E_WARNING` も出します。画像の形式が
-不明（"Unknown Bitmap Format"）、条件に合うビットマップが無い、`$target` が `null`。
+不明（"Unknown Bitmap Format"）、条件に合うビットマップが無い、キャラクター ID が
+範囲外。
 
 #### `convertBitmapDataToJpegTag(): bool`
 
@@ -611,10 +606,11 @@ JPEG データもアルファの長さも検査しないので、JPEG ではな�
 #### `replaceActionStrings(array $map): bool`
 
 ActionScript のバイトコードの中の、`$map` のキーと完全に等しい（バイトの比較で、
-文字列全体だけ）すべての文字列を、対応する値に置き換えます。最上位と
-`DefineSprite` の中の、`DoAction` / `DoInitAction` タグにある、`Push`、
-`ConstantPool`、`GetURL`（URL とターゲット）の文字列を扱います。ボタンのアクションと
-クリップイベントのアクションは変更しません。何も一致しなかったときも `true` を
+文字列全体だけ）すべての文字列を、対応する値に置き換えます。`Push`、
+`ConstantPool`、`GetURL`（URL とターゲット）の文字列を扱います。対象は、最上位と
+`DefineSprite` の中の、`DoAction` / `DoInitAction` タグ、`DefineButton` /
+`DefineButton2` のアクション、`PlaceObject2` / `PlaceObject3` のクリップアクション
+（`onClipEvent`）です。何も一致しなかったときも `true` を
 返します。バイトコードが壊れている場合や、アクションが 65535 バイトを超えて
 しまう場合は、`false` を返します。
 
@@ -622,26 +618,28 @@ ActionScript のバイトコードの中の、`$map` のキーと完全に等し
 
 #### `replaceMovieClip(string $target, string $swf [, bool $unused_cid_purge]): bool`
 
-インスタンス名が `$target` に完全に一致する `PlaceObject2` タグを探し、それが配置
+インスタンス名が `$target` に完全に一致する `PlaceObject2` / `PlaceObject3` タグを探し、それが配置
 している `DefineSprite` の中身を、`$swf`（完全な SWF ファイル）のメインタイムラインで
 置き換えます。入れ子のクリップは、`"parent/child"` のようにパスで指定します。
 各階層は、前のスプライトの中から探します。
 
-- `$swf` のキャラクタータグ（シェイプ、ビットマップ、フォント、テキスト、サウンド、
-  ボタン、スプライトなど）は、スプライトの前に挿入され、キャラクター ID は、
-  既存のものとぶつからないように振り直されます。
-- 制御タグ（`ShowFrame`、`PlaceObject` / `2`、`RemoveObject` / `2`、`DoAction`、
-  `DoInitAction`、`StartSound`、`FrameLabel`、`End`）は、スプライトのタイムライン
-  になります。フレーム数は `ShowFrame` タグの数です。
-- ほかのタグ（`SetBackgroundColor`、`FileAttributes`、`ExportAssets`、
-  `JPEGTables`、`CSMTextSettings`、`FreeCharacter`、swfed が知らない種類のタグ）と、
-  `$swf` のヘッダは捨てられます。
-- 古いキャラクターはファイルに残ります。使われていないシェイプとビットマップを
-  削除するには、`purgeUselessContents()` を呼んでください。
+- `$swf` の定義タグ（シェイプ、ビットマップ、フォント、テキスト、サウンド、ボタン、
+  スプライト、`ExportAssets`、`DoInitAction` など）は、スプライトの前に挿入されます。
+  キャラクター ID は、既存のものとぶつからないように振り直され、それを参照している
+  側も追従します。
+- 制御タグ（`ShowFrame`、`PlaceObject` / `2` / `3`、`RemoveObject` / `2`、`DoAction`、
+  `StartSound`、`SoundStreamHead` / `Block`、`FrameLabel`、`End` など）は、スプライトの
+  タイムラインになります。フレーム数は `ShowFrame` タグの数です。
+- ムービー単位のタグ（`SetBackgroundColor`、`FileAttributes`、`Metadata`、`Protect`
+  など）と、`$swf` のヘッダは捨てられます。`$swf` の `JPEGTables` は、その
+  `DefineBitsJPEG` タグに組み込まれます。
+- 古いキャラクターはファイルに残ります。`$unused_cid_purge` を `true` にすると、
+  続けて `purgeUselessContents()` を実行します。
 
-`$unused_cid_purge` は受け付けますが、無視します（`null` を渡すと、PHP 8.1 以降では
-`E_DEPRECATED` になります）。`$target` が見つからないか、`$swf` を解析できなければ
-`false` を返します。
+次の場合は、ムービーを変更せずに `false` を返します。`$target` が見つからない、
+`$swf` を解析できない、`$swf` にスプライトへ入れられないタグがある（`DoABC`、
+`SymbolClass`、`ImportAssets`、swfed が知らない種類のタグ、`DefineSprite` の中の
+`DefineSprite`）、`$swf` のタグが、`$swf` が定義していないキャラクターを参照している。
 
 ### その他
 
