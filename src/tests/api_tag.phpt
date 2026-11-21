@@ -23,7 +23,7 @@ var_dump($o->output() === $before);
 
 echo "* TagContentsByCID\n";
 $contents = $o->getTagContentsByCID(2); // after the CharacterId
-var_dump($contents === substr($data, 2 + 2));
+var_dump($contents === substr($data, (((ord($data[0]) & 0x3f) == 0x3f) ? 6 : 2) + 2)); // tag header, CharacterId
 var_dump($o->replaceTagContentsByCID(2, $contents));
 $jpeg = $o->getTagContentsByCID(1);    // DefineBitsJPEG
 var_dump(strlen($jpeg), bin2hex(substr($jpeg, 0, 2)));

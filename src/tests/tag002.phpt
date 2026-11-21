@@ -18,5 +18,5 @@ echo md5($obj->output())."\n";
 ?>
 ===DONE===
 --EXPECTF--
-9e6a37ff862431e5820532aa8fa6ffc7
+7a81e5f6cbc3d46ee7f0388a4089ce75
 ===DONE===
