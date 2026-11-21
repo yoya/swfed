@@ -1289,6 +1289,10 @@ swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
                                        int width, int height,
                                        int red, int green, int blue) {
     int cid = -1;
+    int has_color = (red >= 0) || (green >= 0) || (blue >= 0);
+    if (has_color && (! isBitsLosslessTag(tag->code))) {
+        return -1; // out: the color of a JPEG can't be compared
+    }
     if ((width > 0) || (height > 0)) {
         int w, h;
         if (swf_tag_get_bitmap_size(tag, &w, &h)) {
@@ -1302,8 +1306,7 @@ swf_tag_search_cid_by_bitmap_condition(swf_tag_t *tag,
         }
         cid = swf_tag_get_cid(tag);
     }
-    if (isBitsLosslessTag(tag->code) &&
-        ( (red >= 0) || (green >= 0) || (blue >= 0) ))  {
+    if (has_color) {
         int r, g, b;
         if (swf_tag_get_bitmap_color1stpixel(tag, &r, &g, &b)) {
             return -1; // out (e.g. broken palette index)
