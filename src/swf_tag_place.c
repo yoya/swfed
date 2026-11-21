@@ -271,7 +271,7 @@ swf_tag_place_print_detail(swf_tag_t *tag,
         }
         if (swf_tag_place->flag_has_clip_depth) {
             print_indent(indent_depth);
-            printf("ratio=%d\n", swf_tag_place->clip_depth);
+            printf("clip_depth=%d\n", swf_tag_place->clip_depth);
         }
     } else {
         fprintf(stderr, "Illegal tag no(%d)\n", tag->code);
