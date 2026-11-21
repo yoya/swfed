@@ -95,12 +95,8 @@ jpegconv_std2swf(unsigned char *data, unsigned long data_len,
     // compression table parts
     jpeg_segment_append(jpeg_output, 0xD8, NULL, 0); // SOI
     // tables after the first SOS (between progressive scans) stay in place
-    while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xDB, 0xDA, &d_len)) != NULL) {
-        jpeg_segment_append(jpeg_output, 0xDB, d, d_len); // DQT
-    }
-    while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xC4, 0xDA, &d_len)) != NULL) {
-        jpeg_segment_append(jpeg_output, 0xC4, d, d_len); // DHT
-    }
+    jpeg_segment_move_nodes(jpeg_data, jpeg_output, 0xDB, 0xDA); // DQT
+    jpeg_segment_move_nodes(jpeg_data, jpeg_output, 0xC4, 0xDA); // DHT
     jpeg_segment_append(jpeg_output, 0xD9, NULL, 0); // EOI
     // image data parts (include APP)
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
@@ -142,12 +138,8 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
             jpeg_segment_destroy(jpeg_data);
             return NULL;
         }
-        while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xDB, 0xDA, &d_len)) != NULL) {
-            jpeg_segment_append(jpeg_table, 0xDB, d, d_len);  // DQT
-        }
-        while ((d = jpeg_segment_steal_node_before(jpeg_data, 0xC4, 0xDA, &d_len)) != NULL) {
-            jpeg_segment_append(jpeg_table, 0xC4, d, d_len); // DHT
-        }
+        jpeg_segment_move_nodes(jpeg_data, jpeg_table, 0xDB, 0xDA); // DQT
+        jpeg_segment_move_nodes(jpeg_data, jpeg_table, 0xC4, 0xDA); // DHT
     } else if (table_data && table_data_len) {
         /* reference JPEGTables if no compression table */
         jpeg_table = jpeg_segment_parse(table_data, table_data_len, SWFED_JPEG_RST_SCAN_SWFJPEG);
@@ -181,9 +173,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
         d = jpeg_segment_steal_node(jpeg_data, m, &d_len);
         jpeg_segment_append(jpeg_output, m, d, d_len);
     };
-    while ((d = jpeg_segment_steal_node(jpeg_table, 0xDB, &d_len)) != NULL) {
-        jpeg_segment_append(jpeg_output, 0xDB, d, d_len); // DQT
-    }
+    jpeg_segment_move_nodes(jpeg_table, jpeg_output, 0xDB, -1); // DQT
     /* build SOF0,1,2 */
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
         if ((m != 0xC0) &&  (m != 0xC1) && (m != 0xC2)) { // SOF0,1,2
@@ -192,9 +182,7 @@ jpegconv_swf2std(unsigned char *data, unsigned long data_len,
         d = jpeg_segment_steal_node(jpeg_data, m, &d_len);
         jpeg_segment_append(jpeg_output, m, d, d_len);
     }
-    while ((d = jpeg_segment_steal_node(jpeg_table, 0xC4, &d_len)) != NULL) {
-        jpeg_segment_append(jpeg_output, 0xC4, d, d_len); // DHT
-    }
+    jpeg_segment_move_nodes(jpeg_table, jpeg_output, 0xC4, -1); // DHT
     while((m = jpeg_segment_peek_marker(jpeg_data)) >= 0) {
         d = jpeg_segment_steal_node(jpeg_data, m, &d_len);
         jpeg_segment_append(jpeg_output, m, d, d_len);
