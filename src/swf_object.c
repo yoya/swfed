@@ -1751,6 +1751,10 @@ swf_object_replace_action_strings(swf_object_t *swf, y_keyvalue_t *kv) {
                         tag->data = NULL;
                     }
                 }
+                if (ret) { // a later tag must not turn the failure into a success
+                    fprintf(stderr, "swf_object_replace_action_strings: failed in a sprite\n");
+                    break;
+                }
             }
         }
     }
