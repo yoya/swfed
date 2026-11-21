@@ -164,7 +164,8 @@ static int swf_tag_and_length_build(bitstream_t *bs, swf_tag_t *tag) {
             tag->length_longformat = 1;
             break;
           default:
-            tag->length_longformat = 0;
+            /* keep the form the tag was read in (0 for a new tag): a short
+             * tag with a long header is written as it was */
             break;
         }
     }
