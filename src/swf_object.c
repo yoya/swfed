@@ -2515,14 +2515,18 @@ swf_object_replace_movieclip(swf_object_t *swf,
             // follow Character ID change
             _swf_object_movieclip_replace_refcids(tag, cid_trans_table, 0);
             // inplant tag to Sprite
-            if (sprite_tag_tail == NULL) {
-                swf_tag_sprite->tag = swf_tag_move(tag);
-                sprite_tag_tail = swf_tag_sprite->tag;
-            } else {
-                sprite_tag_tail->next = swf_tag_move(tag);
-                sprite_tag_tail = sprite_tag_tail->next;
+            {
+                // the list in a sprite is doubly linked (removeTag() uses prev)
+                swf_tag_t *moved = swf_tag_move(tag);
+                moved->prev = sprite_tag_tail;
+                moved->next = NULL;
+                if (sprite_tag_tail == NULL) {
+                    swf_tag_sprite->tag = moved;
+                } else {
+                    sprite_tag_tail->next = moved;
+                }
+                sprite_tag_tail = moved;
             }
-            sprite_tag_tail->next = NULL;
             if (tag_no == 1) { // ShowFrame
                 swf_tag_sprite->frame_count  += 1;
             }
