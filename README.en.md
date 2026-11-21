@@ -314,7 +314,9 @@ Removes shape (`DefineShape`, `DefineShape2`, `DefineShape3`, `DefineShape4`,
 not used by any `PlaceObject` / `PlaceObject2` / `PlaceObject3`, directly or
 through a shape, button or placed sprite, and are not exported (`ExportAssets` /
 `SymbolClass`, e.g. for `BitmapData.loadBitmap()`). Other character types
-(sprites, fonts, texts, sounds, ...) are kept. Returns `true`.
+(sprites, fonts, texts, sounds, ...) are kept. Returns `true`. If a shape, sprite,
+button or place tag that is in use cannot be parsed, what it uses is unknown: then
+nothing is removed and `false` is returned.
 
 ### Tags
 

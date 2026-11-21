@@ -316,7 +316,9 @@ swfed が解釈できるすべてのタグを解析します。これで `output
 （`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineShape4`、`DefineMorphShape`、
 `DefineMorphShape2`）とビットマップ（`DefineBits*`）のタグを削除します。ほかの
 キャラクターの種類（スプライト、フォント、テキスト、サウンドなど）は残ります。
-`true` を返します。
+`true` を返します。使われているシェイプ・スプライト・ボタン・配置タグの中に解析
+できないものがあると、何を使っているかが分からないので、何も削除せずに `false` を
+返します。
 
 ### タグ
 

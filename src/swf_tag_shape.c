@@ -195,6 +195,11 @@ _swf_tag_shape_styles_fill(swf_styles_t *styles, int has_strokes, int n) {
     return NULL;
 }
 
+/*
+ * The bitmaps the fill styles of the shape refer to. NULL when there is none,
+ * with *cid_list_num 0; or when the shape can't be parsed, with *cid_list_num
+ * -1: what it refers to is then unknown.
+ */
 int *
 swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     swf_tag_shape_detail_t *swf_tag_shape;
@@ -203,6 +208,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     swf_styles_t *styles = NULL;
     swf_shape_record_t *shape_records = NULL;
 
+    *cid_list_num = -1;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_shape_bitmap_get_refcid: tag == NULL\n");
         return NULL;
@@ -257,6 +263,7 @@ swf_tag_shape_bitmap_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
                         if (tmp == NULL) {
                             fprintf(stderr, "swf_tag_shape_bitmap_get_refcid_list: Can't realloc memory (%p, %d)\n", cid_list, cid_list_alloc);
                             free(cid_list);
+                            *cid_list_num = -1;
                             return NULL;
                         }
                         cid_list = tmp;

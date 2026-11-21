@@ -133,6 +133,9 @@ swf_tag_button_character_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
     int *cid_list, cid_list_alloc;
     swf_button_record_t *button_record = NULL;
     int ret;
+    /* NULL with *cid_list_num 0: no character; with -1: the button can't be
+     * parsed, what it refers to is unknown */
+    *cid_list_num = -1;
     if (tag == NULL) {
         fprintf(stderr, "swf_tag_button_character_get_refcid: tag == NULL\n");
         return NULL;
@@ -164,8 +167,9 @@ swf_tag_button_character_get_refcid_list(swf_tag_t *tag, int *cid_list_num) {
                 cid_list_alloc *= 2;
                 tmp = realloc(cid_list, sizeof(int) * cid_list_alloc);
                 if (tmp == NULL) {
-                    fprintf(stderr, "swf_tag_shape_bitmap_get_refcid_list: Can't realloc memory (%p, %d)\n", cid_list, cid_list_alloc);
+                    fprintf(stderr, "swf_tag_button_character_get_refcid_list: Can't realloc memory (%p, %d)\n", cid_list, cid_list_alloc);
                     free(cid_list);
+                    *cid_list_num = -1;
                     return NULL;
                 }
                 cid_list = tmp;

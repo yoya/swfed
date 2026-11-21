@@ -605,10 +605,20 @@ _swf_object_reserve_linkage_refcids(swf_tag_t *tag, trans_table_t *table) {
     }
 }
 
+/*
+ * Shapes and bitmaps that nothing uses are removed.
+ * What a tag uses is read from the tag. When a tag that is in use can't be
+ * read (a broken shape, sprite, button or place tag), what it uses is unknown:
+ * nothing is removed then, and 1 is returned. So the tags to remove are only
+ * collected during the scan, and removed after it.
+ */
 int
 swf_object_purge_contents(swf_object_t *swf) {
     swf_tag_t *tag, *prev_tag;
     trans_table_t *refcid_trans_table;
+    swf_tag_t **purge_list = NULL, **tmp;
+    int purge_num = 0, purge_alloc = 0, i;
+    int unread = -1; // code of the tag in use that can't be read
     if (swf == NULL) {
         fprintf(stderr, "swf_object_purge_contents: swf == NULL\n");
         return 1;
@@ -619,7 +629,7 @@ swf_object_purge_contents(swf_object_t *swf) {
         return 1;
     }
     // scan from tail
-    for (tag = swf->tag_tail; tag ; tag = prev_tag) {
+    for (tag = swf->tag_tail; tag && (unread < 0) ; tag = prev_tag) {
         int cid;
         int refcid;
         prev_tag = tag->prev;
@@ -629,6 +639,10 @@ swf_object_purge_contents(swf_object_t *swf) {
             // register ref id in control tag
             trans_table_set(refcid_trans_table, refcid, TRANS_TABLE_RESERVE_ID);
             continue;
+        }
+        if ((refcid < 0) && (isPlaceTag(tag->code) || (tag->code == 70))) {
+            unread = tag->code; // PlaceObject / 2 / 3: the character it places is unknown
+            break;
         }
         cid = swf_tag_get_cid(tag);
         if (cid <= 0) {
@@ -641,28 +655,30 @@ swf_object_purge_contents(swf_object_t *swf) {
                 int *bitmap_id_list, bitmap_id_list_num;
                 bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
                 if (bitmap_id_list) {
-                    int i;
                     for (i = 0 ; i < bitmap_id_list_num; i++) {
                         trans_table_set(refcid_trans_table, bitmap_id_list[i], TRANS_TABLE_RESERVE_ID);
                     }
                     free(bitmap_id_list);
+                } else if (bitmap_id_list_num < 0) {
+                    unread = tag->code;
                 }
             } else if (isButtonTag(tag->code)) {
                 int *character_id_list, character_id_list_num;
                 character_id_list = swf_tag_button_character_get_refcid_list(tag, &character_id_list_num);
                 if (character_id_list) {
-                    int i;
                     for (i = 0 ; i < character_id_list_num; i++) {
                         trans_table_set(refcid_trans_table, character_id_list[i], TRANS_TABLE_RESERVE_ID);
                     }
                     free(character_id_list);
+                } else if (character_id_list_num < 0) {
+                    unread = tag->code;
                 }
             } else if (isSpriteTag(tag->code)) {
                 swf_tag_t *t;
                 swf_tag_sprite_detail_t *tag_sprite;
                 tag_sprite = swf_tag_create_input_detail(tag, swf);
                 if (tag_sprite == NULL) {
-                    fprintf(stderr, "swf_object_purge_contents: tag_sprite == NULL\n");
+                    unread = tag->code;
                 } else {
                     for (t = tag_sprite->tag ; t ; t = t->next) {
                         // PlaceObject3 etc. inside the sprite
@@ -671,17 +687,40 @@ swf_object_purge_contents(swf_object_t *swf) {
                         rid = swf_tag_get_refcid(t);
                         if (rid > 0) {
                             trans_table_set(refcid_trans_table, rid, TRANS_TABLE_RESERVE_ID);
+                        } else if ((rid < 0) && (isPlaceTag(t->code) || (t->code == 70))) {
+                            unread = t->code;
+                            break;
                         }
                     }
                 }
             }
         } else { // Purge!
             if (isShapeTag(tag->code) || isBitmapTag(tag->code)) {
-                _swf_object_remove_tag(swf, tag);
+                if (purge_num >= purge_alloc) {
+                    purge_alloc = purge_alloc ? (2 * purge_alloc) : 64;
+                    tmp = realloc(purge_list, sizeof(*purge_list) * purge_alloc);
+                    if (tmp == NULL) {
+                        fprintf(stderr, "swf_object_purge_contents: Can't realloc memory\n");
+                        free(purge_list);
+                        trans_table_close(refcid_trans_table);
+                        return 1;
+                    }
+                    purge_list = tmp;
+                }
+                purge_list[purge_num++] = tag;
             }
         }
     }
     trans_table_close(refcid_trans_table);
+    if (unread >= 0) {
+        fprintf(stderr, "swf_object_purge_contents: a tag in use (code=%d) can't be read, nothing is removed\n", unread);
+        free(purge_list);
+        return 1;
+    }
+    for (i = 0 ; i < purge_num ; i++) {
+        _swf_object_remove_tag(swf, purge_list[i]);
+    }
+    free(purge_list);
     return 0;
 }
 
@@ -2161,6 +2200,11 @@ _swf_object_movieclip_replace_refcids(swf_tag_t *tag,
         int *bitmap_id_list, bitmap_id_list_num;
         bitmap_id_list = swf_tag_shape_bitmap_get_refcid_list(tag, &bitmap_id_list_num);
         if (bitmap_id_list == NULL) {
+            if (bitmap_id_list_num < 0) {
+                /* its bitmap fills could not follow the change of the IDs */
+                fprintf(stderr, "swf_object_replace_movieclip: broken shape (tag %d) in swf_data\n", tag_no);
+                return 1;
+            }
             return 0;
         }
         for (i = 0 ; i < bitmap_id_list_num ; i++) {

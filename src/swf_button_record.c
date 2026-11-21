@@ -199,9 +199,11 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
     while ((flag = bitstream_getbyte(bs)) != 0) { // endflag is 0
         swf_button_record_t *button_record;
         if (flag < 0) {
-            /* no end flag: stop here instead of re-reading the last byte forever */
+            /* no end flag. Taking the records read so far as the whole list
+             * would drop the rest when the button is written out again, and
+             * hide the characters it uses. */
             fprintf(stderr, "swf_button_record_list_parse: unexpected end of stream\n");
-            break;
+            return 1;
         }
         button_record = calloc(1, sizeof(*button_record));
         if (button_record == NULL) {
@@ -211,8 +213,8 @@ swf_button_record_list_parse(bitstream_t *bs, swf_button_record_list_t *button_r
         bitstream_incrpos(bs, -1, 0); // 1 byte back
         if (swf_button_record_parse(bs, button_record, tag)) {
             fprintf(stderr, "swf_button_record_list_parse: swf_button_record_parse failed\n");
-            free(button_record);
-            break;
+            swf_button_record_destroy(button_record); // also what it has allocated (filter list)
+            return 1;
         }
         if (prev_button_record) {
             prev_button_record->next = button_record;
