@@ -517,7 +517,11 @@ swf_tag_shape_output_detail(swf_tag_t *tag, unsigned long *length,
         // memory offset for overwrite this value after.
         offset_of_offset_morph = bitstream_getbytepos(bs);
         bitstream_putbytesLE(bs, swf_tag_shape->offset_morph, 4);
-        swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag);
+        if (swf_morph_shape_with_style_build(bs, &swf_tag_shape->morph_shape_with_style, tag)) {
+            fprintf(stderr, "swf_tag_shape_output_detail: swf_morph_shape_with_style_build failed\n");
+            bitstream_close(bs);
+            return NULL;
+        }
         // rewind to overwrite offset_morph field and overwrite it.
         // offset distance from offset_morph so -4 operation
         swf_tag_shape->offset_morph = swf_tag_shape->morph_shape_with_style.offset_of_end_edges - offset_of_offset_morph - 4;

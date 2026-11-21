@@ -85,7 +85,10 @@ swf_shape_record_setup_build(bitstream_t *bs,
                   count->line_bits_count);
     }
     if (shape_record_setup->shape_has_new_styles) {
-        swf_styles_build(bs, &(shape_record_setup->styles), tag);
+        if (swf_styles_build(bs, &(shape_record_setup->styles), tag)) {
+            fprintf(stderr, "swf_shape_record_setup_build: swf_styles_build failed\n");
+            return 1;
+        }
     }
     return 0;
 }

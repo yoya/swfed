@@ -90,7 +90,9 @@ swf_line_style_build(bitstream_t *bs, swf_line_style_t *line_style,
             bitstream_putbytesLE(bs, line_style->miter_limit_factor, 2);
         }
         if (line_style->has_fill) {
-            swf_fill_style_build(bs, &(line_style->fill_style), tag);
+            if (swf_fill_style_build(bs, &(line_style->fill_style), tag)) {
+                return 1;
+            }
         } else {
             swf_rgba_build(bs, &(line_style->rgba));
             if (tag->code == 84) { // DefineMorphShape2
