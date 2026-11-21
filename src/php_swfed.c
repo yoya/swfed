@@ -1473,6 +1473,7 @@ SWFED_METHOD(replaceBitmapData) {
     char *data = NULL, *alpha_data = NULL;
     size_t data_len = 0 , alpha_data_len = 0;
     zval *arg1 = NULL, *arg4 = NULL;
+    zend_long bitmap_id = 0;
     int image_id = 0;
     HashTable *image_info_table = NULL;
     int width = -1, height = -1;
@@ -1493,8 +1494,9 @@ SWFED_METHOD(replaceBitmapData) {
         if (Z_TYPE_P(arg1) != IS_LONG) {
             convert_to_long(arg1);
         }
-        SWFED_CHECK_CID(Z_LVAL_P(arg1));
-        image_id = (int) Z_LVAL_P(arg1);
+        bitmap_id = Z_LVAL_P(arg1); // a variable: SWFED_CHECK_CID() puts its name in the message
+        SWFED_CHECK_CID(bitmap_id);
+        image_id = (int) bitmap_id;
     } else { // or image_info (array)
         image_info_table = Z_ARRVAL_P(arg1);
         get_zend_hash_value_long(image_info_table, "width",  width);
