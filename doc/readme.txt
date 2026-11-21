@@ -23,7 +23,7 @@
  - other sample code
    https://github.com/yoya/swfed/tree/master/sample
  - API reference (every method, its arguments and return values)
-   ../README.md
+   ../README.en.md (English), ../README.md (Japanese)
 
 * messages and errors
 

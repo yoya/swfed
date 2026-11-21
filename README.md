@@ -1,35 +1,37 @@
 # swfed - SWF Editor for PHP
 
-swfed is a PHP extension for editing Adobe Flash (SWF) files.
-It provides one class, `SWFEditor`, that loads an SWF from a string,
-inspects and edits it at the tag level, and writes it back to a string.
+[English](README.en.md) | 日本語
 
-What it can do:
+swfed は、Adobe Flash（SWF）ファイルを編集する PHP 拡張モジュールです。
+`SWFEditor` というクラスを 1 つ提供し、文字列から SWF を読み込み、タグ単位で
+調べたり編集したりして、文字列として書き出せます。
 
-- read and change the SWF header (version, compression, frame size)
-- list, extract, replace and remove tags
-- replace bitmaps with JPEG, PNG or GIF data, and extract them as JPEG / PNG
-- edit the initial text of text fields (DefineEditText)
-- replace strings in ActionScript 1/2 bytecode and inject variables
-- replace the contents of a movie clip with another SWF
-- resize or rescale shapes, and remove unused shapes and bitmaps
+できること:
 
-Tags that swfed does not understand (for example ActionScript 3 `DoABC`) are
-copied through unchanged.
+- SWF のヘッダ（バージョン、圧縮、フレームサイズ）の読み取りと変更
+- タグの一覧、取り出し、置換、削除
+- ビットマップを JPEG / PNG / GIF のデータで置換する。JPEG / PNG として取り出す
+- テキストフィールド（DefineEditText）の初期テキストの編集
+- ActionScript 1/2 のバイトコードの文字列の置換と、変数の注入
+- ムービークリップの中身を別の SWF で置換する
+- シェイプの拡大縮小や移動、使われていないシェイプやビットマップの削除
 
-## Requirements
+swfed が解釈できないタグ（たとえば ActionScript 3 の `DoABC`）は、そのまま
+コピーされます。
 
-- PHP 7.2 or later, with `phpize` (usually in the `php-dev` / `php-devel` package).
-  CI builds and tests PHP 7.2, 8.0 and 8.3.
-- zlib, with headers. `configure` stops if it is not found.
-- libpng, giflib and liblzma (xz), with headers. They are optional: without one of
-  them, `configure` only warns and builds without that feature (PNG, GIF, or
-  reading and writing LZMA-compressed `ZWS` files).
+## 必要なもの
+
+- PHP 7.2 以降と、`phpize`（たいてい `php-dev` / `php-devel` パッケージに入っています）。
+  CI は PHP 7.2、8.0、8.3 でビルドとテストをしています。
+- zlib（ヘッダ付き）。見つからないと `configure` は止まります。
+- libpng、giflib、liblzma（xz）（ヘッダ付き）。これらは任意です。どれかが無くても
+  `configure` は警告を出すだけで、その機能（PNG、GIF、LZMA 圧縮の `ZWS` ファイルの
+  読み書き）なしでビルドします。
   - Debian / Ubuntu: `apt-get install zlib1g-dev libpng-dev libgif-dev liblzma-dev`
   - Homebrew: `brew install zlib libpng giflib xz`
-- A Unix-like OS (Linux, macOS, *BSD). Windows builds are not covered by CI.
+- Unix 系 OS（Linux、macOS、*BSD）。Windows のビルドは CI の対象外です。
 
-## Build and install
+## ビルドとインストール
 
 ```sh
 git clone https://github.com/yoya/swfed.git
@@ -41,42 +43,42 @@ make test
 sudo make install
 ```
 
-Then enable the extension in `php.ini` (or a file in your `conf.d` directory):
+そのあと、`php.ini`（または `conf.d` ディレクトリのファイル）で拡張モジュールを
+有効にします。
 
 ```ini
 extension=swfed
 ```
 
-Check it with `php --ri swfed`; it prints the version and whether PNG, GIF and
-LZMA (ZWS) support were compiled in.
+`php --ri swfed` で確認できます。バージョンと、PNG、GIF、LZMA（ZWS）の対応が
+組み込まれているかが表示されます。
 
-`configure` first uses a library as it is when the compiler finds it without any
-option (system directories, the macOS SDK). Otherwise it looks for it with
-`pkg-config`, then under `/usr/local`, `/usr`, `/opt/homebrew` and `/opt/local`.
-If a library is installed elsewhere, pass its install prefix (the directory that
-contains `include/` and `lib/`):
+`configure` は、まず、オプションなしでコンパイラが見つけられるライブラリ（システムの
+ディレクトリや macOS SDK）をそのまま使います。見つからなければ `pkg-config`、
+続いて `/usr/local`、`/usr`、`/opt/homebrew`、`/opt/local` の下を探します。
+ライブラリが別の場所にある場合は、そのインストール先（`include/` と `lib/` を含む
+ディレクトリ）を指定してください。
 
-| option | library |
+| オプション | ライブラリ |
 |---|---|
-| `--with-zlib-dir=DIR` | zlib (`DIR/include/zlib.h`) |
-| `--with-png-dir=DIR` | libpng (`DIR/include/png.h` or `DIR/include/libpng/png.h`) |
-| `--with-gif-dir=DIR` | giflib (`DIR/include/gif_lib.h` or `DIR/include/giflib/gif_lib.h`) |
-| `--with-lzma-dir=DIR` | liblzma (`DIR/include/lzma.h`) |
+| `--with-zlib-dir=DIR` | zlib（`DIR/include/zlib.h`） |
+| `--with-png-dir=DIR` | libpng（`DIR/include/png.h` または `DIR/include/libpng/png.h`） |
+| `--with-gif-dir=DIR` | giflib（`DIR/include/gif_lib.h` または `DIR/include/giflib/gif_lib.h`） |
+| `--with-lzma-dir=DIR` | liblzma（`DIR/include/lzma.h`） |
 
-`--without-png-dir`, `--without-gif-dir` and `--without-lzma-dir` build without
-that library.
+`--without-png-dir`、`--without-gif-dir`、`--without-lzma-dir` を指定すると、
+そのライブラリなしでビルドします。
 
-For example, with Homebrew on Apple Silicon, when `./configure` alone does not
-find them:
+たとえば、Apple Silicon の Homebrew で、`./configure` だけでは見つからない場合:
 
 ```sh
 ./configure --with-zlib-dir=$(brew --prefix zlib) --with-png-dir=$(brew --prefix) \
             --with-gif-dir=$(brew --prefix) --with-lzma-dir=$(brew --prefix xz)
 ```
 
-See also [doc/install.txt](doc/install.txt).
+[doc/install.txt](doc/install.txt) も参照してください。
 
-## Quick example
+## かんたんな例
 
 ```php
 <?php
@@ -84,48 +86,49 @@ $swf = new SWFEditor();
 if (! $swf->input(file_get_contents('input.swf'))) {
     exit("input failed\n");
 }
-// replace the bitmap whose character ID is 1 (JPEG, PNG or GIF data)
+// キャラクター ID が 1 のビットマップを置換する（JPEG、PNG、GIF のデータ）
 if (! $swf->replaceBitmapData(1, file_get_contents('new.jpg'))) {
     exit("replaceBitmapData failed\n");
 }
 file_put_contents('output.swf', $swf->output());
 ```
 
-To find the IDs, run `php sample/swfdump.php input.swf`, or use
-`getTagList()` and `getTagDetail()`.
+ID を調べるには、`php sample/swfdump.php input.swf` を実行するか、
+`getTagList()` と `getTagDetail()` を使います。
 
-## Basics
+## 基本
 
-### Tag index and character ID
+### タグインデックスとキャラクター ID
 
-Methods address tags in one of two ways:
+メソッドがタグを指す方法は 2 つあります。
 
-- **tag index**: the 0-based position of a tag in the top-level tag list, in the
-  order returned by `getTagList()`. Tags inside a `DefineSprite` are not counted.
-  Indexes shift when tags are removed or inserted.
-  Used by `getTagDetail()`, `getTagData()`, `replaceTagData()`, `removeTag()` and
-  `getActionData()`.
-- **character ID** (CID): the ID of a `Define*` tag (`image_id`, `shape_id`,
-  `sound_id`, ... in `getTagDetail()`). Used by all other methods that take an ID.
-  Only top-level tags are searched.
+- **タグインデックス**: 最上位のタグの並びの中での、0 から始まる位置です。
+  `getTagList()` が返す順序に従います。`DefineSprite` の中のタグは数えません。
+  タグを削除したり挿入したりすると、インデックスはずれます。
+  `getTagDetail()`、`getTagData()`、`replaceTagData()`、`removeTag()`、
+  `getActionData()` が使います。
+- **キャラクター ID**（CID）: `Define*` タグの ID です（`getTagDetail()` の
+  `image_id`、`shape_id`、`sound_id` など）。ID を受け取るそれ以外のメソッドが使います。
+  最上位のタグだけが検索の対象です。
 
-The PHP stub names the ID parameter `$index` for several bitmap and sound methods
-(`getJpegData()`, `replacePNGData()`, `getSoundData()`, ...). It is a character
-ID, not a tag index. Keep this in mind if you call them with named arguments.
+PHP のスタブでは、いくつかのビットマップ・サウンドのメソッド（`getJpegData()`、
+`replacePNGData()`、`getSoundData()` など）で、ID の引数の名前が `$index` に
+なっています。これはタグインデックスではなく、キャラクター ID です。名前付き引数で
+呼ぶときは注意してください。
 
-Sizes and positions (`getHeaderInfo()`, `getBitmapSize()`, the `trans_x` /
-`trans_y` arguments) are in pixels. SWF stores twips (1 pixel = 20 twips);
-`getHeaderInfo()` truncates to whole pixels.
+サイズと位置（`getHeaderInfo()`、`getBitmapSize()`、`trans_x` / `trans_y` 引数）は
+ピクセル単位です。SWF は twip（1 ピクセル = 20 twip）で保存していて、
+`getHeaderInfo()` は整数のピクセルに切り捨てます。
 
-### Strings and character encoding
+### 文字列と文字エンコーディング
 
-swfed never converts character encodings. Every string you pass or get back
-(edit text, action strings and variables, instance names, `getTagDetail()`
-names) is the raw byte sequence stored in the SWF.
+swfed は文字エンコーディングを変換しません。渡す文字列も、受け取る文字列も
+（編集テキスト、アクションの文字列と変数、インスタンス名、`getTagDetail()` の名前）、
+SWF に保存されているバイト列そのままです。
 
-The SWF format stores strings as UTF-8 from SWF version 6 on. SWF 5 and earlier
-use the author's local encoding, for example Shift_JIS for Japanese (common in
-Flash Lite content). Check the version and convert yourself:
+SWF の仕様では、SWF バージョン 6 以降は文字列が UTF-8 で保存されます。SWF 5 以前は
+作者のローカルなエンコーディングで、たとえば日本語なら Shift_JIS です（Flash Lite の
+コンテンツに多く見られます）。バージョンを調べて、自分で変換してください。
 
 ```php
 $info = $swf->getHeaderInfo();
@@ -135,55 +138,55 @@ echo mb_convert_encoding($swf->getEditString('title'), 'UTF-8', $enc);
 $swf->replaceEditString('title', mb_convert_encoding('new title', $enc, 'UTF-8'));
 ```
 
-`www/index.php` uses the same rule (`SJIS-win` for versions below 6) when it
-displays tag details.
-Strings in SWF are NUL-terminated, so a NUL byte in a new string cuts it short.
+`www/index.php` も、タグの詳細を表示するときに同じ規則（バージョン 6 未満は
+`SJIS-win`）を使っています。
+SWF の文字列は NUL で終わるため、新しい文字列に NUL バイトを入れると、そこで切れます。
 
-### Errors
+### エラー
 
-- Most methods return `false` on failure. SWF-level errors do not throw.
-- The C code describes a problem with a message, for example
-  `swf_header_parse: input too short (3)`. `SWFEditor::getLastError()` returns
-  the messages of the last method call. Where else they go is set by
-  `swfed.error_output` (see below); by default they are written to the process's
-  stderr. They are then not PHP warnings, so `error_reporting()`, `@` and error
-  handlers do not see them.
-- A few failures raise a PHP `E_WARNING` and return `false`; they are listed
-  with the methods below. Passing `null` as the first argument of
-  `replaceBitmapData()`, `applyShapeMatrixFactor()`, `applyShapeRectFactor()`,
-  `getSoundData()`, `replaceMLDData()`, `getEditString()`,
-  `replaceEditString()` or `replaceMovieClip()` gives the warning
-  "1st arg must be not NULL".
-- Wrong argument types or counts throw `TypeError` / `ArgumentCountError` on
-  PHP 8. On PHP 7 they raise a warning and the method returns `false` or `null`.
-- `swfInfo()`, `printTagData()` and `disasmActionData()` print through the PHP
-  output (like `echo`), so `ob_start()` captures it.
-- The printed output and the messages for `stderr` / `warning` are written
-  after the method has finished with the movie, not while it is running, in the
-  order the C code produced them. An output buffer callback or an error handler
-  can therefore call methods of the same `SWFEditor`, even `input()`. An
-  exception thrown there drops the output that has not been written yet
-  (`getLastError()` still has the messages).
-- If a `replace*Data()` call fails, the target bitmap tag may already have been
-  changed (for example its tag type switched) and can be left broken; a tag left
-  with no data at all is silently left out of `output()`. Keep the original SWF
-  and call `input()` again after a failed replace.
+- ほとんどのメソッドは、失敗すると `false` を返します。SWF に関するエラーでは
+  例外を投げません。
+- C のコードは、問題をメッセージで説明します。たとえば
+  `swf_header_parse: input too short (3)` のようなものです。
+  `SWFEditor::getLastError()` は、直前のメソッド呼び出しのメッセージを返します。
+  メッセージがほかにどこへ出るかは `swfed.error_output`（後述）で決まり、
+  既定ではプロセスの stderr に書き出されます。これらは PHP の警告ではないので、
+  `error_reporting()`、`@`、エラーハンドラからは見えません。
+- 一部の失敗は、PHP の `E_WARNING` を出して `false` を返します。それらは、
+  以下のメソッドの説明に書いてあります。`replaceBitmapData()`、
+  `applyShapeMatrixFactor()`、`applyShapeRectFactor()`、`getSoundData()`、
+  `replaceMLDData()`、`getEditString()`、`replaceEditString()`、
+  `replaceMovieClip()` の最初の引数に `null` を渡すと、
+  "1st arg must be not NULL" という警告になります。
+- 引数の型や個数が違うと、PHP 8 では `TypeError` / `ArgumentCountError` を投げます。
+  PHP 7 では警告を出し、メソッドは `false` または `null` を返します。
+- `swfInfo()`、`printTagData()`、`disasmActionData()` は、PHP の出力
+  （`echo` と同じ）を通して表示するので、`ob_start()` で取り込めます。
+- 表示する内容と、`stderr` / `warning` 向けのメッセージは、メソッドがムービーの
+  処理を終えたあとに、C のコードが出した順に書き出されます。処理の途中ではありません。
+  そのため、出力バッファのコールバックやエラーハンドラの中から、同じ `SWFEditor` の
+  メソッドを（`input()` でも）呼べます。そこで例外が投げられると、まだ書き出していない
+  出力は捨てられます（`getLastError()` にはメッセージが残ります）。
+- `replace*Data()` が失敗したとき、対象のビットマップタグはすでに変更されていて
+  （たとえばタグの種類が切り替わっていて）、壊れたままになることがあります。
+  データが全く無くなったタグは、`output()` から黙って省かれます。元の SWF を
+  取っておいて、置換に失敗したら `input()` をやり直してください。
 
 #### `swfed.error_output`
 
-An ini setting (`PHP_INI_ALL`: php.ini, `ini_set()`, ...) for the messages of the
-C code:
+C のコードのメッセージの出力先を決める ini 設定です（`PHP_INI_ALL`: php.ini、
+`ini_set()` など）。
 
-| value | the messages go to |
+| 値 | メッセージの行き先 |
 |---|---|
-| `stderr` (default) | the process's stderr |
-| `warning` | PHP, as one `E_WARNING` per message (`SWFEditor::method(): message`), so error handlers see them |
-| `none` | nowhere; only `getLastError()` has them (`off` is the same) |
+| `stderr`（既定） | プロセスの stderr |
+| `warning` | PHP。メッセージごとに `E_WARNING` を 1 つ出す（`SWFEditor::method(): message`）ので、エラーハンドラから見える |
+| `none` | どこにも出さない。`getLastError()` だけが持つ（`off` も同じ） |
 
-The value is not case sensitive (`Off`, `Warning`); php.ini turns a bare `Off` /
-`None` into an empty string, which also means `none`. An unknown value raises
-`E_WARNING`; `ini_set()` returns `false` and keeps the old value, and a wrong
-value in php.ini falls back to `stderr`.
+値は大文字小文字を区別しません（`Off`、`Warning`）。php.ini の中の `Off` / `None` だけの
+指定は空文字列になりますが、これも `none` として扱います。未知の値は `E_WARNING` を
+出します。`ini_set()` は `false` を返して古い値のままにし、php.ini の間違った値は
+`stderr` になります。
 
 ```php
 ini_set('swfed.error_output', 'none');
@@ -192,536 +195,546 @@ if ($swf->input($data) === false) {
 }
 ```
 
-PHP warnings that a method raises for its arguments (for example a character ID
-out of range) do not depend on this setting and are not in `getLastError()`.
+メソッドが引数について出す PHP の警告（たとえば範囲外のキャラクター ID）は、この
+設定に関係なく、`getLastError()` にも入りません。
 
-### The SWFEditor object
+### SWFEditor オブジェクト
 
-- `new SWFEditor()` creates an empty editor. Calling `__construct()` again on the
-  same object throws `Error`.
-- Subclasses work even if their constructor does not call `parent::__construct()`.
-- `clone` makes an independent copy, including the loaded SWF and settings.
-- `serialize()` throws an `Exception`; serialize the result of `output()` instead.
-- Methods can be called before `input()`; they then work on an empty movie
-  (for example `output()` returns `false`).
+- `new SWFEditor()` は、空のエディタを作ります。同じオブジェクトで
+  `__construct()` をもう一度呼ぶと、`Error` を投げます。
+- サブクラスのコンストラクタが `parent::__construct()` を呼ばなくても動きます。
+- `clone` は、読み込んだ SWF と設定を含めて、独立したコピーを作ります。
+- `serialize()` は `Exception` を投げます。代わりに `output()` の結果を
+  シリアライズしてください。
+- `input()` の前にもメソッドを呼べます。空のムービーに対して動きます
+  （たとえば `output()` は `false` を返します）。
 
-## API reference
+## API リファレンス
 
-Signatures show what the implementation accepts. Optional arguments are in
-brackets.
+シグネチャは、実装が受け付けるものを示しています。省略可能な引数は
+角括弧の中にあります。
 
-### Input, output and header
+### 入力、出力、ヘッダ
 
 #### `input(string $data): bool`
 
-Parses an SWF file and replaces whatever was loaded before. Uncompressed (`FWS`),
-zlib-compressed (`CWS`) and LZMA-compressed (`ZWS`) files are supported. `ZWS`
-needs a build with liblzma; without it a `ZWS` file makes `input()` return `false`
-(see `php --ri swfed`). Returns `false` if the header cannot be read, the signature
-is not `FWS` / `CWS` / `ZWS`, or decompression fails (for a `ZWS`: damaged or
-truncated LZMA data, or a size that does not match the header's file length); the
-previously loaded movie is then kept.
-Truncated tag data is not an error: parsing stops at the first incomplete tag and
-`true` is returned.
+SWF ファイルを解析し、それまでに読み込んでいたものと置き換えます。非圧縮
+（`FWS`）、zlib 圧縮（`CWS`）、LZMA 圧縮（`ZWS`）のファイルに対応します。`ZWS` は
+liblzma 付きのビルドが必要で、無いと `ZWS` ファイルでは `input()` が `false` を
+返します（`php --ri swfed` で確認できます）。ヘッダを読めない、シグネチャが
+`FWS` / `CWS` / `ZWS` ではない、展開に失敗した（`ZWS` の場合は、LZMA データの
+破損や途中での切断、ヘッダのファイル長と合わないサイズ）ときは `false` を返し、
+それまでに読み込んでいたムービーはそのまま残ります。
+タグのデータが途中で切れていてもエラーにはなりません。最初の不完全なタグで
+解析をやめ、`true` を返します。
 
 #### `output(): string|false`
 
-Serializes the movie. The file format follows the header: `FWS`, `CWS` if the
-`compress` flag is set, or `ZWS` if `lzma` is also set (a `ZWS` that was read
-stays `ZWS`). Compression uses the level from `setCompressLevel()`. The file
-length field is recomputed. Returns `false` if nothing has been loaded or
-compression fails, and for `ZWS` on a build without liblzma.
+ムービーをシリアライズします。ファイル形式はヘッダに従い、`FWS`、`compress`
+フラグが立っていれば `CWS`、さらに `lzma` も立っていれば `ZWS` になります
+（読み込んだ `ZWS` は `ZWS` のままです）。圧縮には `setCompressLevel()` の
+レベルを使います。ファイル長のフィールドは計算し直します。何も読み込んでいない
+場合と、圧縮に失敗した場合、および liblzma なしのビルドで `ZWS` にする場合は、
+`false` を返します。
 
 #### `getHeaderInfo(): array`
 
-Returns:
+次の値を返します。
 
-| key | type | meaning |
+| キー | 型 | 意味 |
 |---|---|---|
-| `compress` | bool | `true` for `CWS` and `ZWS`, `false` for `FWS` |
-| `lzma` | bool | `true` for `ZWS` (LZMA), `false` for `FWS` and `CWS` |
-| `version` | int | SWF version |
-| `x_min`, `y_min`, `x_max`, `y_max` | int | frame rectangle in pixels |
+| `compress` | bool | `CWS` と `ZWS` なら `true`、`FWS` なら `false` |
+| `lzma` | bool | `ZWS`（LZMA）なら `true`、`FWS` と `CWS` なら `false` |
+| `version` | int | SWF バージョン |
+| `x_min`、`y_min`、`x_max`、`y_max` | int | フレームの矩形（ピクセル） |
 
-Frame rate and frame count are not returned. Before `input()` all values are
-0 / `false`.
+フレームレートとフレーム数は返しません。`input()` の前は、すべての値が
+0 / `false` です。
 
 #### `setHeaderInfo(array $header): bool`
 
-Sets any of the `getHeaderInfo()` keys present in `$header`; other keys are
-ignored. The file format is chosen from `compress` and `lzma`:
+`$header` にある `getHeaderInfo()` のキーを設定します。ほかのキーは無視します。
+ファイル形式は `compress` と `lzma` から決まります。
 
-| given | result |
+| 指定 | 結果 |
 |---|---|
-| `compress => false` | `FWS` (even if `lzma => true` is also given) |
+| `compress => false` | `FWS`（`lzma => true` も一緒に指定しても） |
 | `lzma => true` | `ZWS` |
-| `compress => true` (no `lzma`) | `CWS`; a movie that is already `ZWS` stays `ZWS` |
-| `lzma => false` | `ZWS` becomes `CWS`; `CWS` stays `CWS`; `FWS` stays `FWS`, unless `compress => true` is also given (then `CWS`) |
+| `compress => true`（`lzma` なし） | `CWS`。すでに `ZWS` のムービーは `ZWS` のまま |
+| `lzma => false` | `ZWS` は `CWS` になる。`CWS` は `CWS` のまま。`FWS` は `FWS` のまま。ただし `compress => true` も一緒に指定すると `CWS` |
 
-So the array from `getHeaderInfo()` can be changed in one key and passed back.
-Returns `true`. Returns `false` with an `E_WARNING`, and changes nothing, if
-`version` is not between 0 and 255, a frame rectangle value is out of range, or
-`lzma => true` is given on a build without liblzma. A non-array argument is an
-error (see "Errors").
-swfed does not adjust the version when you set `compress`; compressed files need
-version 6 or later (`CWS`) or 13 or later (`ZWS`). `sample/swfcompress.php` raises
-it to 6.
+そのため、`getHeaderInfo()` の配列のキーを 1 つだけ変えて、そのまま渡せます。
+`true` を返します。`version` が 0〜255 の範囲外、フレームの矩形の値が範囲外、
+または liblzma なしのビルドで `lzma => true` を指定した場合は、`E_WARNING` を
+出して `false` を返し、何も変更しません。配列でない引数はエラーです
+（「エラー」を参照）。
+`compress` を設定しても、swfed はバージョンを調整しません。圧縮したファイルには、
+バージョン 6 以降（`CWS`）または 13 以降（`ZWS`）が必要です。
+`sample/swfcompress.php` は、バージョンを 6 に上げます。
 
 #### `setCompressLevel(int $level): bool`
 
-zlib level used by `output()` for `CWS` files (for `ZWS` files, the LZMA preset:
-`0` to `9`, and `-1` means the LZMA default) and for the zlib data inside
-`DefineBitsJPEG3`/`DefineBitsJPEG4` (alpha) and `DefineBitsLossless`/`DefineBitsLossless2` tags
-that swfed rebuilds. `-1` (zlib default, the initial value) to `9`. Out of range:
-`E_WARNING` and `false`.
+`output()` が `CWS` ファイルに使う zlib のレベルです（`ZWS` ファイルでは LZMA の
+プリセットで、`0`〜`9`、`-1` が LZMA の既定です）。swfed が作り直す
+`DefineBitsJPEG3` / `DefineBitsJPEG4`（アルファ）と、`DefineBitsLossless` /
+`DefineBitsLossless2` タグの中の zlib データにも使います。`-1`（zlib の既定で、
+初期値）から `9` までです。範囲外だと、`E_WARNING` を出して `false` を返します。
 
 #### `swfInfo(): bool`
 
-Prints a readable dump of the header and every tag through the PHP output
-(see Errors above), so `ob_start()` can capture it.
-Always returns `true`.
+ヘッダとすべてのタグを、読みやすい形で PHP の出力に表示します（上の「エラー」を
+参照）。`ob_start()` で取り込めます。
+常に `true` を返します。
 
 #### `rebuild(): bool`
 
-Parses every tag that swfed understands, so that `output()` writes it from the
-parsed data instead of copying the original bytes. Returns `false` if a tag
-cannot be parsed (it stops at that tag). The output is usually not byte-identical
-to the input.
+swfed が解釈できるすべてのタグを解析します。これで `output()` は、元のバイト列を
+コピーする代わりに、解析したデータから書き出します。タグを解析できなければ
+（そのタグで止まって）`false` を返します。出力は、たいてい入力とバイト単位では
+一致しません。
 
 #### `purgeUselessContents(): bool`
 
-Removes shape (`DefineShape`, `DefineShape2`, `DefineShape3`, `DefineMorphShape`)
-and bitmap (`DefineBits*`) tags that are not used by any `PlaceObject` /
-`PlaceObject2`, directly or through a shape, button or placed sprite. Other
-character types (sprites, fonts, texts, sounds, ...) are kept. `ExportAssets`
-is not taken into account, so shapes and bitmaps that are only used through a
-linkage name (e.g. `BitmapData.loadBitmap()`) are removed too. Returns `true`.
+どの `PlaceObject` / `PlaceObject2` からも、直接にも、シェイプ・ボタン・配置された
+スプライトを経由しても使われていない、シェイプ（`DefineShape`、`DefineShape2`、
+`DefineShape3`、`DefineMorphShape`）とビットマップ（`DefineBits*`）のタグを削除
+します。ほかのキャラクターの種類（スプライト、フォント、テキスト、サウンドなど）は
+残ります。`ExportAssets` は考慮しないので、リンケージ名だけで使われているシェイプや
+ビットマップ（たとえば `BitmapData.loadBitmap()`）も削除されます。`true` を返します。
 
-### Tags
+### タグ
 
 #### `getTagList(): array`
 
-Returns one array per top-level tag, in file order:
+最上位のタグごとに、ファイルの順に配列を 1 つ返します。
 
-| key | type | meaning |
+| キー | 型 | 意味 |
 |---|---|---|
-| `code` | int | tag type |
-| `tag` | int | same as `code` |
-| `tagName` | string | tag name; missing for tag types swfed does not know |
-| `length` | int | tag body length in bytes, without the tag header. `0` for tags edited since the last `input()` / `output()` |
-| `detail` | bool | `true` if swfed has a parser for this tag type; missing otherwise |
+| `code` | int | タグの種類 |
+| `tag` | int | `code` と同じ |
+| `tagName` | string | タグの名前。swfed が知らない種類のタグには無い |
+| `length` | int | タグヘッダを除いた、タグ本体のバイト長。最後の `input()` / `output()` のあとに編集されたタグは `0` |
+| `detail` | bool | そのタグの種類のパーサが swfed にあれば `true`。無ければキー自体が無い |
 
 #### `getTagDetail(int $index): array|false|null`
 
-Returns parsed information about the tag at `$index`. Keys by tag type:
+`$index` のタグを解析した情報を返します。タグの種類ごとのキーは次のとおりです。
 
-| tag (code) | keys |
+| タグ（コード） | キー |
 |---|---|
-| DefineBitsJPEG (6), DefineBitsJPEG2 (21), DefineBitsJPEG3 (35), DefineBitsJPEG4 (90) | `image_id`, `jpeg_data_len`, `alpha_data_len` (only if there is alpha data) |
-| DefineBitsLossless (20), DefineBitsLossless2 (36) | `image_id`, `format` (3 = 8-bit colormap, 4 = 15-bit RGB, 5 = 32-bit), `width`, `height`, `colormap_count` (format 3 only) |
-| DefineSound (14) | `sound_id`, `format`, `rate`, `is_16bits`, `is_stereo`, `sound_samples_count`, `sound_data_len` (raw SWF field values) |
-| DoAction (12), DoInitAction (59) | `action_list_count` (missing if empty), `action_sprite` (DoInitAction only) |
-| DefineEditText (37) | `edit_id`, `variable_name` and `initial_text` (each only if not empty) |
-| DefineSprite (39) | `sprite_id`, `frame_count` |
-| DefineShape (2), DefineShape2 (22), DefineShape3 (32), DefineMorphShape (46) | `shape_id`, `fill_styles.count`, `line_styles.count`, `bitmap_ref` (list of referenced bitmap IDs; missing if none) |
-| PlaceObject (4), PlaceObject2 (26) | `character_id` (PlaceObject2: only if set), `depth`, `name` (only if set) |
+| DefineBitsJPEG (6)、DefineBitsJPEG2 (21)、DefineBitsJPEG3 (35)、DefineBitsJPEG4 (90) | `image_id`、`jpeg_data_len`、`alpha_data_len`（アルファのデータがあるときだけ） |
+| DefineBitsLossless (20)、DefineBitsLossless2 (36) | `image_id`、`format`（3 = 8 ビットのカラーマップ、4 = 15 ビット RGB、5 = 32 ビット）、`width`、`height`、`colormap_count`（format 3 のときだけ） |
+| DefineSound (14) | `sound_id`、`format`、`rate`、`is_16bits`、`is_stereo`、`sound_samples_count`、`sound_data_len`（SWF のフィールドの値そのまま） |
+| DoAction (12)、DoInitAction (59) | `action_list_count`（空なら無い）、`action_sprite`（DoInitAction だけ） |
+| DefineEditText (37) | `edit_id`、`variable_name` と `initial_text`（それぞれ、空でないときだけ） |
+| DefineSprite (39) | `sprite_id`、`frame_count` |
+| DefineShape (2)、DefineShape2 (22)、DefineShape3 (32)、DefineMorphShape (46) | `shape_id`、`fill_styles.count`、`line_styles.count`、`bitmap_ref`（参照しているビットマップ ID のリスト。無ければ無い） |
+| PlaceObject (4)、PlaceObject2 (26) | `character_id`（PlaceObject2 は、設定されているときだけ）、`depth`、`name`（設定されているときだけ） |
 
-Returns `false` if `$index` is out of range or negative, the tag type has no
-parser, or the tag cannot be parsed. Returns `null` for `JPEGTables` (8),
-`DefineButton` (7) and `DefineButton2` (34): `getTagList()` reports `detail` for
-them but no keys are implemented. `DefineShape4` (83) and `DefineMorphShape2` (84)
-also report `detail` but return `false`.
+`$index` が範囲外か負の場合、そのタグの種類にパーサが無い場合、またはタグを
+解析できない場合は、`false` を返します。`JPEGTables` (8)、`DefineButton` (7)、
+`DefineButton2` (34) では `null` を返します。`getTagList()` はこれらに `detail` を
+報告しますが、キーは実装されていません。`DefineShape4` (83) と
+`DefineMorphShape2` (84) も `detail` を報告しますが、`false` を返します。
 
 #### `getTagData(int $index): string|false`
 
-Returns the complete tag at `$index` (tag header and body) as `output()` would
-write it. Returns `false` if `$index` is out of range. A negative `$index` is
-treated as 0.
+`$index` のタグ全体（タグヘッダと本体）を、`output()` が書き出すとおりに返します。
+`$index` が範囲外なら `false` を返します。負の `$index` は 0 として扱います。
 
 #### `replaceTagData(int $index, string $data): bool`
 
-Replaces the tag at `$index` with `$data`, which must be one complete tag
-(header and body, e.g. from `getTagData()`). Only the tag header is checked.
-Returns `false` if `$index` is out of range or `$data` is not a complete tag.
-A negative `$index` is treated as 0.
+`$index` のタグを `$data` で置き換えます。`$data` は、完全な 1 つのタグ（ヘッダと
+本体。たとえば `getTagData()` の結果）でなければなりません。検査するのはタグ
+ヘッダだけです。`$index` が範囲外か、`$data` が完全なタグでなければ `false` を
+返します。負の `$index` は 0 として扱います。
 
 #### `getTagDataByCID(int $cid): string|false`
 
-Returns the complete tag (header and body) that defines character `$cid`, or
-`false`.
+キャラクター `$cid` を定義しているタグ全体（ヘッダと本体）を返します。無ければ
+`false` を返します。
 
 #### `replaceTagDataByCID(int $cid, string $data): bool`
 
-Replaces the tag that defines `$cid` with `$data` (one complete tag). The
-character ID inside `$data` is rewritten to `$cid`; the tag type may change.
-Returns `false` if `$cid` is not found or `$data` is not a complete tag.
+`$cid` を定義しているタグを `$data`（完全な 1 つのタグ）で置き換えます。`$data` の
+中のキャラクター ID は `$cid` に書き換えられます。タグの種類は変わることがあります。
+`$cid` が見つからないか、`$data` が完全なタグでなければ `false` を返します。
 
 #### `getTagContentsByCID(int $cid): string|false`
 
-Returns the body of the tag that defines `$cid`, without the tag header and
-without the leading 2-byte character ID. Returns `false` if not found.
+`$cid` を定義しているタグの本体を、タグヘッダと、先頭の 2 バイトのキャラクター ID を
+除いて返します。見つからなければ `false` を返します。
 
 #### `replaceTagContentsByCID(int $cid, string $data): bool`
 
-Replaces the body after the character ID (the counterpart of
-`getTagContentsByCID()`). The tag type and ID are kept; `$data` is not checked.
-Returns `false` if `$cid` is not found.
+キャラクター ID より後ろの本体を置き換えます（`getTagContentsByCID()` の
+対になるメソッドです）。タグの種類と ID は変わりません。`$data` は検査しません。
+`$cid` が見つからなければ `false` を返します。
 
 #### `removeTag(int $index [, ?int $index_in_sprite = null]): bool`
 
-Removes the top-level tag at `$index`. With `$index_in_sprite`, removes the tag at
-that position inside the `DefineSprite` at `$index` instead; `null` or a negative
-value means "not given". Returns `false` if an index is out of range or the tag at
-`$index` is not a `DefineSprite` when `$index_in_sprite` is given. A negative
-`$index` is treated as 0. (The stub calls the second parameter `$index_sprint`.)
+`$index` の最上位のタグを削除します。`$index_in_sprite` を指定すると、代わりに、
+`$index` にある `DefineSprite` の中の、その位置のタグを削除します。`null` または
+負の値は「指定なし」です。インデックスが範囲外のとき、または
+`$index_in_sprite` を指定したのに `$index` のタグが `DefineSprite` ではないときは、
+`false` を返します。負の `$index` は 0 として扱います。（スタブでは、2 番目の
+引数の名前が `$index_sprint` になっています。）
 
 #### `printTagData(string $data): bool`
 
-Prints one complete tag (e.g. from `getTagData()`) through the PHP output in the
-`swfInfo()` format. Returns `false` if `$data` is not a complete tag.
+完全な 1 つのタグ（たとえば `getTagData()` の結果）を、`swfInfo()` と同じ形式で、
+PHP の出力に表示します。`$data` が完全なタグでなければ `false` を返します。
 
 #### `isShapeTagData(string $data): bool`
 
-Returns `true` if `$data` is a complete tag whose type is `DefineShape`,
-`DefineShape2`, `DefineShape3` or `DefineMorphShape`. Only the tag header is
-checked. Does not use the loaded movie.
+`$data` が、`DefineShape`、`DefineShape2`、`DefineShape3`、`DefineMorphShape` の
+いずれかの、完全なタグであれば `true` を返します。検査するのはタグヘッダだけです。
+読み込んだムービーは使いません。
 
 #### `isBitmapTagData(string $data): bool`
 
-Same as `isShapeTagData()` for `DefineBitsJPEG`, `DefineBitsJPEG2`,
-`DefineBitsJPEG3`, `DefineBitsJPEG4`, `DefineBitsLossless` and `DefineBitsLossless2`.
+`isShapeTagData()` と同じで、対象は `DefineBitsJPEG`、`DefineBitsJPEG2`、
+`DefineBitsJPEG3`、`DefineBitsJPEG4`、`DefineBitsLossless`、`DefineBitsLossless2` です。
 
-### Shapes
+### シェイプ
 
-These methods handle `DefineShape`, `DefineShape2`, `DefineShape3` and (for get /
-replace) `DefineMorphShape`. `DefineShape4` is not supported.
+これらのメソッドは、`DefineShape`、`DefineShape2`、`DefineShape3`、および
+（取得と置換だけ）`DefineMorphShape` を扱います。`DefineShape4` は
+サポートしていません。
 
 #### `getShapeData(int $cid): string|false`
 
-Returns the complete shape tag `$cid` (header and body). Returns `false` if `$cid`
-is not found or is not a shape.
+シェイプのタグ `$cid` 全体（ヘッダと本体）を返します。`$cid` が見つからないか、
+シェイプではなければ `false` を返します。
 
 #### `replaceShapeData(int $cid, string $data): bool`
 
-Replaces shape `$cid` with `$data`, a complete shape tag (e.g. from
-`getShapeData()`, possibly from another SWF). The shape ID inside `$data` is
-rewritten to `$cid` and the tag type is taken from `$data`. Bitmap IDs referenced
-by the new shape are used as they are. If `$data` is not a shape tag, it is read
-as a shape body without the ID (the format of swfed 0.37 and earlier). Returns
-`false` if `$cid` is not a shape or `$data` cannot be parsed.
+シェイプ `$cid` を `$data` で置き換えます。`$data` は、完全なシェイプのタグ
+（たとえば `getShapeData()` の結果で、別の SWF のものでも構いません）です。
+`$data` の中のシェイプ ID は `$cid` に書き換えられ、タグの種類は `$data` のものに
+なります。新しいシェイプが参照しているビットマップ ID は、そのまま使われます。
+`$data` がシェイプのタグでなければ、ID の無いシェイプの本体として読みます
+（swfed 0.37 以前の形式です）。`$cid` がシェイプではないか、`$data` を解析できない
+場合は、`false` を返します。
 
 #### `applyShapeMatrixFactor(int $shape_id, float $scale_x, float $scale_y, float $rotate_rad, int $trans_x, int $trans_y): bool`
 
-Transforms the fill matrices of every bitmap and gradient fill in the shape:
-scales them, rotates them by `$rotate_rad` radians, then moves them by
-(`$trans_x`, `$trans_y`) pixels. The outline is not changed. Returns `false` if no
-`DefineShape`/`2`/`3` with that ID exists (`DefineMorphShape` is not supported).
+シェイプの中のすべてのビットマップ塗りとグラデーション塗りの、塗りの行列を
+変換します。拡大縮小し、`$rotate_rad` ラジアン回転し、
+（`$trans_x`、`$trans_y`）ピクセル移動します。輪郭は変わりません。その ID の
+`DefineShape` / `2` / `3` が無ければ `false` を返します（`DefineMorphShape` は
+サポートしていません）。
 
 #### `applyShapeRectFactor(int $shape_id, float $scale_x, float $scale_y, int $trans_x, int $trans_y): bool`
 
-Scales the shape outline and bounds around their top-left corner, then moves
-them by (`$trans_x`, `$trans_y`) pixels. Fill matrices are not changed. Returns
-`false` like `applyShapeMatrixFactor()`.
+シェイプの輪郭と境界を、左上の角を中心に拡大縮小し、
+（`$trans_x`、`$trans_y`）ピクセル移動します。塗りの行列は変わりません。
+`applyShapeMatrixFactor()` と同じ場合に `false` を返します。
 
 #### `setShapeAdjustMode(int $mode): bool`
 
-Sets how shapes that use a bitmap are adjusted when that bitmap is replaced by
-`replaceJpegData()`, `replacePNGData()`, `replaceGIFData()` or
-`replaceBitmapData()`. The mode is a bit mask, kept until changed, and may be
-set before `input()`. Always returns `true`; the value is not checked.
+ビットマップを `replaceJpegData()`、`replacePNGData()`、`replaceGIFData()`、
+`replaceBitmapData()` で置換したときに、そのビットマップを使うシェイプをどう調整
+するかを設定します。モードはビットマスクで、変更するまで保たれ、`input()` の前に
+設定してもかまいません。常に `true` を返します。値は検査しません。
 
-| constant | value | effect on each shape that uses the replaced bitmap |
+| 定数 | 値 | 置換したビットマップを使う各シェイプへの効果 |
 |---|---|---|
-| `SWFEditor::SHAPE_BITMAP_NONE` | 0 | nothing (default) |
-| `SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE` | 1 | the bitmap fill matrix is scaled by old size / new size, so the new image fills the same area as the old one |
-| `SWFEditor::SHAPE_BITMAP_RECT_RESIZE` | 2 | the shape outline and bounds are scaled by new size / old size, so the shape takes the new image's size |
-| `SWFEditor::SHAPE_BITMAP_TYPE_TILLED` | 4 | clipped bitmap fills are changed to tiled (repeating) fills |
+| `SWFEditor::SHAPE_BITMAP_NONE` | 0 | 何もしない（既定） |
+| `SWFEditor::SHAPE_BITMAP_MATRIX_RESCALE` | 1 | ビットマップ塗りの行列を、古いサイズ / 新しいサイズで拡大縮小して、新しい画像が古い画像と同じ領域を埋めるようにする |
+| `SWFEditor::SHAPE_BITMAP_RECT_RESIZE` | 2 | シェイプの輪郭と境界を、新しいサイズ / 古いサイズで拡大縮小して、シェイプが新しい画像のサイズになるようにする |
+| `SWFEditor::SHAPE_BITMAP_TYPE_TILLED` | 4 | クリップされたビットマップ塗りを、タイル（繰り返し）の塗りに変える |
 
-Combine values with `|`. The samples use `SHAPE_BITMAP_RECT_RESIZE`.
+値は `|` で組み合わせられます。サンプルは `SHAPE_BITMAP_RECT_RESIZE` を使っています。
 
 #### `getShapeIdListByBitmapRef(int $bitmap_id): array`
 
-Returns the IDs of the shapes whose fill styles use bitmap `$bitmap_id`, or an
-empty array.
+塗りのスタイルがビットマップ `$bitmap_id` を使っているシェイプの ID を返します。
+無ければ空の配列を返します。
 
-### Bitmaps
+### ビットマップ
 
-A replace method accepts any bitmap tag (JPEG or lossless) as the target and
-changes its tag type to match the new data. See "Errors" above for what a failed
-replace leaves behind.
+置換のメソッドは、対象としてどのビットマップタグ（JPEG でもロスレスでも）でも
+受け付け、タグの種類を新しいデータに合わせて変えます。置換に失敗したときに何が
+残るかは、上の「エラー」を参照してください。
 
 #### `getBitmapSize(int $bitmap_id): array|false`
 
-Returns `['width' => int, 'height' => int]` in pixels, or `false` if `$bitmap_id`
-is not a bitmap or the JPEG size cannot be read.
+`['width' => int, 'height' => int]` を、ピクセル単位で返します。`$bitmap_id` が
+ビットマップではない場合や、JPEG のサイズを読めない場合は、`false` を返します。
 
 #### `getJpegData(int $image_id): string|false`
 
-Returns the image of a `DefineBitsJPEG`/`2`/`3`/`4` tag as a normal JPEG file (for
-`DefineBitsJPEG` the shared `JPEGTables` are merged in). Returns `false` if there
-is no JPEG tag with that ID.
+`DefineBitsJPEG` / `2` / `3` / `4` タグの画像を、普通の JPEG ファイルとして返します
+（`DefineBitsJPEG` では、共有の `JPEGTables` を組み込みます）。その ID の JPEG タグが
+無ければ `false` を返します。
 
 #### `getJpegAlpha(int $image_id): string|false`
 
-Returns the alpha channel of a `DefineBitsJPEG3` or `DefineBitsJPEG4` tag,
-uncompressed: one byte per pixel, width × height bytes. Returns `false` if the
-tag is neither of them or has no alpha data.
+`DefineBitsJPEG3` または `DefineBitsJPEG4` タグのアルファチャンネルを、展開して
+返します。1 ピクセルにつき 1 バイトで、width × height バイトです。そのタグが
+どちらでもない場合や、アルファのデータが無い場合は、`false` を返します。
 
 #### `replaceJpegData(int $image_id, string $jpeg [, string $alpha]): bool`
 
-Replaces bitmap `$image_id` with JPEG data. Without `$alpha` (or with `''`) the
-tag becomes `DefineBitsJPEG2`; with `$alpha` it becomes `DefineBitsJPEG3`, or
-stays `DefineBitsJPEG4` (keeping its `DeblockParam`) if it already was one.
-`$alpha` is uncompressed alpha data in the `getJpegAlpha()` format; swfed
-compresses it. Neither the JPEG data nor the alpha length is checked, so this
-returns `true` for non-JPEG data. Returns `false` if there is no bitmap with that
-ID. Passing `null` as `$alpha` works but raises `E_DEPRECATED` on PHP 8.1+; omit
-it instead.
+ビットマップ `$image_id` を JPEG データで置き換えます。`$alpha` が無い（または
+`''` の）場合、タグは `DefineBitsJPEG2` になります。`$alpha` がある場合は
+`DefineBitsJPEG3` になります。すでに `DefineBitsJPEG4` だった場合は、
+`DefineBitsJPEG4` のまま（`DeblockParam` を保ったまま）です。`$alpha` は、
+`getJpegAlpha()` の形式の、展開されたアルファのデータで、swfed が圧縮します。
+JPEG データもアルファの長さも検査しないので、JPEG ではないデータでも `true` を
+返します。その ID のビットマップが無ければ `false` を返します。`$alpha` に
+`null` を渡しても動きますが、PHP 8.1 以降では `E_DEPRECATED` になるので、
+省略してください。
 
 #### `getPNGData(int $image_id): string|false`
 
-Returns a `DefineBitsLossless`/`2` tag as a PNG file. Returns `false` for other
-tags and for 15-bit (format 4) bitmaps.
+`DefineBitsLossless` / `2` タグを PNG ファイルとして返します。ほかのタグと、
+15 ビット（format 4）のビットマップでは `false` を返します。
 
 #### `replacePNGData(int $image_id, string $png [, array $options]): bool`
 
-Replaces bitmap `$image_id` with a PNG image:
+ビットマップ `$image_id` を PNG 画像で置き換えます。
 
-| PNG | result |
+| PNG | 結果 |
 |---|---|
-| palette | format 3; `DefineBitsLossless2` if it has transparency (tRNS), else `DefineBitsLossless` |
-| RGB | `DefineBitsLossless`, format 5 (format 4 with `rgb15`) |
-| RGB + alpha | `DefineBitsLossless2`, format 5 |
+| パレット | format 3。透明（tRNS）があれば `DefineBitsLossless2`、なければ `DefineBitsLossless` |
+| RGB | `DefineBitsLossless`、format 5（`rgb15` では format 4） |
+| RGB + アルファ | `DefineBitsLossless2`、format 5 |
 
-Grayscale PNGs and PNGs with more than 8 bits per channel are not supported.
-Option keys:
+グレースケールの PNG と、1 チャンネルが 8 ビットより大きい PNG はサポートして
+いません。オプションのキー:
 
-- `rgb15` (bool): store an RGB PNG as 15-bit color (format 4). Ignored, with an
-  error message (see Errors), for other PNG types.
+- `rgb15`（bool）: RGB の PNG を 15 ビットカラー（format 4）で保存します。ほかの
+  種類の PNG では、エラーメッセージ（「エラー」を参照）を出して無視します。
 
-If given, `$options` must be an array; `null` throws `TypeError`.
-Returns `false` if there is no bitmap with that ID or the PNG cannot be converted.
+`$options` を指定するときは配列でなければならず、`null` は `TypeError` を
+投げます。その ID のビットマップが無いか、PNG を変換できなければ `false` を
+返します。
 
 #### `replaceGIFData(int $image_id, string $gif): bool`
 
-Replaces bitmap `$image_id` with the first image of a GIF file
-(`DefineBitsLossless`, format 3; `DefineBitsLossless2` if the GIF has a
-transparent color). Returns `false` if there is no bitmap with that ID or the GIF
-cannot be read.
+ビットマップ `$image_id` を、GIF ファイルの最初の画像で置き換えます
+（`DefineBitsLossless`、format 3。GIF に透明色があれば `DefineBitsLossless2`）。
+その ID のビットマップが無いか、GIF を読めなければ `false` を返します。
 
 #### `replaceBitmapData(int|array $target, string $data [, string $alpha [, bool|array $options]]): bool`
 
-Detects whether `$data` is JPEG, PNG or GIF from its signature and replaces the
-bitmap like `replaceJpegData()`, `replacePNGData()` or `replaceGIFData()`.
+`$data` が JPEG、PNG、GIF のどれかをシグネチャから判別して、
+`replaceJpegData()`、`replacePNGData()`、`replaceGIFData()` と同じようにビットマップを
+置き換えます。
 
-`$target` is a character ID (non-array values are converted to int) or an array
-of conditions. With conditions, the first bitmap tag in file order that matches
-all given keys is replaced:
+`$target` は、キャラクター ID（配列でない値は int に変換されます）か、条件の
+配列です。条件を指定した場合は、指定したキーのすべてに合う、ファイルの順で最初の
+ビットマップタグが置換されます。
 
-| key | match |
+| キー | 一致の条件 |
 |---|---|
-| `width`, `height` | exact size in pixels |
-| `red`, `green`, `blue` | color of the first pixel, within ±10. Only lossless bitmaps can match these. |
+| `width`、`height` | ピクセル単位のサイズが完全に一致 |
+| `red`、`green`、`blue` | 最初のピクセルの色が、±10 の範囲で一致。ロスレスのビットマップだけが一致しうる |
 
-`$alpha` is used for JPEG data only. To pass `$options` without alpha data,
-pass `''` as `$alpha` (`null` raises `E_DEPRECATED` on PHP 8.1+).
+`$alpha` は、JPEG データのときだけ使います。アルファのデータなしで `$options` を
+渡すには、`$alpha` に `''` を渡します（`null` は PHP 8.1 以降で `E_DEPRECATED` に
+なります）。
 
-`$options` is either a bool (same as `without_converting`) or an array with the
-keys:
+`$options` は、bool（`without_converting` と同じ）か、次のキーを持つ配列です。
 
-- `without_converting` (bool): store the file bytes unchanged in a
-  `DefineBitsJPEG2` tag (JPEG, PNG or GIF; PNG and GIF in this tag are a
-  SWF 8 feature). `$alpha` and `rgb15` are ignored.
-- `rgb15` (bool): as for `replacePNGData()`.
+- `without_converting`（bool）: ファイルのバイト列をそのまま `DefineBitsJPEG2`
+  タグに保存します（JPEG、PNG、GIF。このタグの中の PNG と GIF は SWF 8 の機能です）。
+  `$alpha` と `rgb15` は無視します。
+- `rgb15`（bool）: `replacePNGData()` と同じです。
 
-Returns `false` on failure. These cases also raise `E_WARNING`: unknown image
-format ("Unknown Bitmap Format"), no bitmap matching the conditions, and `null`
-as `$target`.
+失敗すると `false` を返します。次の場合は `E_WARNING` も出します。画像の形式が
+不明（"Unknown Bitmap Format"）、条件に合うビットマップが無い、`$target` が `null`。
 
 #### `convertBitmapDataToJpegTag(): bool`
 
-Converts every top-level `DefineBitsLossless`/`2` tag into a `DefineBitsJPEG2`
-tag that holds the image as PNG (lossless; needs SWF 8 / Flash Player 8 to
-display). Bitmaps that cannot be converted are left unchanged. Always returns
-`true`.
+最上位のすべての `DefineBitsLossless` / `2` タグを、画像を PNG として保持する
+`DefineBitsJPEG2` タグに変換します（ロスレスで、表示には SWF 8 / Flash Player 8 が
+必要です）。変換できないビットマップは変更しません。常に `true` を返します。
 
-### Sounds
+### サウンド
 
 #### `getSoundData(int $sound_id): string|false`
 
-Returns the sound data of the `DefineSound` tag `$sound_id`: the bytes after the
-tag's format fields, in the tag's own format (for MP3 this starts with the 2-byte
-SeekSamples field). Use `getTagDetail()` for the format and rate. Returns `false`
-if not found.
+`DefineSound` タグ `$sound_id` のサウンドデータを返します。タグのフォーマットの
+フィールドより後ろのバイト列で、タグ自身のフォーマットのままです（MP3 では、
+先頭の 2 バイトが SeekSamples フィールドです）。フォーマットとレートは
+`getTagDetail()` で調べてください。見つからなければ `false` を返します。
 
 #### `replaceMLDData(int $sound_id, string $mld): bool`
 
-Replaces the data of `DefineSound` `$sound_id` with MLD (i-mode melody) data and
-sets the sound format to 15 (device sound, used by Flash Lite), rate 0, 8-bit,
-mono, sample count 0. The data is not checked. Returns `false` if not found.
+`DefineSound` `$sound_id` のデータを MLD（i モードのメロディ）のデータで置き換え、
+サウンドのフォーマットを 15（Flash Lite が使うデバイスサウンド）、レートを 0、
+8 ビット、モノラル、サンプル数を 0 にします。データは検査しません。見つからなければ
+`false` を返します。
 
-### Text fields
+### テキストフィールド
 
 #### `getEditString(string $name): string|null|false`
 
-Returns the initial text of the first `DefineEditText` whose variable name is
-exactly `$name`. If the variable name does not match, `$name` is also tried as a
-decimal character ID (e.g. `"2"`). Returns `null` if the matching field has no
-initial text (or no movie is loaded), and `false` if no field matches. The text
-is returned as stored (see "Strings and character encoding").
+変数名が `$name` に完全に一致する、最初の `DefineEditText` の初期テキストを
+返します。変数名が一致しなければ、`$name` を 10 進のキャラクター ID（たとえば
+`"2"`）としても試します。一致したフィールドに初期テキストが無い（またはムービーを
+読み込んでいない）場合は `null` を、どのフィールドにも一致しない場合は `false` を
+返します。テキストは保存されているとおりに返します（「文字列と文字エンコーディング」を
+参照）。
 
 #### `replaceEditString(string $name, string $text): bool`
 
-Sets the initial text of every `DefineEditText` that matches `$name` (same rule
-as `getEditString()`). An empty `$text` removes the initial text. Returns `false`
-if no field matches.
+`$name` に一致するすべての `DefineEditText`（規則は `getEditString()` と同じ）の
+初期テキストを設定します。`$text` が空だと、初期テキストを削除します。どの
+フィールドにも一致しなければ `false` を返します。
 
-### Actions (ActionScript 1/2)
+### アクション（ActionScript 1/2）
 
 #### `getActionData(int $index): string|false`
 
-Returns the action bytecode of the `DoAction` or `DoInitAction` tag at
-`$index` (for `DoInitAction`, without the sprite ID). Returns `false` if the tag
-is not an action tag.
+`$index` の `DoAction` または `DoInitAction` タグのアクションのバイトコードを返します
+（`DoInitAction` では、スプライト ID を除きます）。アクションのタグでなければ
+`false` を返します。
 
 #### `disasmActionData(string $bytecode): bool`
 
-Prints a disassembly of `$bytecode` (e.g. from `getActionData()`) through the PHP
-output, one action per line. Does not use the loaded movie. Always returns `true`.
+`$bytecode`（たとえば `getActionData()` の結果）の逆アセンブルを、1 行に 1 つの
+アクションで、PHP の出力に表示します。読み込んだムービーは使いません。常に
+`true` を返します。
 
 #### `setActionVariables(array $vars): bool`
 
-For each `key => value` pair, in array order, inserts the bytecode for
-`key = value` at the start of the first frame: into the first `DoAction` tag of
-that frame, or into a new `DoAction` tag if the frame has none. Keys and values
-are converted to strings. Returns `false` if no movie is loaded or a key or
-value is longer than 65533 bytes.
+`key => value` の組ごとに、配列の順で、`key = value` のバイトコードを、最初の
+フレームの先頭に挿入します。そのフレームの最初の `DoAction` タグの中に入れ、
+無ければ新しい `DoAction` タグを作ります。キーと値は文字列に変換されます。ムービーを
+読み込んでいない場合や、キーまたは値が 65533 バイトより長い場合は、`false` を
+返します。
 
 #### `replaceActionStrings(array $map): bool`
 
-Replaces every string in ActionScript bytecode that is exactly equal to a key of
-`$map` (byte comparison, whole strings only) with the corresponding value.
-Strings in `Push`, `ConstantPool` and `GetURL` (URL and target) are handled, in
-`DoAction` / `DoInitAction` tags at the top level and inside `DefineSprite`.
-Button actions and clip event actions are not changed. Returns `true` also when
-nothing matched; `false` on broken bytecode or if an action would grow beyond
-65535 bytes.
+ActionScript のバイトコードの中の、`$map` のキーと完全に等しい（バイトの比較で、
+文字列全体だけ）すべての文字列を、対応する値に置き換えます。最上位と
+`DefineSprite` の中の、`DoAction` / `DoInitAction` タグにある、`Push`、
+`ConstantPool`、`GetURL`（URL とターゲット）の文字列を扱います。ボタンのアクションと
+クリップイベントのアクションは変更しません。何も一致しなかったときも `true` を
+返します。バイトコードが壊れている場合や、アクションが 65535 バイトを超えて
+しまう場合は、`false` を返します。
 
-### Movie clips
+### ムービークリップ
 
 #### `replaceMovieClip(string $target, string $swf [, bool $unused_cid_purge]): bool`
 
-Finds the `PlaceObject2` tag whose instance name is exactly `$target` and replaces
-the contents of the `DefineSprite` it places with the main timeline of `$swf`
-(a complete SWF file). Nested clips are given as a path, `"parent/child"`; each
-level is looked up inside the previous sprite.
+インスタンス名が `$target` に完全に一致する `PlaceObject2` タグを探し、それが配置
+している `DefineSprite` の中身を、`$swf`（完全な SWF ファイル）のメインタイムラインで
+置き換えます。入れ子のクリップは、`"parent/child"` のようにパスで指定します。
+各階層は、前のスプライトの中から探します。
 
-- Character tags of `$swf` (shapes, bitmaps, fonts, texts, sounds, buttons,
-  sprites, ...) are inserted before the sprite, with their character IDs
-  renumbered so they do not collide with existing ones.
-- Control tags (`ShowFrame`, `PlaceObject`/`2`, `RemoveObject`/`2`, `DoAction`,
-  `DoInitAction`, `StartSound`, `FrameLabel`, `End`) become the sprite's
-  timeline; the frame count is the number of `ShowFrame` tags.
-- Other tags (`SetBackgroundColor`, `FileAttributes`, `ExportAssets`,
-  `JPEGTables`, `CSMTextSettings`, `FreeCharacter` and tag types swfed does not
-  know) and the header of `$swf` are dropped.
-- The old characters stay in the file; call `purgeUselessContents()` to remove
-  unused shapes and bitmaps.
+- `$swf` のキャラクタータグ（シェイプ、ビットマップ、フォント、テキスト、サウンド、
+  ボタン、スプライトなど）は、スプライトの前に挿入され、キャラクター ID は、
+  既存のものとぶつからないように振り直されます。
+- 制御タグ（`ShowFrame`、`PlaceObject` / `2`、`RemoveObject` / `2`、`DoAction`、
+  `DoInitAction`、`StartSound`、`FrameLabel`、`End`）は、スプライトのタイムライン
+  になります。フレーム数は `ShowFrame` タグの数です。
+- ほかのタグ（`SetBackgroundColor`、`FileAttributes`、`ExportAssets`、
+  `JPEGTables`、`CSMTextSettings`、`FreeCharacter`、swfed が知らない種類のタグ）と、
+  `$swf` のヘッダは捨てられます。
+- 古いキャラクターはファイルに残ります。使われていないシェイプとビットマップを
+  削除するには、`purgeUselessContents()` を呼んでください。
 
-`$unused_cid_purge` is accepted but ignored (passing `null` raises `E_DEPRECATED`
-on PHP 8.1+). Returns `false` if `$target` is not found or `$swf` cannot be
-parsed.
+`$unused_cid_purge` は受け付けますが、無視します（`null` を渡すと、PHP 8.1 以降では
+`E_DEPRECATED` になります）。`$target` が見つからないか、`$swf` を解析できなければ
+`false` を返します。
 
-### Other
+### その他
 
 #### `static getLastError(): ?string`
 
-Returns the messages that the C code produced during the last `SWFEditor` method
-call (one per line), or `null` if there were none. Every method clears them
-when it starts, also when it returns early because of a wrong argument, so they
-never come from an earlier call. `clone` clears them too; the constructor and
-`getLastError()` itself do not. It does not depend on `swfed.error_output`. A method can return
-`false` with no message (for example `getTagDetail()` for a tag it cannot
-describe), so the result may be `null` even after a failure.
+直前の `SWFEditor` のメソッド呼び出しの間に C のコードが出したメッセージを、
+1 行に 1 つで返します。無ければ `null` を返します。すべてのメソッドは、開始時に
+メッセージを消します。引数が間違っていて早く戻る場合も同じなので、メッセージが
+以前の呼び出しのものになることはありません。`clone` も消します。コンストラクタと
+`getLastError()` 自身は消しません。`swfed.error_output` には関係ありません。
+メソッドは、メッセージ無しで `false` を返すことがあります（たとえば、説明できない
+タグに対する `getTagDetail()`）。そのため、失敗のあとでも結果が `null` に
+なることがあります。
 
 #### `_destroy_and_exit(): bool`
 
-Debug leftover. Does nothing and returns `true`.
+デバッグ用の名残です。何もせず、`true` を返します。
 
-## Samples
+## サンプル
 
-The `sample/` directory has small command line scripts, one per feature. Most
-take an SWF file and write the result to stdout, e.g.
+`sample/` ディレクトリには、機能ごとに 1 つずつ、小さなコマンドラインのスクリプトが
+あります。多くは SWF ファイルを受け取り、結果を標準出力に書き出します。たとえば:
 
 ```sh
 php sample/swfreplacebitmapdata.php input.swf 1 new.png > output.swf
 ```
 
-| script | what it does |
+| スクリプト | 内容 |
 |---|---|
-| `swfdump.php` | print the header and all tags (`swfInfo()`) |
-| `swfgetheaderinfo.php`, `swfsetheaderinfo.php` | read / change header fields |
-| `swfcompress.php` | compress an SWF (`-u` to uncompress) |
-| `swfreplacebitmapdata.php` | replace a bitmap with a JPEG, PNG or GIF file (+ optional alpha file) |
-| `swfreplacebitmapdata2.php` | the same with `without_converting` / `rgb15` options |
-| `swfreplacejpegdata.php`, `swfreplacepngdata.php`, `swfreplacegifdata.php` | format-specific replacement |
-| `swfgetjpegdata.php`, `swfgetjpegalphadata.php`, `swfgetpngdata.php` | extract a bitmap |
-| `swfgeteditstring.php`, `swfreplaceeditstring.php` | read / replace text field contents |
-| `swfsetactionvariables.php`, `swfreplaceactionstrings.php` | inject variables / replace action strings |
-| `swfreplacemovieclip.php` | replace a movie clip with another SWF |
-| `swfgetshapedata.php`, `swfreplaceshapedata.php` | extract / replace a shape |
-| `swfremovetag.php`, `swfpurgeuselesscontents.php`, `swfrebuild.php` | tag maintenance |
+| `swfdump.php` | ヘッダとすべてのタグを表示する（`swfInfo()`） |
+| `swfgetheaderinfo.php`、`swfsetheaderinfo.php` | ヘッダのフィールドを読む / 変更する |
+| `swfcompress.php` | SWF を圧縮する（`-u` で展開） |
+| `swfreplacebitmapdata.php` | ビットマップを JPEG、PNG、GIF のファイルで置換する（+ 任意のアルファのファイル） |
+| `swfreplacebitmapdata2.php` | 同じことを、`without_converting` / `rgb15` オプションで行う |
+| `swfreplacejpegdata.php`、`swfreplacepngdata.php`、`swfreplacegifdata.php` | 形式ごとの置換 |
+| `swfgetjpegdata.php`、`swfgetjpegalphadata.php`、`swfgetpngdata.php` | ビットマップを取り出す |
+| `swfgeteditstring.php`、`swfreplaceeditstring.php` | テキストフィールドの内容を読む / 置換する |
+| `swfsetactionvariables.php`、`swfreplaceactionstrings.php` | 変数を注入する / アクションの文字列を置換する |
+| `swfreplacemovieclip.php` | ムービークリップを別の SWF で置換する |
+| `swfgetshapedata.php`、`swfreplaceshapedata.php` | シェイプを取り出す / 置換する |
+| `swfremovetag.php`、`swfpurgeuselesscontents.php`、`swfrebuild.php` | タグの整理 |
 
-The tests in `src/tests/*.phpt` are also short usage examples.
+`src/tests/*.phpt` のテストも、短い使用例になっています。
 
-## Demo pages (`www/`)
+## デモページ（`www/`）
 
-The PHP pages in `www/` upload a SWF, list its images and shapes, and replace
-an image. Try them with PHP's built-in server (the extension has to be loaded):
+`www/` の PHP ページは、SWF をアップロードし、その画像とシェイプを一覧し、画像を
+置換します。PHP の組み込みサーバーで試せます（拡張モジュールを読み込む必要が
+あります）。
 
 ```
 cd www
 php -d extension=swfed -S 127.0.0.1:8000
 ```
 
-The pages show SWF files, which need Flash Player when they are shown with
-`<object>` / `<embed>`, and no current browser runs it. So they play the SWF
-with [Flapp](https://github.com/yoya/Flapp), a player written in JavaScript
-(the `<flapp-player>` element). `flapp.js` is loaded from jsDelivr, pinned to a
-commit. The SWF is shown at the size of its stage and starts playing without a
-click.
+ページは SWF ファイルを表示します。`<object>` / `<embed>` で表示するには Flash
+Player が必要ですが、今のブラウザはそれを実行できません。そのため、JavaScript で
+書かれたプレーヤー [Flapp](https://github.com/yoya/Flapp)（`<flapp-player>` 要素）で
+SWF を再生します。`flapp.js` は、コミットに固定した jsDelivr から読み込みます。
+SWF はステージの大きさで表示され、クリックしなくても再生が始まります。
 
-| environment variable | |
+| 環境変数 | |
 |---|---|
-| `SWFED_PLAYER=none` | Nothing is loaded: `<object>` / `<embed>` are used as they are (for a browser that still has Flash Player). |
-| `SWFED_PLAYER_URL` | URL (`http(s)://...` or a path) of your own copy of `flapp.js`, for a network that can't reach jsDelivr. |
+| `SWFED_PLAYER=none` | 何も読み込まず、`<object>` / `<embed>` をそのまま使う（まだ Flash Player があるブラウザ向け） |
+| `SWFED_PLAYER_URL` | 自前の `flapp.js` のコピーの URL（`http(s)://...` またはパス）。jsDelivr に届かないネットワーク向け |
 
-Uploaded files are kept in `swfed-<uid>/` under the system temporary directory
-(see `SWFED_TMP_DIR` in `www/define.php`) and removed after an hour.
+アップロードされたファイルは、システムの一時ディレクトリの下の `swfed-<uid>/` に
+保存され（`www/define.php` の `SWFED_TMP_DIR` を参照）、1 時間後に削除されます。
 
-## Links
+## リンク
 
-- Repository: https://github.com/yoya/swfed
+- リポジトリ: https://github.com/yoya/swfed
 - Issues: https://github.com/yoya/swfed/issues
 
-Historical links (the project used to be hosted on OSDN; these pages may no
-longer be available, and the blog articles are in Japanese):
+過去のリンク（このプロジェクトはかつて OSDN にありました。これらのページはもう
+見られないかもしれません）:
 
-- OSDN project: https://osdn.jp/projects/swfed/
-- Demo: http://app.awm.jp/swfed/
-- Articles: replace JPEG http://diary.awm.jp/~yoya/?20080331#200803311,
-  replace alpha http://diary.awm.jp/~yoya/?20080514#200805141,
-  adjust bitmap http://diary.awm.jp/~yoya/?20101027#201010270,
-  action bytecode http://diary.awm.jp/~yoya/?20101130#201011300,
-  replace shape http://diary.awm.jp/~yoya/?20110203#201102030,
-  replace movie clip http://diary.awm.jp/~yoya/?20110319#201103190,
-  replace bitmap http://diary.awm.jp/~yoya/?20110623#201106231
+- OSDN プロジェクト: https://osdn.jp/projects/swfed/
+- デモ: http://app.awm.jp/swfed/
+- 記事:
+  - JPEG の置換: http://diary.awm.jp/~yoya/?20080331#200803311
+  - アルファの置換: http://diary.awm.jp/~yoya/?20080514#200805141
+  - ビットマップの調整: http://diary.awm.jp/~yoya/?20101027#201010270
+  - アクションのバイトコード: http://diary.awm.jp/~yoya/?20101130#201011300
+  - シェイプの置換: http://diary.awm.jp/~yoya/?20110203#201102030
+  - ムービークリップの置換: http://diary.awm.jp/~yoya/?20110319#201103190
+  - ビットマップの置換: http://diary.awm.jp/~yoya/?20110623#201106231
 
-## License
+## ライセンス
 
-`src/php_swfed.c` and `src/php_swfed.h` are under the PHP License 3.01, as stated
-in their headers. The other source files carry only an author line.
+`src/php_swfed.c` と `src/php_swfed.h` は、ヘッダに書かれているとおり、
+PHP License 3.01 です。ほかのソースファイルには、作者の行だけがあります。
 
-## Author
+## 作者
 
 Yoshihiro Yamazaki

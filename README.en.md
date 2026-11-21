@@ -1,5 +1,7 @@
 # swfed - SWF Editor for PHP
 
+English | [日本語](README.md)
+
 swfed is a PHP extension for editing Adobe Flash (SWF) files.
 It provides one class, `SWFEditor`, that loads an SWF from a string,
 inspects and edits it at the tag level, and writes it back to a string.
