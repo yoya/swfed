@@ -41,6 +41,7 @@ extern void swf_action_list_print(swf_action_list_t *act_list,
 
 extern int swf_action_data_print(unsigned char *action_data,
                                  unsigned short action_data_len);
+extern int swf_action_string_length(const char *str, int len);
 extern int swf_action_list_replace_strings(swf_action_list_t *action_list,
                                            int *modified, y_keyvalue_t *kv);
 

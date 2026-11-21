@@ -133,6 +133,17 @@ get_swf_action_info(int action_id) {
     return NULL;
 }
 
+/*
+ * The length of a string that goes into an action: it ends at its first NUL.
+ * The bytes after a NUL would be read as what follows the string in the
+ * action (the next pushed value, the next string of the constant pool).
+ */
+int
+swf_action_string_length(const char *str, int len) {
+    const char *nul = (len > 0) ? memchr(str, '\0', len) : NULL;
+    return nul ? (int) (nul - str) : len;
+}
+
 /* length of NUL-terminated string in [p, end), or -1 if unterminated */
 static long
 _swf_action_strnlen(const unsigned char *p, const unsigned char *end) {
@@ -611,6 +622,7 @@ _swf_action_list_replace_strings(swf_action_list_t *action_list,
                 }
                 value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
                 if (value) {
+                    value_len = swf_action_string_length(value, value_len);
                     bitstream_putstring(bs, (unsigned char *) value, value_len);
                     m = 1;
                 } else {
@@ -638,6 +650,7 @@ _swf_action_list_replace_strings(swf_action_list_t *action_list,
                 }
                 value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
                 if (value) {
+                    value_len = swf_action_string_length(value, value_len);
                     bitstream_putstring(bs, (unsigned char *)value, value_len);
                     m = 1;
                 } else {
@@ -675,6 +688,7 @@ _swf_action_list_replace_strings(swf_action_list_t *action_list,
                 }
                 value = y_keyvalue_get(kv, (char *)token, token_len, &value_len);
                 if (value) {
+                    value_len = swf_action_string_length(value, value_len);
                     bitstream_putstring(bs, (unsigned char *)value, value_len);
                     m = 1;
                 } else {
