@@ -203,7 +203,7 @@ unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,
     jpeg_segment_node_t *node;
     unsigned char *data;
     *length = 0;
-    for (node=jpeg_seg->head ; node ; node=node->next) {
+    for (node = jpeg_seg->live ? jpeg_seg->live : jpeg_seg->head ; node ; node=node->next) {
         if (node->marker == marker) {
             data = node->data_ref;
             *length = node->data_len;
@@ -216,27 +216,25 @@ unsigned char *jpeg_segment_steal_node(jpeg_segment_t *jpeg_seg,
     return NULL;
 }
 
-/* like jpeg_segment_steal_node(), but only nodes before the first stop_marker */
-unsigned char *jpeg_segment_steal_node_before(jpeg_segment_t *jpeg_seg,
-                                              int marker, int stop_marker,
-                                              unsigned long *length) {
+
+int
+jpeg_segment_move_nodes(jpeg_segment_t *jpeg_seg, jpeg_segment_t *to,
+                        int marker, int stop_marker) {
     jpeg_segment_node_t *node;
-    unsigned char *data;
-    *length = 0;
+    int count = 0;
     for (node=jpeg_seg->head ; node ; node=node->next) {
-        if (node->marker == stop_marker) {
+        if ((stop_marker != -1) && (node->marker == stop_marker)) {
             break;
         }
         if (node->marker == marker) {
-            data = node->data_ref;
-            *length = node->data_len;
+            jpeg_segment_append(to, marker, node->data_ref, node->data_len);
             node->marker = -1; // remove mark;
             node->data_ref = NULL;
             node->data_len = 0;
-            return data;
+            count ++;
         }
     }
-    return NULL;
+    return count;
 }
 
 int
@@ -257,10 +255,11 @@ jpeg_segment_delete_node(jpeg_segment_t *jpeg_seg, int marker) {
 int
 jpeg_segment_peek_marker(jpeg_segment_t *jpeg_seg) {
     jpeg_segment_node_t *node;
-    for (node=jpeg_seg->head ; node ; node=node->next) {
+    for (node = jpeg_seg->live ? jpeg_seg->live : jpeg_seg->head ; node ; node=node->next) {
         if (node->marker != -1) {
+            jpeg_seg->live = node; // the nodes before it are removed
             return node->marker;
-        }     
+        }
     }
     return -1;
 }
