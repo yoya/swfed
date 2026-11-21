@@ -172,6 +172,9 @@ swf_tag_action_top_append_varibles(swf_tag_t *tag, y_keyvalue_t *kv) {
             break;
         }
         value = y_keyvalue_get_currentvalue(kv, &value_len);
+        // a NUL ends the string: what follows it must not become another pushed value
+        key_len = swf_action_string_length(key, key_len);
+        value_len = swf_action_string_length(value, value_len);
 
         // Push Data(key), Push Data(value), Set Variable.
         // But reversible order for append top method.
