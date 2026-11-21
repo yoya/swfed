@@ -1,6 +1,11 @@
 name: windows
 
-on: [workflow_dispatch, push, pull_request]
+# a pull request used to run every job twice (push and pull_request)
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+  pull_request:
 
 jobs:
   build:
