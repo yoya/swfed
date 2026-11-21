@@ -294,6 +294,27 @@ swf_tag_edit_destroy_detail(swf_tag_t *tag) {
     return ;
 }
 
+/*
+ * A name that matches no variable name is tried as a character ID, but only
+ * when all of it is decimal digits ("12"). atoi() would also take "12abc",
+ * " 12" or "12.5" as 12, and any other name as 0.
+ */
+static int
+_swf_tag_edit_name_is_id(const char *name, int name_len, int edit_id) {
+    long id = 0;
+    int i;
+    if ((name_len < 1) || (name_len > 5)) { // up to 65535
+        return 0;
+    }
+    for (i = 0 ; i < name_len ; i++) {
+        if ((name[i] < '0') || (name[i] > '9')) {
+            return 0;
+        }
+        id = id * 10 + (name[i] - '0');
+    }
+    return id == edit_id;
+}
+
 char *
 swf_tag_edit_get_string(void *detail,
                         char *variable_name, int variable_name_len,
@@ -304,7 +325,7 @@ swf_tag_edit_get_string(void *detail,
     *error = 0;
 
     if ((strlen(swf_tag_edit->edit_variable_name) != (unsigned)variable_name_len) || strncmp(swf_tag_edit->edit_variable_name, variable_name, variable_name_len)) {
-        if (atoi(variable_name) != swf_tag_edit->edit_id) {
+        if (! _swf_tag_edit_name_is_id(variable_name, variable_name_len, swf_tag_edit->edit_id)) {
             *error = 1;
             return NULL;
         }
@@ -333,7 +354,7 @@ swf_tag_edit_replace_string(void *detail,
     if (((int) strlen(swf_tag_edit->edit_variable_name) != variable_name_len)
         || memcmp(swf_tag_edit->edit_variable_name, variable_name,
                   variable_name_len)) {
-        if (atoi(variable_name) != swf_tag_edit->edit_id) {
+        if (! _swf_tag_edit_name_is_id(variable_name, variable_name_len, swf_tag_edit->edit_id)) {
             return 1;
         }
     }
