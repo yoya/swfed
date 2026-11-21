@@ -22,14 +22,15 @@ copied through unchanged.
 ## Requirements
 
 - PHP 7.2 or later, with `phpize` (usually in the `php-dev` / `php-devel` package).
-  CI builds and tests PHP 7.2, 8.0 and 8.3.
+  CI builds and tests PHP 7.2, 8.0, 8.3, 8.4 and 8.5 on Linux (also with UBSan and
+  valgrind), and PHP 8.3 on Windows.
 - zlib, with headers. `configure` stops if it is not found.
 - libpng, giflib and liblzma (xz), with headers. They are optional: without one of
   them, `configure` only warns and builds without that feature (PNG, GIF, or
   reading and writing LZMA-compressed `ZWS` files).
   - Debian / Ubuntu: `apt-get install zlib1g-dev libpng-dev libgif-dev liblzma-dev`
   - Homebrew: `brew install zlib libpng giflib xz`
-- A Unix-like OS (Linux, macOS, *BSD). Windows builds are not covered by CI.
+- A Unix-like OS (Linux, macOS, *BSD), or Windows (`src/config.w32`).
 
 ## Build and install
 
@@ -117,7 +118,7 @@ ID, not a tag index. Keep this in mind if you call them with named arguments.
 
 Sizes and positions (`getHeaderInfo()`, `getBitmapSize()`, the `trans_x` /
 `trans_y` arguments) are in pixels. SWF stores twips (1 pixel = 20 twips);
-`getHeaderInfo()` truncates to whole pixels.
+`getHeaderInfo()` returns a float when a value is not a whole number of pixels.
 
 ### Strings and character encoding
 
@@ -151,11 +152,8 @@ Strings in SWF are NUL-terminated, so a NUL byte in a new string cuts it short.
   stderr. They are then not PHP warnings, so `error_reporting()`, `@` and error
   handlers do not see them.
 - A few failures raise a PHP `E_WARNING` and return `false`; they are listed
-  with the methods below. Passing `null` as the first argument of
-  `replaceBitmapData()`, `applyShapeMatrixFactor()`, `applyShapeRectFactor()`,
-  `getSoundData()`, `replaceMLDData()`, `getEditString()`,
-  `replaceEditString()` or `replaceMovieClip()` gives the warning
-  "1st arg must be not NULL".
+  with the methods below. A tag index that is negative or over 2147483647, and
+  a character ID that is not between 0 and 65535, do so in every method.
 - Wrong argument types or counts throw `TypeError` / `ArgumentCountError` on
   PHP 8. On PHP 7 they raise a warning and the method returns `false` or `null`.
 - `swfInfo()`, `printTagData()` and `disasmActionData()` print through the PHP
@@ -166,10 +164,7 @@ Strings in SWF are NUL-terminated, so a NUL byte in a new string cuts it short.
   can therefore call methods of the same `SWFEditor`, even `input()`. An
   exception thrown there drops the output that has not been written yet
   (`getLastError()` still has the messages).
-- If a `replace*Data()` call fails, the target bitmap tag may already have been
-  changed (for example its tag type switched) and can be left broken; a tag left
-  with no data at all is silently left out of `output()`. Keep the original SWF
-  and call `input()` again after a failed replace.
+- If a `replace*Data()` call fails, the target bitmap tag is left as it was.
 
 #### `swfed.error_output`
 
@@ -245,8 +240,8 @@ needs a build with liblzma; without it a `ZWS` file makes `input()` return `fals
 is not `FWS` / `CWS` / `ZWS`, or decompression fails (for a `ZWS`: damaged or
 truncated LZMA data, or a size that does not match the header's file length); the
 previously loaded movie is then kept.
-Truncated tag data is not an error: parsing stops at the first incomplete tag and
-`true` is returned.
+A tag that is cut off, and data that ends before the file length of the header,
+also make it return `false`. Only a missing `End` tag at the very end is accepted.
 
 #### `output(): string|false`
 
@@ -265,7 +260,7 @@ Returns:
 | `compress` | bool | `true` for `CWS` and `ZWS`, `false` for `FWS` |
 | `lzma` | bool | `true` for `ZWS` (LZMA), `false` for `FWS` and `CWS` |
 | `version` | int | SWF version |
-| `x_min`, `y_min`, `x_max`, `y_max` | int | frame rectangle in pixels |
+| `x_min`, `y_min`, `x_max`, `y_max` | int\|float | frame rectangle in pixels (a float when it is not a whole number) |
 
 Frame rate and frame count are not returned. Before `input()` all values are
 0 / `false`.
@@ -314,12 +309,12 @@ to the input.
 
 #### `purgeUselessContents(): bool`
 
-Removes shape (`DefineShape`, `DefineShape2`, `DefineShape3`, `DefineMorphShape`)
-and bitmap (`DefineBits*`) tags that are not used by any `PlaceObject` /
-`PlaceObject2`, directly or through a shape, button or placed sprite. Other
-character types (sprites, fonts, texts, sounds, ...) are kept. `ExportAssets`
-is not taken into account, so shapes and bitmaps that are only used through a
-linkage name (e.g. `BitmapData.loadBitmap()`) are removed too. Returns `true`.
+Removes shape (`DefineShape`, `DefineShape2`, `DefineShape3`, `DefineShape4`,
+`DefineMorphShape`, `DefineMorphShape2`) and bitmap (`DefineBits*`) tags that are
+not used by any `PlaceObject` / `PlaceObject2` / `PlaceObject3`, directly or
+through a shape, button or placed sprite, and are not exported (`ExportAssets` /
+`SymbolClass`, e.g. for `BitmapData.loadBitmap()`). Other character types
+(sprites, fonts, texts, sounds, ...) are kept. Returns `true`.
 
 ### Tags
 
@@ -332,10 +327,10 @@ Returns one array per top-level tag, in file order:
 | `code` | int | tag type |
 | `tag` | int | same as `code` |
 | `tagName` | string | tag name; missing for tag types swfed does not know |
-| `length` | int | tag body length in bytes, without the tag header. `0` for tags edited since the last `input()` / `output()` |
-| `detail` | bool | `true` if swfed has a parser for this tag type; missing otherwise |
+| `length` | int | tag body length in bytes, without the tag header |
+| `detail` | bool | `true` if `getTagDetail()` can describe this tag type; missing otherwise |
 
-#### `getTagDetail(int $index): array|false|null`
+#### `getTagDetail(int $index): array|false`
 
 Returns parsed information about the tag at `$index`. Keys by tag type:
 
@@ -347,27 +342,22 @@ Returns parsed information about the tag at `$index`. Keys by tag type:
 | DoAction (12), DoInitAction (59) | `action_list_count` (missing if empty), `action_sprite` (DoInitAction only) |
 | DefineEditText (37) | `edit_id`, `variable_name` and `initial_text` (each only if not empty) |
 | DefineSprite (39) | `sprite_id`, `frame_count` |
-| DefineShape (2), DefineShape2 (22), DefineShape3 (32), DefineMorphShape (46) | `shape_id`, `fill_styles.count`, `line_styles.count`, `bitmap_ref` (list of referenced bitmap IDs; missing if none) |
+| DefineShape (2), DefineShape2 (22), DefineShape3 (32), DefineShape4 (83), DefineMorphShape (46), DefineMorphShape2 (84) | `shape_id`, `fill_styles.count`, `line_styles.count`, `bitmap_ref` (list of referenced bitmap IDs; missing if none) |
 | PlaceObject (4), PlaceObject2 (26) | `character_id` (PlaceObject2: only if set), `depth`, `name` (only if set) |
 
-Returns `false` if `$index` is out of range or negative, the tag type has no
-parser, or the tag cannot be parsed. Returns `null` for `JPEGTables` (8),
-`DefineButton` (7) and `DefineButton2` (34): `getTagList()` reports `detail` for
-them but no keys are implemented. `DefineShape4` (83) and `DefineMorphShape2` (84)
-also report `detail` but return `false`.
+Returns `false` if `$index` is out of range, the tag type is not in this table
+(`getTagList()` has no `detail` for it), or the tag cannot be parsed.
 
 #### `getTagData(int $index): string|false`
 
 Returns the complete tag at `$index` (tag header and body) as `output()` would
-write it. Returns `false` if `$index` is out of range. A negative `$index` is
-treated as 0.
+write it. Returns `false` if `$index` is out of range.
 
 #### `replaceTagData(int $index, string $data): bool`
 
 Replaces the tag at `$index` with `$data`, which must be one complete tag
 (header and body, e.g. from `getTagData()`). Only the tag header is checked.
 Returns `false` if `$index` is out of range or `$data` is not a complete tag.
-A negative `$index` is treated as 0.
 
 #### `getTagDataByCID(int $cid): string|false`
 
@@ -396,8 +386,8 @@ Returns `false` if `$cid` is not found.
 Removes the top-level tag at `$index`. With `$index_in_sprite`, removes the tag at
 that position inside the `DefineSprite` at `$index` instead; `null` or a negative
 value means "not given". Returns `false` if an index is out of range or the tag at
-`$index` is not a `DefineSprite` when `$index_in_sprite` is given. A negative
-`$index` is treated as 0. (The stub calls the second parameter `$index_sprint`.)
+`$index` is not a `DefineSprite` when `$index_in_sprite` is given.
+(The stub calls the second parameter `$index_sprint`.)
 
 #### `printTagData(string $data): bool`
 
@@ -407,8 +397,8 @@ Prints one complete tag (e.g. from `getTagData()`) through the PHP output in the
 #### `isShapeTagData(string $data): bool`
 
 Returns `true` if `$data` is a complete tag whose type is `DefineShape`,
-`DefineShape2`, `DefineShape3` or `DefineMorphShape`. Only the tag header is
-checked. Does not use the loaded movie.
+`DefineShape2`, `DefineShape3`, `DefineShape4`, `DefineMorphShape` or
+`DefineMorphShape2`. Only the tag header is checked. Does not use the loaded movie.
 
 #### `isBitmapTagData(string $data): bool`
 
@@ -417,8 +407,8 @@ Same as `isShapeTagData()` for `DefineBitsJPEG`, `DefineBitsJPEG2`,
 
 ### Shapes
 
-These methods handle `DefineShape`, `DefineShape2`, `DefineShape3` and (for get /
-replace) `DefineMorphShape`. `DefineShape4` is not supported.
+These methods handle `DefineShape`, `DefineShape2`, `DefineShape3`, `DefineShape4`
+and (for get / replace) `DefineMorphShape`, `DefineMorphShape2`.
 
 #### `getShapeData(int $cid): string|false`
 
@@ -500,15 +490,15 @@ Replaces bitmap `$image_id` with JPEG data. Without `$alpha` (or with `''`) the
 tag becomes `DefineBitsJPEG2`; with `$alpha` it becomes `DefineBitsJPEG3`, or
 stays `DefineBitsJPEG4` (keeping its `DeblockParam`) if it already was one.
 `$alpha` is uncompressed alpha data in the `getJpegAlpha()` format; swfed
-compresses it. Neither the JPEG data nor the alpha length is checked, so this
-returns `true` for non-JPEG data. Returns `false` if there is no bitmap with that
-ID. Passing `null` as `$alpha` works but raises `E_DEPRECATED` on PHP 8.1+; omit
-it instead.
+compresses it. Returns `false` if there is no bitmap with that ID, or `$jpeg` is
+not a JPEG (no SOI, a broken segment, or no SOF / SOS). Data after the EOI is
+dropped. The length of `$alpha` is not checked. Passing `null` as `$alpha` works
+but raises `E_DEPRECATED` on PHP 8.1+; omit it instead.
 
 #### `getPNGData(int $image_id): string|false`
 
-Returns a `DefineBitsLossless`/`2` tag as a PNG file. Returns `false` for other
-tags and for 15-bit (format 4) bitmaps.
+Returns a `DefineBitsLossless`/`2` tag as a PNG file (15-bit color, format 4,
+becomes 8 bits per channel). Returns `false` for other tags.
 
 #### `replacePNGData(int $image_id, string $png [, array $options]): bool`
 
@@ -520,7 +510,8 @@ Replaces bitmap `$image_id` with a PNG image:
 | RGB | `DefineBitsLossless`, format 5 (format 4 with `rgb15`) |
 | RGB + alpha | `DefineBitsLossless2`, format 5 |
 
-Grayscale PNGs and PNGs with more than 8 bits per channel are not supported.
+Grayscale is converted to RGB, 16-bit channels are reduced to 8 bits, and the
+transparency (tRNS) of a grayscale or RGB PNG becomes an alpha channel.
 Option keys:
 
 - `rgb15` (bool): store an RGB PNG as 15-bit color (format 4). Ignored, with an
@@ -551,7 +542,7 @@ all given keys is replaced:
 | `red`, `green`, `blue` | color of the first pixel, within ±10. Only lossless bitmaps can match these. |
 
 `$alpha` is used for JPEG data only. To pass `$options` without alpha data,
-pass `''` as `$alpha` (`null` raises `E_DEPRECATED` on PHP 8.1+).
+pass `''` or `null` as `$alpha`.
 
 `$options` is either a bool (same as `without_converting`) or an array with the
 keys:
@@ -562,8 +553,8 @@ keys:
 - `rgb15` (bool): as for `replacePNGData()`.
 
 Returns `false` on failure. These cases also raise `E_WARNING`: unknown image
-format ("Unknown Bitmap Format"), no bitmap matching the conditions, and `null`
-as `$target`.
+format ("Unknown Bitmap Format"), no bitmap matching the conditions, and a
+character ID out of range.
 
 #### `convertBitmapDataToJpegTag(): bool`
 
@@ -629,8 +620,9 @@ value is longer than 65533 bytes.
 Replaces every string in ActionScript bytecode that is exactly equal to a key of
 `$map` (byte comparison, whole strings only) with the corresponding value.
 Strings in `Push`, `ConstantPool` and `GetURL` (URL and target) are handled, in
-`DoAction` / `DoInitAction` tags at the top level and inside `DefineSprite`.
-Button actions and clip event actions are not changed. Returns `true` also when
+`DoAction` / `DoInitAction` tags, in the actions of `DefineButton` /
+`DefineButton2`, and in the clip actions (`onClipEvent`) of `PlaceObject2` /
+`PlaceObject3`, at the top level and inside `DefineSprite`. Returns `true` also when
 nothing matched; `false` on broken bytecode or if an action would grow beyond
 65535 bytes.
 
@@ -638,26 +630,29 @@ nothing matched; `false` on broken bytecode or if an action would grow beyond
 
 #### `replaceMovieClip(string $target, string $swf [, bool $unused_cid_purge]): bool`
 
-Finds the `PlaceObject2` tag whose instance name is exactly `$target` and replaces
+Finds the `PlaceObject2` / `PlaceObject3` tag whose instance name is exactly `$target` and replaces
 the contents of the `DefineSprite` it places with the main timeline of `$swf`
 (a complete SWF file). Nested clips are given as a path, `"parent/child"`; each
 level is looked up inside the previous sprite.
 
-- Character tags of `$swf` (shapes, bitmaps, fonts, texts, sounds, buttons,
-  sprites, ...) are inserted before the sprite, with their character IDs
-  renumbered so they do not collide with existing ones.
-- Control tags (`ShowFrame`, `PlaceObject`/`2`, `RemoveObject`/`2`, `DoAction`,
-  `DoInitAction`, `StartSound`, `FrameLabel`, `End`) become the sprite's
-  timeline; the frame count is the number of `ShowFrame` tags.
-- Other tags (`SetBackgroundColor`, `FileAttributes`, `ExportAssets`,
-  `JPEGTables`, `CSMTextSettings`, `FreeCharacter` and tag types swfed does not
-  know) and the header of `$swf` are dropped.
-- The old characters stay in the file; call `purgeUselessContents()` to remove
-  unused shapes and bitmaps.
+- Definition tags of `$swf` (shapes, bitmaps, fonts, texts, sounds, buttons,
+  sprites, `ExportAssets`, `DoInitAction`, ...) are inserted before the sprite.
+  Their character IDs are renumbered so they do not collide with existing ones,
+  and the references to them follow.
+- Control tags (`ShowFrame`, `PlaceObject`/`2`/`3`, `RemoveObject`/`2`, `DoAction`,
+  `StartSound`, `SoundStreamHead`/`Block`, `FrameLabel`, `End`, ...) become the
+  sprite's timeline; the frame count is the number of `ShowFrame` tags.
+- Movie-level tags (`SetBackgroundColor`, `FileAttributes`, `Metadata`, `Protect`,
+  ...) and the header of `$swf` are dropped. The `JPEGTables` of `$swf` are merged
+  into its `DefineBitsJPEG` tags.
+- The old characters stay in the file. With `$unused_cid_purge` set to `true`,
+  `purgeUselessContents()` is run afterwards.
 
-`$unused_cid_purge` is accepted but ignored (passing `null` raises `E_DEPRECATED`
-on PHP 8.1+). Returns `false` if `$target` is not found or `$swf` cannot be
-parsed.
+Returns `false`, without changing the movie, if `$target` is not found, `$swf`
+cannot be parsed, `$swf` has a tag that cannot go into a sprite (`DoABC`,
+`SymbolClass`, `ImportAssets`, tag types swfed does not know, a `DefineSprite`
+inside a `DefineSprite`), or a tag of `$swf` refers to a character `$swf` does not
+define.
 
 ### Other
 
