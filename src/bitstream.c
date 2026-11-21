@@ -188,7 +188,9 @@ bitstream_steal(bitstream_t *bs, unsigned long *length) {
     }
     data = bs->data;
     *length = bs->data_len;
-    if ((tmp = realloc(data, *length)) == NULL) {
+    /* never realloc() to 0 bytes: it may free the data and return NULL, which
+     * would make an empty stream look like a failure */
+    if ((tmp = realloc(data, *length ? *length : 1)) == NULL) {
         fprintf(stderr, "bitstream_steal: Can't realloc\n");
         return NULL;
     }

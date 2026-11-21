@@ -117,7 +117,11 @@ swf_tag_sprite_output_detail(swf_tag_t *tag, unsigned long *length,
     bitstream_putbytesLE(bs, swf_tag_sprite->sprite_id, 2);
     bitstream_putbytesLE(bs, swf_tag_sprite->frame_count, 2);
     for (_tag=swf_tag_sprite->tag ; _tag ; _tag=_tag->next) {
-        swf_tag_build(bs, _tag, swf);
+        if (swf_tag_build(bs, _tag, swf)) {
+            fprintf(stderr, "swf_tag_sprite_output_detail: swf_tag_build failed (code=%d)\n", _tag->code);
+            bitstream_close(bs);
+            return NULL;
+        }
     }
     data = bitstream_steal(bs, length);
     bitstream_close(bs);
