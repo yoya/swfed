@@ -594,11 +594,12 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
                                   double rotate_rad,
                                   signed int trans_x,
                                   signed int trans_y) {
-    int i, n;
+    int i, n, pass;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
     swf_styles_t *styles;
     swf_fill_style_t *fill_style;
     swf_shape_record_t *shape_record = NULL;
+    swf_matrix_t work;
 
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: detail == NULL\n");
@@ -615,6 +616,9 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_shape_apply_matrix_factor: DefineMorphShape not supported yet\n");
         return 1;
     }
+    /* pass 0 checks, on copies, that every matrix still fits; pass 1 applies:
+     * a failure changes nothing */
+  for (pass = 0 ; pass < 2 ; pass++) {
     styles = &(swf_tag_shape->shape_with_style.styles);
     shape_record = &(swf_tag_shape->shape_with_style.shape_records);
 
@@ -630,23 +634,31 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
             case 0x12: // radial gradient fill
             case 0x13: // focal  gradient fill
                 if (bitmap_id < 0) {
-                    swf_matrix_apply_factor(&(fill_style->gradient.gradient_matrix), scale_x, scale_y,
-                                            rotate_rad, trans_x, trans_y);
+                    work = fill_style->gradient.gradient_matrix;
+                    if (swf_matrix_apply_factor(pass ? &(fill_style->gradient.gradient_matrix) : &work,
+                                                scale_x, scale_y, rotate_rad, trans_x, trans_y)) {
+                        return 1;
+                    }
                 }
                 break;
             case 0x40: // tilled  bitmap fill with smoothed edges
             case 0x41: // clipped bitmap fill with smoothed edges
             case 0x42: // tilled  bitmap fill with hard edges
             case 0x43: // clipped bitmap fill with hard edges
+                work = fill_style->bitmap.bitmap_matrix;
                 if (bitmap_id < 0) {
-                    swf_matrix_apply_factor(&(fill_style->bitmap.bitmap_matrix),
-                                            scale_x, scale_y, rotate_rad,
-                                            trans_x, trans_y);
+                    if (swf_matrix_apply_factor(pass ? &(fill_style->bitmap.bitmap_matrix) : &work,
+                                                scale_x, scale_y, rotate_rad,
+                                                trans_x, trans_y)) {
+                        return 1;
+                    }
                 } else if (bitmap_id == fill_style->bitmap.bitmap_ref) {
                     /* a bitmap_id is given only to compensate a change of the
                      * bitmap's pixel size, which is a scale in bitmap space */
-                    swf_matrix_scale_source(&(fill_style->bitmap.bitmap_matrix),
-                                            scale_x, scale_y);
+                    if (swf_matrix_scale_source(pass ? &(fill_style->bitmap.bitmap_matrix) : &work,
+                                                scale_x, scale_y)) {
+                        return 1;
+                    }
                 }
                 break;
             case 0x00: // solid
@@ -679,6 +691,7 @@ swf_tag_shape_apply_matrix_factor(void *detail, int shape_id, int bitmap_id,
             }
         }
     }
+  }
     return 0;
 }
 
@@ -687,8 +700,8 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
                                 double scale_x, double scale_y,
                                 signed int trans_x,
                                 signed int trans_y) {
-//    int i;
     swf_tag_shape_detail_t *swf_tag_shape = (swf_tag_shape_detail_t *) detail;
+    swf_rect_t rect, stroke_rect;
     if (detail == NULL) {
         fprintf(stderr, "swf_tag_shape_apply_rect_factor: detail == NULL\n");
         return 1;
@@ -704,6 +717,24 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
         fprintf(stderr, "swf_tag_shape_apply_rect_factor: DefineMorphShape not supported yet\n");
         return 1;
     }
+    /* the rects are computed on copies and stored only after the edges
+     * (which check before they change) succeeded: a failure changes nothing */
+    rect = swf_tag_shape->rect;
+    stroke_rect = swf_tag_shape->stroke_rect;
+    if (swf_rect_apply_factor(&rect, scale_x, scale_y, trans_x, trans_y)) {
+        return 1;
+    }
+    if (swf_tag_shape->has_strokes) {
+        /* EdgeBounds (DefineShape4) is the bounds of the edges without the
+         * strokes: it follows the edges, around the same base point, which is
+         * the rect before it changes. */
+        if (swf_rect_apply_factor_around(&stroke_rect,
+                                         swf_tag_shape->rect.x_min,
+                                         swf_tag_shape->rect.y_min,
+                                         scale_x, scale_y, trans_x, trans_y)) {
+            return 1;
+        }
+    }
     // edges scale around the same base point as the rect (x_min, y_min)
     if (swf_shape_record_edge_apply_factor(&(swf_tag_shape->shape_with_style.shape_records),
                                            swf_tag_shape->rect.x_min,
@@ -711,17 +742,8 @@ swf_tag_shape_apply_rect_factor(void *detail, int shape_id, int bitmap_id,
                                            scale_x, scale_y, trans_x, trans_y)) {
         return 1; // nothing changed
     }
-    if (swf_tag_shape->has_strokes) {
-        /* EdgeBounds (DefineShape4) is the bounds of the edges without the
-         * strokes: it follows the edges, around the same base point. This is
-         * done before the rect changes, which is its base. */
-        swf_rect_apply_factor_around(&(swf_tag_shape->stroke_rect),
-                                     swf_tag_shape->rect.x_min,
-                                     swf_tag_shape->rect.y_min,
-                                     scale_x, scale_y, trans_x, trans_y);
-    }
-    swf_rect_apply_factor(&(swf_tag_shape->rect),
-                          scale_x, scale_y, trans_x, trans_y);
+    swf_tag_shape->rect = rect;
+    swf_tag_shape->stroke_rect = stroke_rect;
     return 0;
 }
 

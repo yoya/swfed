@@ -50,17 +50,41 @@ swf_rect_print(swf_rect_t *rect, int indent_depth) {
     return 0;
 }
 
+/* RECT is written with 5bit NBits: up to 31bit signed twips */
+#define SWF_RECT_VALUE_MIN (-1073741824.0)
+#define SWF_RECT_VALUE_MAX (1073741823.0)
+
+/* trunc(value) + trans (twips), or 1 if a step is not a number that fits */
+static int
+_swf_rect_value(double value, double trans, signed int *result) {
+    if (! ((value >= SWF_RECT_VALUE_MIN) && (value <= SWF_RECT_VALUE_MAX))) {
+        return 1; // out of range, or NaN
+    }
+    value = (double) (signed int) value + trans;
+    if (! ((value >= SWF_RECT_VALUE_MIN) && (value <= SWF_RECT_VALUE_MAX))) {
+        return 1;
+    }
+    *result = (signed int) value;
+    return 0;
+}
+
+/* returns 1, and changes nothing, if a result doesn't fit in a RECT */
 int swf_rect_apply_factor(swf_rect_t *rect,
                           double scale_x, double scale_y,
                           signed int trans_x, signed int trans_y) {
-    int size_x = rect->x_max - rect->x_min;
-    int size_y = rect->y_max - rect->y_min;
-    rect->x_max = rect->x_min + size_x * scale_x;
-    rect->y_max = rect->y_min + size_y * scale_y;
-    rect->x_min += trans_x * SWF_TWIPS;
-    rect->x_max += trans_x * SWF_TWIPS;
-    rect->y_min += trans_y * SWF_TWIPS;
-    rect->y_max += trans_y * SWF_TWIPS;
+    double tx = (double) trans_x * SWF_TWIPS, ty = (double) trans_y * SWF_TWIPS;
+    signed int x_min, x_max, y_min, y_max;
+    if (_swf_rect_value(rect->x_min, tx, &x_min) ||
+        _swf_rect_value(rect->x_min + ((double) rect->x_max - rect->x_min) * scale_x, tx, &x_max) ||
+        _swf_rect_value(rect->y_min, ty, &y_min) ||
+        _swf_rect_value(rect->y_min + ((double) rect->y_max - rect->y_min) * scale_y, ty, &y_max)) {
+        fprintf(stderr, "swf_rect_apply_factor: the result is out of the range of a RECT\n");
+        return 1;
+    }
+    rect->x_min = x_min;
+    rect->x_max = x_max;
+    rect->y_min = y_min;
+    rect->y_max = y_max;
     return 0;
 }
 
@@ -75,9 +99,18 @@ int swf_rect_apply_factor_around(swf_rect_t *rect,
                                  signed int base_x, signed int base_y,
                                  double scale_x, double scale_y,
                                  signed int trans_x, signed int trans_y) {
-    rect->x_min = (signed int) (base_x + (rect->x_min - base_x) * scale_x) + trans_x * SWF_TWIPS;
-    rect->x_max = (signed int) (base_x + (rect->x_max - base_x) * scale_x) + trans_x * SWF_TWIPS;
-    rect->y_min = (signed int) (base_y + (rect->y_min - base_y) * scale_y) + trans_y * SWF_TWIPS;
-    rect->y_max = (signed int) (base_y + (rect->y_max - base_y) * scale_y) + trans_y * SWF_TWIPS;
+    double tx = (double) trans_x * SWF_TWIPS, ty = (double) trans_y * SWF_TWIPS;
+    signed int x_min, x_max, y_min, y_max;
+    if (_swf_rect_value(base_x + ((double) rect->x_min - base_x) * scale_x, tx, &x_min) ||
+        _swf_rect_value(base_x + ((double) rect->x_max - base_x) * scale_x, tx, &x_max) ||
+        _swf_rect_value(base_y + ((double) rect->y_min - base_y) * scale_y, ty, &y_min) ||
+        _swf_rect_value(base_y + ((double) rect->y_max - base_y) * scale_y, ty, &y_max)) {
+        fprintf(stderr, "swf_rect_apply_factor_around: the result is out of the range of a RECT\n");
+        return 1;
+    }
+    rect->x_min = x_min;
+    rect->x_max = x_max;
+    rect->y_min = y_min;
+    rect->y_max = y_max;
     return 0;
 }
