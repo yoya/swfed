@@ -1,7 +1,13 @@
 --TEST--
 JPEG scan data that is a single 0xFF at the end of the data does not get the length -1 (#157)
+--INI--
+pcre.jit=0
 --FILE--
 <?php
+// pcre.jit=0: on x86_64, valgrind (run-tests.php -m) reports "conditional jump
+// depends on uninitialised value" in the PCRE JIT code of the preg_match_all()
+// below. The value is in PHP's own output buffer (ob_get_clean()), past the end
+// of the string; the report is gone with pcre.jit=0, and without the regexp.
 ini_set('swfed.error_output', 'none');
 
 function tag($code, $body) {
