@@ -158,6 +158,12 @@ jpeg_segment_t *jpeg_segment_parse(unsigned char *data,
                   if (next_marker2 == 0x00) {
                       continue;
                   }
+                  if (next_marker2 < 0) {
+                      /* the data ends with this 0xFF: no marker follows the
+                       * scan data, as when it ends without any 0xFF. (Stepping
+                       * back 2 bytes from here would go before sos_offset.) */
+                      break;
+                  }
                   bitstream_incrpos(bs, -2, 0);
                   jpeg_segment_append(jpeg_seg, marker2, data + sos_offset,
                                       bitstream_getbytepos(bs) - sos_offset);
