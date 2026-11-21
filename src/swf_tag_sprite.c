@@ -63,8 +63,13 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         tag_in_sprite = swf_tag_create(bs);
         if (tag_in_sprite == NULL) {
-            fprintf(stderr, "swf_object_input: swf_tag_create failed\n");
-            break;
+            /* as at the top level (swf_object_input()): the tags after a
+             * broken one would silently be dropped when the sprite is
+             * written out again */
+            fprintf(stderr, "swf_tag_sprite_input_detail: broken tag at %ld in sprite_id=%d\n",
+                    pos, swf_tag_sprite->sprite_id);
+            bitstream_close(bs);
+            return 1;
         }
         if (prev_tag == NULL) {
             swf_tag_sprite->tag = tag_in_sprite;
@@ -75,6 +80,9 @@ swf_tag_sprite_input_detail(swf_tag_t *tag, struct swf_object_ *swf) {
         }
         tag_in_sprite->next = NULL;
         prev_tag = tag_in_sprite;
+        if (tag_in_sprite->code == 0) { // END Tag
+            break; // what follows it is not a tag
+        }
     }
     bitstream_close(bs);
     return 0;
