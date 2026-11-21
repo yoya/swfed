@@ -203,7 +203,7 @@ is compared with it:
   and `replaceMovieClip()`. Over the limit: `E_WARNING` and `false`.
 - the image data of a DefineBitsLossless / DefineBitsLossless2 and the alpha of a
   DefineBitsJPEG3 / DefineBitsJPEG4, after decompression. Over the limit: the tag
-  can't be parsed (the alpha is treated as missing).
+  can't be parsed.
 - the decoded size of the PNG / GIF given to `replacePNGData()` /
   `replaceGIFData()` / `replaceBitmapData()` (for a GIF: the logical screen plus
   every frame). Over the limit: `false`.
