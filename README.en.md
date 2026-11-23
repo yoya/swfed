@@ -250,6 +250,9 @@ Serializes the movie. The file format follows the header: `FWS`, `CWS` if the
 stays `ZWS`). Compression uses the level from `setCompressLevel()`. The file
 length field is recomputed. Returns `false` if nothing has been loaded or
 compression fails, and for `ZWS` on a build without liblzma.
+Tags that were not edited are written as they were read (the form of the tag
+header included), so an unedited `FWS` file comes out byte for byte as it went
+in. A compressed file is compressed again, so it may differ.
 
 #### `getHeaderInfo(): array`
 
@@ -585,8 +588,9 @@ mono, sample count 0. The data is not checked. Returns `false` if not found.
 #### `getEditString(string $name): string|null|false`
 
 Returns the initial text of the first `DefineEditText` whose variable name is
-exactly `$name`. If the variable name does not match, `$name` is also tried as a
-decimal character ID (e.g. `"2"`). Returns `null` if the matching field has no
+exactly `$name`. If the variable name does not match and all of `$name` is
+decimal digits (e.g. `"2"`), it is also tried as a character ID (`"2x"` or `" 2"`
+are not taken as IDs). Returns `null` if the matching field has no
 initial text (or no movie is loaded), and `false` if no field matches. The text
 is returned as stored (see "Strings and character encoding").
 
@@ -614,8 +618,9 @@ output, one action per line. Does not use the loaded movie. Always returns `true
 For each `key => value` pair, in array order, inserts the bytecode for
 `key = value` at the start of the first frame: into the first `DoAction` tag of
 that frame, or into a new `DoAction` tag if the frame has none. Keys and values
-are converted to strings. Returns `false` if no movie is loaded or a key or
-value is longer than 65533 bytes.
+are converted to strings and end at their first NUL (nothing after it is
+written). Returns `false` if no movie is loaded or a key or value is longer than
+65533 bytes.
 
 #### `replaceActionStrings(array $map): bool`
 
@@ -624,9 +629,10 @@ Replaces every string in ActionScript bytecode that is exactly equal to a key of
 Strings in `Push`, `ConstantPool` and `GetURL` (URL and target) are handled, in
 `DoAction` / `DoInitAction` tags, in the actions of `DefineButton` /
 `DefineButton2`, and in the clip actions (`onClipEvent`) of `PlaceObject2` /
-`PlaceObject3`, at the top level and inside `DefineSprite`. Returns `true` also when
-nothing matched; `false` on broken bytecode or if an action would grow beyond
-65535 bytes.
+`PlaceObject3`, at the top level and inside `DefineSprite`. A value ends at its
+first NUL. Returns `true` also when nothing matched; `false` on broken bytecode
+or if an action would grow beyond 65535 bytes. On failure the actions of the
+failing tag are left as they were, but the tags handled before it stay replaced.
 
 ### Movie clips
 
@@ -726,6 +732,8 @@ Uploaded files are kept in `swfed-<uid>/` under the system temporary directory
 ## Links
 
 - Repository: https://github.com/yoya/swfed
+- Releases (what changed in each version): https://github.com/yoya/swfed/releases
+- Wiki (in Japanese: examples for every method, how-tos, internals): https://github.com/yoya/swfed/wiki
 - Issues: https://github.com/yoya/swfed/issues
 
 Historical links (the project used to be hosted on OSDN; these pages may no
